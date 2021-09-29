@@ -1,0 +1,40 @@
+I"x<h2 id="step-1-set-markdown-engine-to-kramdown">Step 1. Set markdown engine to kramdown</h2>
+
+<p>In your <code class="language-plaintext highlighter-rouge">_config.yml</code> change the engine to kramdown as follows</p>
+
+<div class="language-yml highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1"># Build settings</span>
+<span class="na">markdown</span><span class="pi">:</span> <span class="s">kramdown</span>
+<span class="na">remote_theme</span><span class="pi">:</span> <span class="s">mmistakes/minimal-mistakes</span>
+<span class="nn">...</span>
+</code></pre></div></div>
+
+<h2 id="step-2-modify-scriptshtml">Step 2. Modify <code class="language-plaintext highlighter-rouge">scripts.html</code></h2>
+
+<p>We are now going to modify <code class="language-plaintext highlighter-rouge">scripts.html</code> and <strong>append</strong> the following content:</p>
+
+<div class="language-html highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nt">&lt;script </span><span class="na">type=</span><span class="s">"text/javascript"</span> <span class="na">async</span>
+	<span class="na">src=</span><span class="s">"https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-MML-AM_CHTML"</span><span class="nt">&gt;</span>
+<span class="nt">&lt;/script&gt;</span>
+
+<span class="nt">&lt;script </span><span class="na">type=</span><span class="s">"text/x-mathjax-config"</span><span class="nt">&gt;</span>
+   <span class="nx">MathJax</span><span class="p">.</span><span class="nx">Hub</span><span class="p">.</span><span class="nx">Config</span><span class="p">({</span>
+     <span class="na">extensions</span><span class="p">:</span> <span class="p">[</span><span class="dl">"</span><span class="s2">tex2jax.js</span><span class="dl">"</span><span class="p">],</span>
+     <span class="na">jax</span><span class="p">:</span> <span class="p">[</span><span class="dl">"</span><span class="s2">input/TeX</span><span class="dl">"</span><span class="p">,</span> <span class="dl">"</span><span class="s2">output/HTML-CSS</span><span class="dl">"</span><span class="p">],</span>
+     <span class="na">tex2jax</span><span class="p">:</span> <span class="p">{</span>
+       <span class="na">inlineMath</span><span class="p">:</span> <span class="p">[</span> <span class="p">[</span><span class="dl">'</span><span class="s1">$</span><span class="dl">'</span><span class="p">,</span><span class="dl">'</span><span class="s1">$</span><span class="dl">'</span><span class="p">],</span> <span class="p">[</span><span class="dl">"</span><span class="se">\\</span><span class="s2">(</span><span class="dl">"</span><span class="p">,</span><span class="dl">"</span><span class="se">\\</span><span class="s2">)</span><span class="dl">"</span><span class="p">]</span> <span class="p">],</span>
+       <span class="na">displayMath</span><span class="p">:</span> <span class="p">[</span> <span class="p">[</span><span class="dl">'</span><span class="s1">$$</span><span class="dl">'</span><span class="p">,</span><span class="dl">'</span><span class="s1">$$</span><span class="dl">'</span><span class="p">],</span> <span class="p">[</span><span class="dl">"</span><span class="se">\\</span><span class="s2">[</span><span class="dl">"</span><span class="p">,</span><span class="dl">"</span><span class="se">\\</span><span class="s2">]</span><span class="dl">"</span><span class="p">]</span> <span class="p">],</span>
+       <span class="na">processEscapes</span><span class="p">:</span> <span class="kc">true</span>
+     <span class="p">},</span>
+     <span class="dl">"</span><span class="s2">HTML-CSS</span><span class="dl">"</span><span class="p">:</span> <span class="p">{</span> <span class="na">availableFonts</span><span class="p">:</span> <span class="p">[</span><span class="dl">"</span><span class="s2">TeX</span><span class="dl">"</span><span class="p">]</span> <span class="p">}</span>
+   <span class="p">});</span>
+<span class="nt">&lt;/script&gt;</span>
+</code></pre></div></div>
+
+<h2 id="step-3-thats-it">Step 3. That’s it!</h2>
+
+<p>If you did everything properly then this should render nicely:</p>
+
+\[e^{i \pi} = -1\]
+
+<!--End mc_embed_signup-->
+:ET

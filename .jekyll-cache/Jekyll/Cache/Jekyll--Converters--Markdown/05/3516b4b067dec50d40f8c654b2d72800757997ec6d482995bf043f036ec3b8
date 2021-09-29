@@ -1,0 +1,19 @@
+I""<p><img src="/assets/images/hmm2.svg" alt="hidden_markov_model2" /></p>
+
+<p>We know that to model any problem using a Hidden Markov Model we need a set of observations and a set of possible states. The states in an HMM are hidden.</p>
+
+<p>In the part of speech tagging problem, the observations are the words themselves in the given sequence.</p>
+
+<p>As for the states, which are hidden, these would be the POS tags for the words.</p>
+
+<p><img src="/assets/images/hmm.png" alt="hidden_markov_model" /></p>
+
+<p>The transition probabilities would be like <strong>P(VP | NP)</strong> which means the probability of the current word having a tag of Verb Phrase given that the previous tag was a Noun Phrase.</p>
+
+<p>Emission probabilities would be <strong>P(Joe | NP)</strong>, which means the probability that the word is, say, Joe given that the tag is a Noun Phrase.</p>
+
+<p><a href="https://github.com/cyberzzhhss/hmm_pos_tagger">My github project</a></p>
+
+<p><a href="https://github.com/cyberzzhhss/hmm_pos_tagger/blob/main/hmm_pos_tagger.py">Code</a></p>
+
+:ET

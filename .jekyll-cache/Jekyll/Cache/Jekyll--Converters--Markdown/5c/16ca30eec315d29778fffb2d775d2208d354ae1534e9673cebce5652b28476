@@ -1,0 +1,66 @@
+I"�<p><img src="/assets/images/regex.jpg" alt="information_retrieval" /></p>
+
+<p>There are two python parsers in the project</p>
+
+<p>dollar_program.py</p>
+
+<figure class="highlight"><pre><code class="language-python" data-lang="python"><table class="rouge-table"><tbody><tr><td class="gutter gl"><pre class="lineno">1
+2
+3
+4
+5
+6
+7
+8
+9
+</pre></td><td class="code"><pre><span class="kn">import</span> <span class="nn">sys</span><span class="p">,</span><span class="n">re</span> 
+<span class="n">regex</span> <span class="o">=</span> <span class="sa">r</span><span class="s">"(\$?(?:(\d+|a|half|quarter|one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|\w+teen|\w+ty|hundred|thousand|\w+illion).)*((\d+|and|((and|a)?.)?half( a)?|quarter|one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|\w+teen|\w+ty|hundred|thousand|\w+illion))(\s)?(dollar|cent)(s)?)|((\$(?:\d+.)*\d+)(.(\w+illion|thousand))?)"</span>
+<span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">sys</span><span class="p">.</span><span class="n">argv</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="s">'r'</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+    <span class="n">test_str</span> <span class="o">=</span> <span class="n">f</span><span class="p">.</span><span class="n">read</span><span class="p">()</span>
+<span class="n">matches</span> <span class="o">=</span> <span class="n">re</span><span class="p">.</span><span class="n">finditer</span><span class="p">(</span><span class="n">regex</span><span class="p">,</span> <span class="n">test_str</span><span class="p">,</span> <span class="n">re</span><span class="p">.</span><span class="n">MULTILINE</span><span class="p">)</span>
+<span class="n">outFile</span><span class="o">=</span><span class="nb">open</span><span class="p">(</span><span class="s">"dollar_output.txt"</span><span class="p">,</span><span class="s">"w"</span><span class="p">)</span>
+<span class="k">for</span> <span class="n">matchNum</span><span class="p">,</span> <span class="n">match</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">matches</span><span class="p">,</span> <span class="n">start</span><span class="o">=</span><span class="mi">1</span><span class="p">):</span>
+    <span class="n">outFile</span><span class="p">.</span><span class="n">write</span><span class="p">(</span><span class="n">match</span><span class="p">.</span><span class="n">group</span><span class="p">()</span><span class="o">+</span><span class="s">"</span><span class="se">\n</span><span class="s">"</span><span class="p">)</span>
+<span class="n">outFile</span><span class="p">.</span><span class="n">close</span><span class="p">()</span>
+</pre></td></tr></tbody></table></code></pre></figure>
+
+<p>telephone_regex.py</p>
+
+<figure class="highlight"><pre><code class="language-python" data-lang="python"><table class="rouge-table"><tbody><tr><td class="gutter gl"><pre class="lineno">1
+2
+3
+4
+5
+6
+7
+8
+9
+</pre></td><td class="code"><pre><span class="kn">import</span> <span class="nn">sys</span><span class="p">,</span><span class="n">re</span> 
+<span class="n">regex</span> <span class="o">=</span> <span class="sa">r</span><span class="s">"[(]?\d{3}[)]?[(\s)?.-]\d{3}[\s.-]\d{4}"</span>
+<span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">sys</span><span class="p">.</span><span class="n">argv</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="s">'r'</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+    <span class="n">test_str</span> <span class="o">=</span> <span class="n">f</span><span class="p">.</span><span class="n">read</span><span class="p">()</span>
+<span class="n">matches</span> <span class="o">=</span> <span class="n">re</span><span class="p">.</span><span class="n">finditer</span><span class="p">(</span><span class="n">regex</span><span class="p">,</span> <span class="n">test_str</span><span class="p">,</span> <span class="n">re</span><span class="p">.</span><span class="n">MULTILINE</span><span class="p">)</span>
+<span class="n">outFile</span><span class="o">=</span><span class="nb">open</span><span class="p">(</span><span class="s">"telephone_output.txt"</span><span class="p">,</span><span class="s">"w"</span><span class="p">)</span>
+<span class="k">for</span> <span class="n">matchNum</span><span class="p">,</span> <span class="n">match</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">matches</span><span class="p">,</span> <span class="n">start</span><span class="o">=</span><span class="mi">1</span><span class="p">):</span>
+    <span class="n">outFile</span><span class="p">.</span><span class="n">write</span><span class="p">(</span><span class="n">match</span><span class="p">.</span><span class="n">group</span><span class="p">()</span><span class="o">+</span><span class="s">"</span><span class="se">\n</span><span class="s">"</span><span class="p">)</span>
+<span class="n">outFile</span><span class="p">.</span><span class="n">close</span><span class="p">()</span>
+</pre></td></tr></tbody></table></code></pre></figure>
+
+<p>This is the program file. It is possible to call the program on the command line with a text file as a parameter and output regexp matches in the format indicated below. For example,</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>dollar_program.py target_text.txt  
+telephone_regex.py target_text.txt
+</code></pre></div></div>
+
+<p>dollar_output.txt – this should contain the dollar amounts recognized by your program, one per line. The parts of the lines that are not part of the dollar amount should not be printed at all. 3 lines of example output might be something like this:<br />
+$5 million<br />
+$5.00<br />
+five hundred dollars</p>
+
+<p>telephone_output.txt – the output file for telephosne numbers,<br />
+  e.g.,<br />
+  212-345-1234<br />
+  777-1000</p>
+
+<p><a href="https://github.com/cyberzzhhss/regex_parser">My github project</a></p>
+:ET

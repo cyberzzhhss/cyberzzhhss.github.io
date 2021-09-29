@@ -1,0 +1,16 @@
+I"Ÿ<p><img src="/assets/images/gol2.gif" alt="gol" /></p>
+
+<p>This is n implementation of Conwayâ€™s Game of Life using C language, and parallel computing library OpenMP</p>
+
+<p><a href="https://github.com/cyberzzhhss/game_of_life">My github project</a></p>
+
+<p><a href="https://github.com/cyberzzhhss/game_of_life/blob/main/detailed_explanation.pdf">My documentation</a></p>
+
+<p><a href="https://github.com/cyberzzhhss/game_of_life/blob/main/automata.c">Code</a></p>
+
+<p>External Resources:</p>
+
+<p><a href="https://playgameoflife.com/">https://playgameoflife.com/</a></p>
+
+<p><a href="http://battleship.ru/virus/conway.html">http://battleship.ru/virus/conway.html</a></p>
+:ET

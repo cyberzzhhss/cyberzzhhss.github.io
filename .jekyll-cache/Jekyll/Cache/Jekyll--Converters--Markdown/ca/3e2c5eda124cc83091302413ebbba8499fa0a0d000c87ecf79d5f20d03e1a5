@@ -1,0 +1,241 @@
+I",;<p>TimSort is a sorting algorithm based on Insertion Sort and Merge Sort.</p>
+
+<ol>
+  <li>A stable sorting algorithm works in O(n Log n) time</li>
+  <li>Used in Java’s Arrays.sort() as well as Python’s sorted() and sort().</li>
+  <li>First sort small pieces using Insertion Sort, then merges the pieces using merge of merge sort.</li>
+</ol>
+
+<p>You can use IDE <a href="https://repl.it">repl.it</a> to run the following code</p>
+
+<p>From <a href="https://www.geeksforgeeks.org/timsort/">Geeksforgeeks</a></p>
+
+<figure class="highlight"><pre><code class="language-python" data-lang="python"><table class="rouge-table"><tbody><tr><td class="gutter gl"><pre class="lineno">1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+26
+27
+28
+29
+30
+31
+32
+33
+34
+35
+36
+37
+38
+39
+40
+41
+42
+43
+44
+45
+46
+47
+48
+49
+50
+51
+52
+53
+54
+55
+56
+57
+58
+59
+60
+61
+62
+63
+64
+65
+66
+67
+68
+69
+70
+71
+72
+73
+74
+75
+76
+77
+78
+79
+80
+81
+82
+83
+84
+85
+86
+87
+88
+89
+90
+91
+92
+93
+94
+95
+96
+97
+98
+99
+100
+101
+102
+103
+104
+105
+106
+107
+108
+109
+110
+111
+112
+113
+</pre></td><td class="code"><pre><span class="c1"># Python3 program to perform basic timSort 
+</span><span class="n">MIN_MERGE</span> <span class="o">=</span> <span class="mi">32</span>
+
+<span class="k">def</span> <span class="nf">calcMinRun</span><span class="p">(</span><span class="n">n</span><span class="p">):</span> 
+  <span class="s">"""Returns the minimum length of a 
+  run from 23 - 64 so that 
+  the len(array)/minrun is less than or 
+  equal to a power of 2. 
+  e.g. 1=&gt;1, ..., 63=&gt;63, 64=&gt;32, 65=&gt;33, 
+  ..., 127=&gt;64, 128=&gt;32, ... 
+  """</span>
+  <span class="n">r</span> <span class="o">=</span> <span class="mi">0</span>
+  <span class="k">while</span> <span class="n">n</span> <span class="o">&gt;=</span> <span class="n">MIN_MERGE</span><span class="p">:</span> 
+    <span class="n">r</span> <span class="o">|=</span> <span class="n">n</span> <span class="o">&amp;</span> <span class="mi">1</span>
+    <span class="n">n</span> <span class="o">&gt;&gt;=</span> <span class="mi">1</span>
+  <span class="k">return</span> <span class="n">n</span> <span class="o">+</span> <span class="n">r</span> 
+
+<span class="c1"># This function sorts array from left index to 
+# to right index which is of size atmost RUN 
+</span><span class="k">def</span> <span class="nf">insertionSort</span><span class="p">(</span><span class="n">arr</span><span class="p">,</span> <span class="n">left</span><span class="p">,</span> <span class="n">right</span><span class="p">):</span> 
+  <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">left</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span> <span class="n">right</span> <span class="o">+</span> <span class="mi">1</span><span class="p">):</span> 
+    <span class="n">j</span> <span class="o">=</span> <span class="n">i</span> 
+    <span class="k">while</span> <span class="n">j</span> <span class="o">&gt;</span> <span class="n">left</span> <span class="ow">and</span> <span class="n">arr</span><span class="p">[</span><span class="n">j</span><span class="p">]</span> <span class="o">&lt;</span> <span class="n">arr</span><span class="p">[</span><span class="n">j</span> <span class="o">-</span> <span class="mi">1</span><span class="p">]:</span> 
+      <span class="n">arr</span><span class="p">[</span><span class="n">j</span><span class="p">],</span> <span class="n">arr</span><span class="p">[</span><span class="n">j</span> <span class="o">-</span> <span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="n">arr</span><span class="p">[</span><span class="n">j</span> <span class="o">-</span> <span class="mi">1</span><span class="p">],</span> <span class="n">arr</span><span class="p">[</span><span class="n">j</span><span class="p">]</span> 
+      <span class="n">j</span> <span class="o">-=</span> <span class="mi">1</span>
+
+<span class="c1"># Merge function merges the sorted runs 
+</span><span class="k">def</span> <span class="nf">merge</span><span class="p">(</span><span class="n">arr</span><span class="p">,</span> <span class="n">l</span><span class="p">,</span> <span class="n">m</span><span class="p">,</span> <span class="n">r</span><span class="p">):</span> 
+  
+  <span class="c1"># original array is broken in two parts 
+</span>  <span class="c1"># left and right array 
+</span>  <span class="n">len1</span><span class="p">,</span> <span class="n">len2</span> <span class="o">=</span> <span class="n">m</span> <span class="o">-</span> <span class="n">l</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span> <span class="n">r</span> <span class="o">-</span> <span class="n">m</span> 
+  <span class="n">left</span><span class="p">,</span> <span class="n">right</span> <span class="o">=</span> <span class="p">[],</span> <span class="p">[]</span> 
+  <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">len1</span><span class="p">):</span> 
+    <span class="n">left</span><span class="p">.</span><span class="n">append</span><span class="p">(</span><span class="n">arr</span><span class="p">[</span><span class="n">l</span> <span class="o">+</span> <span class="n">i</span><span class="p">])</span> 
+  <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">len2</span><span class="p">):</span> 
+    <span class="n">right</span><span class="p">.</span><span class="n">append</span><span class="p">(</span><span class="n">arr</span><span class="p">[</span><span class="n">m</span> <span class="o">+</span> <span class="mi">1</span> <span class="o">+</span> <span class="n">i</span><span class="p">])</span> 
+
+  <span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">,</span> <span class="n">k</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="n">l</span> 
+
+  <span class="c1"># after comparing, we merge those two array 
+</span>  <span class="c1"># in larger sub array 
+</span>  <span class="k">while</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="n">len1</span> <span class="ow">and</span> <span class="n">j</span> <span class="o">&lt;</span> <span class="n">len2</span><span class="p">:</span> 
+    <span class="k">if</span> <span class="n">left</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">&lt;=</span> <span class="n">right</span><span class="p">[</span><span class="n">j</span><span class="p">]:</span> 
+      <span class="n">arr</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">=</span> <span class="n">left</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> 
+      <span class="n">i</span> <span class="o">+=</span> <span class="mi">1</span>
+    <span class="k">else</span><span class="p">:</span> 
+      <span class="n">arr</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">=</span> <span class="n">right</span><span class="p">[</span><span class="n">j</span><span class="p">]</span> 
+      <span class="n">j</span> <span class="o">+=</span> <span class="mi">1</span>
+
+    <span class="n">k</span> <span class="o">+=</span> <span class="mi">1</span>
+
+  <span class="c1"># Copy remaining elements of left, if any 
+</span>  <span class="k">while</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="n">len1</span><span class="p">:</span> 
+    <span class="n">arr</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">=</span> <span class="n">left</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> 
+    <span class="n">k</span> <span class="o">+=</span> <span class="mi">1</span>
+    <span class="n">i</span> <span class="o">+=</span> <span class="mi">1</span>
+
+  <span class="c1"># Copy remaining element of right, if any 
+</span>  <span class="k">while</span> <span class="n">j</span> <span class="o">&lt;</span> <span class="n">len2</span><span class="p">:</span> 
+    <span class="n">arr</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">=</span> <span class="n">right</span><span class="p">[</span><span class="n">j</span><span class="p">]</span> 
+    <span class="n">k</span> <span class="o">+=</span> <span class="mi">1</span>
+    <span class="n">j</span> <span class="o">+=</span> <span class="mi">1</span>
+
+<span class="c1"># Iterative Timsort function to sort the 
+# array[0...n-1] (similar to merge sort) 
+</span><span class="k">def</span> <span class="nf">timSort</span><span class="p">(</span><span class="n">arr</span><span class="p">):</span> 
+  <span class="n">n</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">arr</span><span class="p">)</span> 
+  <span class="n">minRun</span> <span class="o">=</span> <span class="n">calcMinRun</span><span class="p">(</span><span class="n">n</span><span class="p">)</span> 
+  
+  <span class="c1"># Sort individual subarrays of size RUN 
+</span>  <span class="k">for</span> <span class="n">start</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">n</span><span class="p">,</span> <span class="n">minRun</span><span class="p">):</span> 
+    <span class="n">end</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">start</span> <span class="o">+</span> <span class="n">minRun</span> <span class="o">-</span> <span class="mi">1</span><span class="p">,</span> <span class="n">n</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span> 
+    <span class="n">insertionSort</span><span class="p">(</span><span class="n">arr</span><span class="p">,</span> <span class="n">start</span><span class="p">,</span> <span class="n">end</span><span class="p">)</span> 
+
+  <span class="c1"># Start merging from size RUN (or 32). It will merge 
+</span>  <span class="c1"># to form size 64, then 128, 256 and so on .... 
+</span>  <span class="n">size</span> <span class="o">=</span> <span class="n">minRun</span> 
+  <span class="k">while</span> <span class="n">size</span> <span class="o">&lt;</span> <span class="n">n</span><span class="p">:</span> 
+    
+    <span class="c1"># Pick starting point of left sub array. We 
+</span>    <span class="c1"># are going to merge arr[left..left+size-1] 
+</span>    <span class="c1"># and arr[left+size, left+2*size-1] 
+</span>    <span class="c1"># After every merge, we increase left by 2*size 
+</span>    <span class="k">for</span> <span class="n">left</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">n</span><span class="p">,</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">size</span><span class="p">):</span> 
+
+      <span class="c1"># Find ending point of left sub array 
+</span>      <span class="c1"># mid+1 is starting point of right sub array 
+</span>      <span class="n">mid</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">n</span> <span class="o">-</span> <span class="mi">1</span><span class="p">,</span> <span class="n">left</span> <span class="o">+</span> <span class="n">size</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span> 
+      <span class="n">right</span> <span class="o">=</span> <span class="nb">min</span><span class="p">((</span><span class="n">left</span> <span class="o">+</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">size</span> <span class="o">-</span> <span class="mi">1</span><span class="p">),</span> <span class="p">(</span><span class="n">n</span> <span class="o">-</span> <span class="mi">1</span><span class="p">))</span> 
+
+      <span class="c1"># Merge sub array arr[left.....mid] &amp; 
+</span>      <span class="c1"># arr[mid+1....right] 
+</span>      <span class="n">merge</span><span class="p">(</span><span class="n">arr</span><span class="p">,</span> <span class="n">left</span><span class="p">,</span> <span class="n">mid</span><span class="p">,</span> <span class="n">right</span><span class="p">)</span> 
+
+    <span class="n">size</span> <span class="o">=</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">size</span> 
+
+<span class="c1"># Driver program to test above function 
+</span><span class="k">if</span> <span class="n">__name__</span> <span class="o">==</span> <span class="s">"__main__"</span><span class="p">:</span> 
+
+  <span class="n">arr</span> <span class="o">=</span> <span class="p">[</span><span class="o">-</span><span class="mi">2</span><span class="p">,</span> <span class="mi">7</span><span class="p">,</span> <span class="mi">15</span><span class="p">,</span> <span class="o">-</span><span class="mi">14</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">15</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> 
+    <span class="mi">7</span><span class="p">,</span> <span class="o">-</span><span class="mi">7</span><span class="p">,</span> <span class="o">-</span><span class="mi">4</span><span class="p">,</span> <span class="o">-</span><span class="mi">13</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">8</span><span class="p">,</span> <span class="o">-</span><span class="mi">14</span><span class="p">,</span> <span class="mi">12</span><span class="p">]</span> 
+
+  <span class="k">print</span><span class="p">(</span><span class="s">"Given Array is"</span><span class="p">)</span> 
+  <span class="k">print</span><span class="p">(</span><span class="n">arr</span><span class="p">)</span> 
+
+  <span class="c1"># Function Call 
+</span>  <span class="n">timSort</span><span class="p">(</span><span class="n">arr</span><span class="p">)</span> 
+
+  <span class="k">print</span><span class="p">(</span><span class="s">"After Sorting Array is"</span><span class="p">)</span> 
+  <span class="k">print</span><span class="p">(</span><span class="n">arr</span><span class="p">)</span> 
+  <span class="c1"># [-14, -14, -13, -7, -4, -2, 0, 0, 
+</span>    <span class="mi">5</span><span class="p">,</span> <span class="mi">7</span><span class="p">,</span> <span class="mi">7</span><span class="p">,</span> <span class="mi">8</span><span class="p">,</span> <span class="mi">12</span><span class="p">,</span> <span class="mi">15</span><span class="p">,</span> <span class="mi">15</span><span class="p">]</span> 
+</pre></td></tr></tbody></table></code></pre></figure>
+
+:ET

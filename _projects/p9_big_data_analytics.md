@@ -1,0 +1,17 @@
+---
+title: "Big Data Analytics"
+excerpt: "Analysis of Boston Restaurants’ Cleanliness from Yelp and Boston Department Data Using Big Data Tools"
+last_modified_at: 2021-5-10
+header:
+  teaser: /assets/images/big_data_graph.jpg
+---
+![image]({{site.url}}{{site.baseurl}}/assets/images/big_data_graph.jpg)
+
+
+This is an analysis of Boston restaurants’ cleanliness data using our designed metrics from the data provided by Yelp and Boston government. The data manipulations for tables were done using Hive, and regression analyses were done using Spark.
+
+[My github project](https://github.com/cyberzzhhss/BigDataCodeDrop)
+
+[My Medium writeup](https://cyberzzhhss.medium.com/analysis-of-boston-restaurants-cleanliness-from-yelp-and-boston-department-data-using-big-data-a51bc3fdd6c)
+
+[My detailed report](https://github.com/cyberzzhhss/BigDataCodeDrop/blob/main/Big_Data_Writeup.pdf)

@@ -1,0 +1,16 @@
+I"Í<p>I created a system for an Ad Hoc Information Retrieval task using TF-IDF weights and cosine similarity scores.</p>
+
+<p><img src="/assets/images/information_retrieval.png" alt="information_retrieval" /></p>
+
+<p><img src="/assets/images/tf.png" alt="information_retrieval" /></p>
+
+<p><img src="/assets/images/idf.png" alt="information_retrieval" /></p>
+
+<p><img src="/assets/images/tfidf.png" alt="information_retrieval" /></p>
+
+<p><img src="/assets/images/cosine_similarity.png" alt="information_retrieval" /></p>
+
+<p><a href="https://github.com/cyberzzhhss/information_retrieval">My github project</a></p>
+
+<p><a href="https://github.com/cyberzzhhss/information_retrieval/blob/main/info_retrieval.py">Code</a></p>
+:ET

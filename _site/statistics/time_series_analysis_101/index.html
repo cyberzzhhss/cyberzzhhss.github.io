@@ -1,0 +1,800 @@
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    <meta charset="utf-8">
+
+<!-- begin _includes/seo.html --><title>Time Series Analysis 101 - Zhehan Shi</title>
+<meta name="description" content="These are all classical models of forecasting based on time series data, with slight differences. This post focuses on the conceptual differences to gain an intuition and overview.  Autoregressive model  Autoregression refers to a regression model based on itself (“auto”). Basically, it takes p number of time steps before the one to be forecast and fits a regression model based on that. Or, in other words, predict the current value based on p previous values. Time steps before the one to be forecast are referred to as lags, so one could also say, predict the current value based on p lags. And the number of lags is called the order of the model.  [X_{t}=c+\sum {i=1}^{p}\varphi _{i}X{t-i}+\varepsilon _{t}\,]     $X_{t}$: value to be forecast at time $t$.   $c$: some constant value   $\varepsilon_{t}$: error value at time $t$   $p$ number of lags, or order of the model   $\varphi_{i}$: model parameter at index $i$   Moving-average regression model  The moving-average regression model takes a slightly different approach. It takes the average of the time series, and then predicts the current value based on the error term of n previous time steps. Similar to above, the n is referred to as the order.  How does this compare to the autoregressive approach above?  Pros:     The error terms of the lags are modeled to affect the forecasted value directly, rather than indirectly.   The error influence from lags is limited to the order, and not infinitely like the autoregressive approach.   Cons:     Fitting the model can be more complicated, as the error terms are not directly observable (they are included within the lag total values).   [X_{t}=\mu +\varepsilon _{t}+\theta _{1}\varepsilon _{t-1}+\cdots +\theta _{q}\varepsilon _{t-q}\,]     $X_{t}$: value to be forecast at time $t$.   $\mu$: the average of the series   $\varepsilon_{t}$: error value at time $t$   $q$: the number of lags to use, or order of the model   $\theta_{t}$: the parameter of the model at time t   This is alternatively written with the summmation operator like so:  [X_{t}=\mu +\varepsilon _{t}+\sum _{i=1}^{q}\theta _{i}\varepsilon _{t-i}.\,]  Note that this model name sounds similar to the moving average concept from statistics, but is conceptually different.  Autoregressive moving average model (ARMA)  After reviewing the above, ARMA becomes much easier to understand, as it’s simply a combination of the above two.  [X_{t}=c+\varepsilon {t}+\sum _{i=1}^{p}\varphi _{i}X{t-i}+\sum _{i=1}^{q}\theta _{i}\varepsilon _{t-i}.\,]  ARMA forecasts the targeted value as a combination of both p previous lag values and q previous error values.  Autoregressive integrated moving average (ARIMA)  The ARIMA approach extends ARMA by using difference values as opposed to the lag values themselves. This is the integrated part.  What is a difference value? A difference value for time step t would be the differnce between it and the previous value at time step t-1. Or, formulaically:  [X_{t} - X_{t-1}]  Using the differences as opposed to the values themselves is an effort to eliminate non-stationarity, or differences in the data when shifted in time. Difference values may be calculated repeatedly on a series, also giving them an order.  The following links from MIT OCW Math give a broad overview of Time Series Analysis.  Time Series Analysis Lecture 1  Time Series Analysis Lecture 2  Time Series Analysis Lecture 3">
+
+
+  <meta name="author" content="Zhehan Shi">
+  
+  <meta property="article:author" content="Zhehan Shi">
+  
+
+
+<meta property="og:type" content="article">
+<meta property="og:locale" content="en_US">
+<meta property="og:site_name" content="Zhehan Shi">
+<meta property="og:title" content="Time Series Analysis 101">
+<meta property="og:url" content="/statistics/time_series_analysis_101/">
+
+
+  <meta property="og:description" content="These are all classical models of forecasting based on time series data, with slight differences. This post focuses on the conceptual differences to gain an intuition and overview.  Autoregressive model  Autoregression refers to a regression model based on itself (“auto”). Basically, it takes p number of time steps before the one to be forecast and fits a regression model based on that. Or, in other words, predict the current value based on p previous values. Time steps before the one to be forecast are referred to as lags, so one could also say, predict the current value based on p lags. And the number of lags is called the order of the model.  [X_{t}=c+\sum {i=1}^{p}\varphi _{i}X{t-i}+\varepsilon _{t}\,]     $X_{t}$: value to be forecast at time $t$.   $c$: some constant value   $\varepsilon_{t}$: error value at time $t$   $p$ number of lags, or order of the model   $\varphi_{i}$: model parameter at index $i$   Moving-average regression model  The moving-average regression model takes a slightly different approach. It takes the average of the time series, and then predicts the current value based on the error term of n previous time steps. Similar to above, the n is referred to as the order.  How does this compare to the autoregressive approach above?  Pros:     The error terms of the lags are modeled to affect the forecasted value directly, rather than indirectly.   The error influence from lags is limited to the order, and not infinitely like the autoregressive approach.   Cons:     Fitting the model can be more complicated, as the error terms are not directly observable (they are included within the lag total values).   [X_{t}=\mu +\varepsilon _{t}+\theta _{1}\varepsilon _{t-1}+\cdots +\theta _{q}\varepsilon _{t-q}\,]     $X_{t}$: value to be forecast at time $t$.   $\mu$: the average of the series   $\varepsilon_{t}$: error value at time $t$   $q$: the number of lags to use, or order of the model   $\theta_{t}$: the parameter of the model at time t   This is alternatively written with the summmation operator like so:  [X_{t}=\mu +\varepsilon _{t}+\sum _{i=1}^{q}\theta _{i}\varepsilon _{t-i}.\,]  Note that this model name sounds similar to the moving average concept from statistics, but is conceptually different.  Autoregressive moving average model (ARMA)  After reviewing the above, ARMA becomes much easier to understand, as it’s simply a combination of the above two.  [X_{t}=c+\varepsilon {t}+\sum _{i=1}^{p}\varphi _{i}X{t-i}+\sum _{i=1}^{q}\theta _{i}\varepsilon _{t-i}.\,]  ARMA forecasts the targeted value as a combination of both p previous lag values and q previous error values.  Autoregressive integrated moving average (ARIMA)  The ARIMA approach extends ARMA by using difference values as opposed to the lag values themselves. This is the integrated part.  What is a difference value? A difference value for time step t would be the differnce between it and the previous value at time step t-1. Or, formulaically:  [X_{t} - X_{t-1}]  Using the differences as opposed to the values themselves is an effort to eliminate non-stationarity, or differences in the data when shifted in time. Difference values may be calculated repeatedly on a series, also giving them an order.  The following links from MIT OCW Math give a broad overview of Time Series Analysis.  Time Series Analysis Lecture 1  Time Series Analysis Lecture 2  Time Series Analysis Lecture 3">
+
+
+
+
+
+
+
+  <meta property="article:published_time" content="2020-03-01T00:00:00-05:00">
+
+
+
+
+
+  
+
+  
+
+
+<link rel="canonical" href="/statistics/time_series_analysis_101/">
+
+
+
+
+<script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    
+      "@type": "Person",
+      "name": "Zhehan Shi",
+      "url": "/"
+    
+  }
+</script>
+
+
+
+
+
+
+<!-- end _includes/seo.html -->
+
+
+<link href="/feed.xml" type="application/atom+xml" rel="alternate" title="Zhehan Shi Feed">
+
+<!-- https://t.co/dKP3o1e -->
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<script>
+  document.documentElement.className = document.documentElement.className.replace(/\bno-js\b/g, '') + ' js ';
+</script>
+
+<!-- For all browsers -->
+<link rel="stylesheet" href="/assets/css/main.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5/css/all.min.css">
+
+<!--[if IE]>
+  <style>
+    /* old IE unsupported flexbox fixes */
+    .greedy-nav .site-title {
+      padding-right: 3em;
+    }
+    .greedy-nav button {
+      position: absolute;
+      top: 0;
+      right: 0;
+      height: 100%;
+    }
+  </style>
+<![endif]-->
+
+
+
+    <!-- start custom head snippets -->
+
+<!-- insert favicons. use https://realfavicongenerator.net/ -->
+
+<!-- end custom head snippets -->
+
+  </head>
+
+  <body class="layout--single">
+    <nav class="skip-links">
+  <h2 class="screen-reader-text">Skip links</h2>
+  <ul>
+    <li><a href="#site-nav" class="screen-reader-shortcut">Skip to primary navigation</a></li>
+    <li><a href="#main" class="screen-reader-shortcut">Skip to content</a></li>
+    <li><a href="#footer" class="screen-reader-shortcut">Skip to footer</a></li>
+  </ul>
+</nav>
+
+    <!--[if lt IE 9]>
+<div class="notice--danger align-center" style="margin: 0;">You are using an <strong>outdated</strong> browser. Please <a href="https://browsehappy.com/">upgrade your browser</a> to improve your experience.</div>
+<![endif]-->
+
+    
+
+<div class="masthead">
+  <div class="masthead__inner-wrap">
+    <div class="masthead__menu">
+      <nav id="site-nav" class="greedy-nav">
+        
+        <a class="site-title" href="/">
+          Zhehan Shi
+          
+        </a>
+        <ul class="visible-links"><li class="masthead__menu-item">
+              <a href="/">Home</a>
+            </li><li class="masthead__menu-item">
+              <a href="/projects/">Projects</a>
+            </li><li class="masthead__menu-item">
+              <a href="/posts/">Posts</a>
+            </li><li class="masthead__menu-item">
+              <a href="/about/">About</a>
+            </li></ul>
+        
+        <button class="search__toggle" type="button">
+          <span class="visually-hidden">Toggle search</span>
+          <svg class="icon" width="16" height="16" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 15.99 16">
+            <path d="M15.5,13.12L13.19,10.8a1.69,1.69,0,0,0-1.28-.55l-0.06-.06A6.5,6.5,0,0,0,5.77,0,6.5,6.5,0,0,0,2.46,11.59a6.47,6.47,0,0,0,7.74.26l0.05,0.05a1.65,1.65,0,0,0,.5,1.24l2.38,2.38A1.68,1.68,0,0,0,15.5,13.12ZM6.4,2A4.41,4.41,0,1,1,2,6.4,4.43,4.43,0,0,1,6.4,2Z" transform="translate(-.01)"></path>
+          </svg>
+        </button>
+        
+        <button class="greedy-nav__toggle hidden" type="button">
+          <span class="visually-hidden">Toggle menu</span>
+          <div class="navicon"></div>
+        </button>
+        <ul class="hidden-links hidden"></ul>
+      </nav>
+    </div>
+  </div>
+</div>
+
+
+    <div class="initial-content">
+      
+
+
+
+<div id="main" role="main">
+  
+  <div class="sidebar sticky">
+  
+
+
+<div itemscope itemtype="https://schema.org/Person">
+
+  
+    <div class="author__avatar">
+      
+        <img src="/assets/images/profile.jpg" alt="Zhehan Shi" itemprop="image">
+      
+    </div>
+  
+
+  <div class="author__content">
+    
+      <h3 class="author__name" itemprop="name">Zhehan Shi</h3>
+    
+    
+      <div class="author__bio" itemprop="description">
+        <p>Stay Hungry Stay Foolish</p>
+
+      </div>
+    
+  </div>
+
+  <div class="author__urls-wrapper">
+    <button class="btn btn--inverse">Follow</button>
+    <ul class="author__urls social-icons">
+      
+        <li itemprop="homeLocation" itemscope itemtype="https://schema.org/Place">
+          <i class="fas fa-fw fa-map-marker-alt" aria-hidden="true"></i> <span itemprop="name">New York, NY</span>
+        </li>
+      
+
+      
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+      
+
+      
+        <li>
+          <a href="https://cyberzzhhss.github.io/posts/" itemprop="url">
+            <i class="fas fa-fw fa-link" aria-hidden="true"></i><span class="label">Website</span>
+          </a>
+        </li>
+      
+
+      
+        <li>
+          <a href="/assets/files/resume.pdf"> 
+            <i class="fas fa-fw fa-file-alt" aria-hidden="true"></i><span class="label">Resume</span>
+          </a>
+        </li>
+      
+
+      
+
+      
+
+      
+
+      
+
+      
+        <li>
+          <a href="https://www.linkedin.com/in/zhehan-shi-175b09135" itemprop="sameAs" rel="nofollow noopener noreferrer">
+            <i class="fab fa-fw fa-linkedin" aria-hidden="true"></i><span class="label">LinkedIn</span>
+          </a>
+        </li>
+      
+
+      
+
+      
+
+      
+
+      
+
+      
+        <li>
+          <a href="https://github.com/cyberzzhhss" itemprop="sameAs" rel="nofollow noopener noreferrer">
+            <i class="fab fa-fw fa-github" aria-hidden="true"></i><span class="label">GitHub</span>
+          </a>
+        </li>
+      
+
+      
+
+      
+
+      
+
+      
+
+      
+
+      
+
+      
+
+      
+
+      
+
+      
+
+      
+
+      
+
+      
+
+      <!--
+  <li>
+    <a href="http://link-to-whatever-social-network.com/user/" itemprop="sameAs" rel="nofollow noopener noreferrer">
+      <i class="fas fa-fw" aria-hidden="true"></i> Custom Social Profile Link
+    </a>
+  </li>
+-->
+    </ul>
+  </div>
+</div>
+
+  
+  </div>
+
+
+
+  <article class="page" itemscope itemtype="https://schema.org/CreativeWork">
+    <meta itemprop="headline" content="Time Series Analysis 101">
+    <meta itemprop="description" content="These are all classical models of forecasting based on time seriesdata, with slight differences. This post focuses on the conceptualdifferences to gain an intuition and overview.Autoregressive modelAutoregression refers to a regression model based on itself(“auto”). Basically, it takes p number of time steps before the oneto be forecast and fits a regression model based on that. Or, in otherwords, predict the current value based on p previous values. Timesteps before the one to be forecast are referred to as lags, so onecould also say, predict the current value based on p lags. And thenumber of lags is called the order of the model.[X_{t}=c+\sum {i=1}^{p}\varphi _{i}X{t-i}+\varepsilon _{t}\,]  $X_{t}$: value to be forecast at time $t$.  $c$: some constant value  $\varepsilon_{t}$: error value at time $t$  $p$ number of lags, or order of the model  $\varphi_{i}$: model parameter at index $i$Moving-average regression modelThe moving-average regression model takes a slightly differentapproach. It takes the average of the time series, and then predictsthe current value based on the error term of n previous timesteps. Similar to above, the n is referred to as the order.How does this compare to the autoregressive approach above?Pros:  The error terms of the lags are modeled to affect the forecastedvalue directly, rather than indirectly.  The error influence from lags is limited to the order, and notinfinitely like the autoregressive approach.Cons:  Fitting the model can be more complicated, as the error terms arenot directly observable (they are included within the lag totalvalues).[X_{t}=\mu +\varepsilon _{t}+\theta _{1}\varepsilon _{t-1}+\cdots +\theta _{q}\varepsilon _{t-q}\,]  $X_{t}$: value to be forecast at time $t$.  $\mu$: the average of the series  $\varepsilon_{t}$: error value at time $t$  $q$: the number of lags to use, or order of the model  $\theta_{t}$: the parameter of the model at time tThis is alternatively written with the summmation operator like so:[X_{t}=\mu +\varepsilon _{t}+\sum _{i=1}^{q}\theta _{i}\varepsilon _{t-i}.\,]Note that this model name sounds similar to the moving averageconcept from statistics, but is conceptually different.Autoregressive moving average model (ARMA)After reviewing the above, ARMA becomes much easier to understand,as it’s simply a combination of the above two.[X_{t}=c+\varepsilon {t}+\sum _{i=1}^{p}\varphi _{i}X{t-i}+\sum _{i=1}^{q}\theta _{i}\varepsilon _{t-i}.\,]ARMA forecasts the targeted value as a combination of both pprevious lag values and q previous error values.Autoregressive integrated moving average (ARIMA)The ARIMA approach extends ARMA by using difference values asopposed to the lag values themselves. This is the integrated part.What is a difference value? A difference value for time step twould be the differnce between it and the previous value at time stept-1. Or, formulaically:[X_{t} - X_{t-1}]Using the differences as opposed to the values themselves is an efforttoeliminatenon-stationarity,or differences in the data when shifted in time. Difference values maybe calculated repeatedly on a series, also giving them an order.The following links from MIT OCW Math give a broad overview of Time Series Analysis.Time Series Analysis Lecture 1Time Series Analysis Lecture 2Time Series Analysis Lecture 3">
+    <meta itemprop="datePublished" content="2020-03-01T00:00:00-05:00">
+    
+
+    <div class="page__inner-wrap">
+      
+        <header>
+          <h1 id="page-title" class="page__title" itemprop="headline">Time Series Analysis 101
+</h1>
+          
+
+  <p class="page__meta">
+    
+
+    
+
+    
+      
+      
+
+      <span class="page__meta-readtime">
+        <i class="far fa-clock" aria-hidden="true"></i>
+        
+          2 minute read
+        
+      </span>
+    
+  </p>
+
+
+        </header>
+      
+
+      <section class="page__content" itemprop="text">
+        
+        <p>These are all classical models of forecasting based on time series
+data, with slight differences. This post focuses on the conceptual
+differences to gain an intuition and overview.</p>
+
+<h2 id="autoregressive-model">Autoregressive model</h2>
+
+<p><em>Autoregression</em> refers to a regression model based on itself
+(“auto”). Basically, it takes <em>p</em> number of time steps before the one
+to be forecast and fits a regression model based on that. Or, in other
+words, predict the current value based on <em>p</em> previous values. Time
+steps before the one to be forecast are referred to as <em>lags</em>, so one
+could also say, predict the current value based on <em>p</em> lags. And the
+number of <em>lags</em> is called the <em>order</em> of the model.</p>
+
+\[X_{t}=c+\sum _{i=1}^{p}\varphi _{i}X_{t-i}+\varepsilon _{t}\,\]
+
+<ul>
+  <li>$X_{t}$: value to be forecast at time $t$.</li>
+  <li>$c$: some constant value</li>
+  <li>$\varepsilon_{t}$: error value at time $t$</li>
+  <li>$p$ number of <em>lags</em>, or <em>order</em> of the model</li>
+  <li>$\varphi_{i}$: model parameter at index $i$</li>
+</ul>
+
+<h2 id="moving-average-regression-model">Moving-average regression model</h2>
+
+<p>The <em>moving-average regression model</em> takes a slightly different
+approach. It takes the average of the time series, and then predicts
+the current value based on the error term of <em>n</em> previous time
+steps. Similar to above, the <em>n</em> is referred to as the <em>order</em>.</p>
+
+<p>How does this compare to the autoregressive approach above?</p>
+
+<p>Pros:</p>
+
+<ul>
+  <li>The error terms of the lags are modeled to affect the forecasted
+value directly, rather than indirectly.</li>
+  <li>The error influence from lags is limited to the <em>order</em>, and not
+infinitely like the autoregressive approach.</li>
+</ul>
+
+<p>Cons:</p>
+
+<ul>
+  <li>Fitting the model can be more complicated, as the error terms are
+not directly observable (they are included within the lag total
+values).</li>
+</ul>
+
+\[X_{t}=\mu +\varepsilon _{t}+\theta _{1}\varepsilon _{t-1}+\cdots +\theta _{q}\varepsilon _{t-q}\,\]
+
+<ul>
+  <li>$X_{t}$: value to be forecast at time $t$.</li>
+  <li>$\mu$: the average of the series</li>
+  <li>$\varepsilon_{t}$: error value at time $t$</li>
+  <li>$q$: the number of <em>lags</em> to use, or <em>order</em> of the model</li>
+  <li>$\theta_{t}$: the parameter of the model at time <em>t</em></li>
+</ul>
+
+<p>This is alternatively written with the summmation operator like so:</p>
+
+\[X_{t}=\mu +\varepsilon _{t}+\sum _{i=1}^{q}\theta _{i}\varepsilon _{t-i}.\,\]
+
+<p>Note that this model name sounds similar to the <em>moving average</em>
+concept from statistics, but is conceptually different.</p>
+
+<h2 id="autoregressive-moving-average-model-arma">Autoregressive moving average model (ARMA)</h2>
+
+<p>After reviewing the above, <em>ARMA</em> becomes much easier to understand,
+as it’s simply a combination of the above two.</p>
+
+\[X_{t}=c+\varepsilon _{t}+\sum _{i=1}^{p}\varphi _{i}X_{t-i}+\sum _{i=1}^{q}\theta _{i}\varepsilon _{t-i}.\,\]
+
+<p><em>ARMA</em> forecasts the targeted value as a combination of both <em>p</em>
+previous lag values and <em>q</em> previous error values.</p>
+
+<h2 id="autoregressive-integrated-moving-average-arima">Autoregressive integrated moving average (ARIMA)</h2>
+
+<p>The <em>ARIMA</em> approach extends <em>ARMA</em> by using <em>difference</em> values as
+opposed to the lag values themselves. This is the <em>integrated</em> part.</p>
+
+<p>What is a <em>difference</em> value? A <em>difference</em> value for time step <em>t</em>
+would be the differnce between it and the previous value at time step
+<em>t-1</em>. Or, formulaically:</p>
+
+\[X_{t} - X_{t-1}\]
+
+<p>Using the differences as opposed to the values themselves is an effort
+to
+eliminate
+<a href="https://en.wikipedia.org/wiki/Stationary_process"><em>non-stationarity</em></a>,
+or differences in the data when shifted in time. Difference values may
+be calculated repeatedly on a series, also giving them an <em>order</em>.</p>
+
+<p>The following links from MIT OCW Math give a broad overview of Time Series Analysis.</p>
+
+<p><a href="https://ocw.mit.edu/courses/mathematics/18-s096-topics-in-mathematics-with-applications-in-finance-fall-2013/video-lectures/lecture-8-time-series-analysis-i/">Time Series Analysis Lecture 1</a></p>
+
+<p><a href="https://ocw.mit.edu/courses/mathematics/18-s096-topics-in-mathematics-with-applications-in-finance-fall-2013/video-lectures/lecture-11-time-series-analysis-ii/">Time Series Analysis Lecture 2</a></p>
+
+<p><a href="https://ocw.mit.edu/courses/mathematics/18-s096-topics-in-mathematics-with-applications-in-finance-fall-2013/video-lectures/lecture-12-time-series-analysis-iii/">Time Series Analysis Lecture 3</a></p>
+
+
+        
+      </section>
+
+      <footer class="page__meta">
+        
+        
+  
+
+
+  
+  
+  
+
+  <p class="page__taxonomy">
+    <strong><i class="fas fa-fw fa-tags" aria-hidden="true"></i> Tags: </strong>
+    <span itemprop="keywords">
+    
+      
+      
+      <a href="/tags/#time-series-analysis" class="page__taxonomy-item" rel="tag">Time Series Analysis</a>
+    
+    </span>
+  </p>
+
+
+
+
+  
+
+
+  
+  
+  
+
+  <p class="page__taxonomy">
+    <strong><i class="fas fa-fw fa-folder-open" aria-hidden="true"></i> Categories: </strong>
+    <span itemprop="keywords">
+    
+      
+      
+      <a href="/categories/#statistics" class="page__taxonomy-item" rel="tag">Statistics</a>
+    
+    </span>
+  </p>
+
+
+        
+  <p class="page__date"><strong><i class="fas fa-fw fa-calendar-alt" aria-hidden="true"></i> Updated:</strong> <time datetime="2020-03-01T00:00:00-05:00">March 1, 2020</time></p>
+
+
+      </footer>
+
+      <section class="page__share">
+  
+
+  <a href="https://twitter.com/intent/tweet?text=Time+Series+Analysis+101%20%2Fstatistics%2Ftime_series_analysis_101%2F" class="btn btn--twitter" onclick="window.open(this.href, 'window', 'left=20,top=20,width=500,height=500,toolbar=1,resizable=0'); return false;" title="Share on Twitter"><i class="fab fa-fw fa-twitter" aria-hidden="true"></i><span> Twitter</span></a>
+
+  <a href="https://www.facebook.com/sharer/sharer.php?u=%2Fstatistics%2Ftime_series_analysis_101%2F" class="btn btn--facebook" onclick="window.open(this.href, 'window', 'left=20,top=20,width=500,height=500,toolbar=1,resizable=0'); return false;" title="Share on Facebook"><i class="fab fa-fw fa-facebook" aria-hidden="true"></i><span> Facebook</span></a>
+
+  <a href="https://www.linkedin.com/shareArticle?mini=true&url=%2Fstatistics%2Ftime_series_analysis_101%2F" class="btn btn--linkedin" onclick="window.open(this.href, 'window', 'left=20,top=20,width=500,height=500,toolbar=1,resizable=0'); return false;" title="Share on LinkedIn"><i class="fab fa-fw fa-linkedin" aria-hidden="true"></i><span> LinkedIn</span></a>
+</section>
+
+
+      
+  <nav class="pagination">
+    
+      <a href="/computer%20science/How-to-add-Latex-to-Jekyll/" class="pagination--pager" title="How to add Latex to Jekyll
+">Previous</a>
+    
+    
+      <a href="/finance/Quant_strategy/" class="pagination--pager" title="Quantconnect Trending System
+">Next</a>
+    
+  </nav>
+
+    </div>
+
+    
+  </article>
+
+  
+  
+    <div class="page__related">
+      <h4 class="page__related-title">You May Also Enjoy</h4>
+      <div class="grid__wrapper">
+        
+          
+
+
+
+<div class="grid__item">
+  <article class="archive__item" itemscope itemtype="https://schema.org/CreativeWork">
+    
+    <h2 class="archive__item-title no_toc" itemprop="headline">
+      
+        <a href="/computer%20science/star_wars_api/" rel="permalink">Star Wars API
+</a>
+      
+    </h2>
+    
+
+  <p class="page__meta">
+    
+
+    
+
+    
+      
+      
+
+      <span class="page__meta-readtime">
+        <i class="far fa-clock" aria-hidden="true"></i>
+        
+          4 minute read
+        
+      </span>
+    
+  </p>
+
+
+    <p class="archive__item-excerpt" itemprop="description">Star Wars API Jupyter Notebook HTML
+
+The following is the same content as above but reformatted:
+
+Intro
+
+Exploring the Star Wars API. This is an open and fre...</p>
+  </article>
+</div>
+
+        
+          
+
+
+
+<div class="grid__item">
+  <article class="archive__item" itemscope itemtype="https://schema.org/CreativeWork">
+    
+    <h2 class="archive__item-title no_toc" itemprop="headline">
+      
+        <a href="/computer%20science/web_scraping_101/" rel="permalink">Web Scraping 101
+</a>
+      
+    </h2>
+    
+
+  <p class="page__meta">
+    
+
+    
+
+    
+      
+      
+
+      <span class="page__meta-readtime">
+        <i class="far fa-clock" aria-hidden="true"></i>
+        
+          less than 1 minute read
+        
+      </span>
+    
+  </p>
+
+
+    <p class="archive__item-excerpt" itemprop="description">This is a simple example of web scraping from wikipedia using python
+It requires two libraries: beautifulsoup4, requests
+
+import requests
+import sys
+import b...</p>
+  </article>
+</div>
+
+        
+          
+
+
+
+<div class="grid__item">
+  <article class="archive__item" itemscope itemtype="https://schema.org/CreativeWork">
+    
+    <h2 class="archive__item-title no_toc" itemprop="headline">
+      
+        <a href="/finance/Quant_strategy/" rel="permalink">Quantconnect Trending System
+</a>
+      
+    </h2>
+    
+
+  <p class="page__meta">
+    
+
+    
+
+    
+      
+      
+
+      <span class="page__meta-readtime">
+        <i class="far fa-clock" aria-hidden="true"></i>
+        
+          1 minute read
+        
+      </span>
+    
+  </p>
+
+
+    <p class="archive__item-excerpt" itemprop="description">Quantconnect is World’s Leading Algorithmic Trading Platform
+It provides a free algorithm backtesting tool and financial data so engineers can design algorit...</p>
+  </article>
+</div>
+
+        
+          
+
+
+
+<div class="grid__item">
+  <article class="archive__item" itemscope itemtype="https://schema.org/CreativeWork">
+    
+    <h2 class="archive__item-title no_toc" itemprop="headline">
+      
+        <a href="/computer%20science/How-to-add-Latex-to-Jekyll/" rel="permalink">How to add Latex to Jekyll
+</a>
+      
+    </h2>
+    
+
+  <p class="page__meta">
+    
+
+    
+
+    
+      
+      
+
+      <span class="page__meta-readtime">
+        <i class="far fa-clock" aria-hidden="true"></i>
+        
+          less than 1 minute read
+        
+      </span>
+    
+  </p>
+
+
+    <p class="archive__item-excerpt" itemprop="description">Step 1. Set markdown engine to kramdown
+</p>
+  </article>
+</div>
+
+        
+      </div>
+    </div>
+  
+  
+</div>
+
+    </div>
+
+    
+      <div class="search-content">
+        <div class="search-content__inner-wrap"><form class="search-content__form" onkeydown="return event.key != 'Enter';">
+    <label class="sr-only" for="search">
+      Enter your search term...
+    </label>
+    <input type="search" id="search" class="search-input" tabindex="-1" placeholder="Enter your search term..." />
+  </form>
+  <div id="results" class="results"></div></div>
+
+      </div>
+    
+
+    <div id="footer" class="page__footer">
+      <footer>
+        <!-- start custom footer snippets -->
+
+<!-- end custom footer snippets -->
+        <!-- <div class="page__footer-follow">
+  <ul class="social-icons">
+    
+
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+
+    <li><a href="/feed.xml"><i class="fas fa-fw fa-rss-square" aria-hidden="true"></i> Feed</a></li>
+  </ul>
+</div>
+ -->
+<div class="page__footer-copyright">&copy; <!-- 2021  -->Zhehan Shi<!-- . Powered by <a href="https://jekyllrb.com" rel="nofollow">Jekyll</a> &amp; --></div>
+
+      </footer>
+    </div>
+
+    
+  <script src="/assets/js/main.min.js"></script>
+
+
+
+
+<script src="/assets/js/lunr/lunr.min.js"></script>
+<script src="/assets/js/lunr/lunr-store.js"></script>
+<script src="/assets/js/lunr/lunr-en.js"></script>
+
+
+
+
+    <div id="fb-root"></div>
+<script>(function(d, s, id) {
+  var js, fjs = d.getElementsByTagName(s)[0];
+  if (d.getElementById(id)) return;
+  js = d.createElement(s); js.id = id;
+  js.src = "//connect.facebook.net/en_US/sdk.js#xfbml=1&version=v2.5";
+  fjs.parentNode.insertBefore(js, fjs);
+}(document, 'script', 'facebook-jssdk'));</script>
+  
+
+
+
+
+<script type="text/javascript" async
+  src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-MML-AM_CHTML">
+</script>
+
+<script type="text/x-mathjax-config">
+   MathJax.Hub.Config({
+     extensions: ["tex2jax.js"],
+     jax: ["input/TeX", "output/HTML-CSS"],
+     tex2jax: {
+       inlineMath: [ ['$','$'], ["\\(","\\)"] ],
+       displayMath: [ ['$$','$$'], ["\\[","\\]"] ],
+       processEscapes: true
+     },
+     "HTML-CSS": { availableFonts: ["TeX"] }
+   });
+</script>
+
+  </body>
+</html>

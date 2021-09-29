@@ -1,0 +1,184 @@
+I"8L<p>Quantconnect is World’s Leading Algorithmic Trading Platform
+It provides a free algorithm backtesting tool and financial data so engineers can design algorithmic trading strategies.</p>
+
+<p>The following is a simple <strong>Trending</strong> System.
+It is for demo purpose only.</p>
+
+<p>The model uses <strong><a href="https://school.stockcharts.com/doku.php?id=technical_indicators:bollinger_bands">Bollinger Bands</a></strong>(BB) and <strong><a href="https://school.stockcharts.com/doku.php?id=technical_indicators:relative_strength_index_rsi">Relative Strength Index</a></strong>(RSI)</p>
+
+<p>Version 1 uses 4-hour aggregates.
+It is a Mean reverting strategy where it assumes SPY will revert to its historical mean.</p>
+
+<p>BB uses past 30 data points and 2 standard deviation for bands
+RSI uses past 14 data points</p>
+
+<p>The model sells when RSI &gt; 70 AND Price &gt; BB Upper Band</p>
+
+<p>The model buys when RSI &lt; 30 AND Price &lt; BB Lower Band</p>
+
+<figure class="highlight"><pre><code class="language-python" data-lang="python"><table class="rouge-table"><tbody><tr><td class="gutter gl"><pre class="lineno">1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+26
+27
+28
+29
+30
+31
+32
+33
+34
+35
+</pre></td><td class="code"><pre><span class="c1">#original 
+</span><span class="k">class</span> <span class="nc">Algo101_Version_1</span><span class="p">(</span><span class="n">QCAlgorithm</span><span class="p">):</span>
+
+    <span class="k">def</span> <span class="nf">Initialize</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="p">.</span><span class="n">SetStartDate</span><span class="p">(</span><span class="mi">2020</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>  <span class="c1"># Set Start Date
+</span>        <span class="bp">self</span><span class="p">.</span><span class="n">SetEndDate</span><span class="p">(</span><span class="mi">2020</span><span class="p">,</span><span class="mi">10</span><span class="p">,</span><span class="mi">1</span><span class="p">)</span> <span class="c1">#Comment
+</span>        <span class="bp">self</span><span class="p">.</span><span class="n">SetCash</span><span class="p">(</span><span class="mi">100000</span><span class="p">)</span>  <span class="c1"># Set Strategy Cash
+</span>        <span class="n">symbol</span> <span class="o">=</span> <span class="s">"SPY"</span>
+        <span class="bp">self</span><span class="p">.</span><span class="n">ticker</span> <span class="o">=</span> <span class="bp">self</span><span class="p">.</span><span class="n">AddEquity</span><span class="p">(</span><span class="n">symbol</span><span class="p">,</span><span class="n">Resolution</span><span class="p">.</span><span class="n">Hour</span><span class="p">).</span><span class="n">Symbol</span>
+        <span class="bp">self</span><span class="p">.</span><span class="n">rsi</span> <span class="o">=</span> <span class="bp">self</span><span class="p">.</span><span class="n">RSI</span><span class="p">(</span><span class="n">symbol</span><span class="p">,</span> <span class="mi">14</span><span class="p">,</span> <span class="n">MovingAverageType</span><span class="p">.</span><span class="n">Simple</span><span class="p">,</span><span class="n">Resolution</span><span class="p">.</span><span class="n">Hour</span><span class="p">)</span>
+        <span class="bp">self</span><span class="p">.</span><span class="n">bb</span> <span class="o">=</span> <span class="bp">self</span><span class="p">.</span><span class="n">BB</span><span class="p">(</span><span class="n">symbol</span><span class="p">,</span><span class="mi">30</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="n">MovingAverageType</span><span class="p">.</span><span class="n">Simple</span><span class="p">,</span><span class="n">Resolution</span><span class="p">.</span><span class="n">Hour</span><span class="p">)</span>
+        <span class="bp">self</span><span class="p">.</span><span class="n">RegisterIndicator</span><span class="p">(</span><span class="n">symbol</span><span class="p">,</span> <span class="bp">self</span><span class="p">.</span><span class="n">rsi</span><span class="p">,</span> <span class="n">timedelta</span><span class="p">(</span><span class="n">hours</span> <span class="o">=</span> <span class="mi">4</span><span class="p">))</span>
+        <span class="bp">self</span><span class="p">.</span><span class="n">RegisterIndicator</span><span class="p">(</span><span class="n">symbol</span><span class="p">,</span> <span class="bp">self</span><span class="p">.</span><span class="n">bb</span><span class="p">,</span> <span class="n">timedelta</span><span class="p">(</span><span class="n">hours</span> <span class="o">=</span> <span class="mi">4</span><span class="p">))</span> 
+        
+        <span class="bp">self</span><span class="p">.</span><span class="n">SetWarmup</span><span class="p">(</span><span class="n">timedelta</span><span class="p">(</span><span class="mi">30</span><span class="p">))</span>
+
+    <span class="k">def</span> <span class="nf">OnData</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">):</span>
+        <span class="n">symbol</span> <span class="o">=</span> <span class="s">"SPY"</span>
+        <span class="k">if</span> <span class="n">data</span><span class="p">[</span><span class="bp">self</span><span class="p">.</span><span class="n">ticker</span><span class="p">]</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span> <span class="k">return</span>
+        <span class="k">if</span> <span class="p">(</span><span class="ow">not</span> <span class="bp">self</span><span class="p">.</span><span class="n">rsi</span><span class="p">.</span><span class="n">IsReady</span><span class="p">)</span> <span class="ow">or</span> <span class="p">(</span><span class="ow">not</span> <span class="bp">self</span><span class="p">.</span><span class="n">bb</span><span class="p">.</span><span class="n">IsReady</span><span class="p">):</span> <span class="k">return</span>
+
+        <span class="n">value</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="bp">self</span><span class="p">.</span><span class="n">ticker</span><span class="p">].</span><span class="n">Value</span>
+        
+        <span class="n">buy_signal</span> <span class="o">=</span> <span class="bp">self</span><span class="p">.</span><span class="n">rsi</span><span class="p">.</span><span class="n">Current</span><span class="p">.</span><span class="n">Value</span> <span class="o">&lt;</span> <span class="mi">30</span> <span class="ow">and</span> <span class="n">value</span> <span class="o">&lt;</span> <span class="bp">self</span><span class="p">.</span><span class="n">bb</span><span class="p">.</span><span class="n">LowerBand</span><span class="p">.</span><span class="n">Current</span><span class="p">.</span><span class="n">Value</span>
+        <span class="n">sell_signal</span> <span class="o">=</span> <span class="bp">self</span><span class="p">.</span><span class="n">rsi</span><span class="p">.</span><span class="n">Current</span><span class="p">.</span><span class="n">Value</span> <span class="o">&gt;</span> <span class="mi">70</span> <span class="ow">and</span> <span class="n">value</span> <span class="o">&gt;</span> <span class="bp">self</span><span class="p">.</span><span class="n">bb</span><span class="p">.</span><span class="n">UpperBand</span><span class="p">.</span><span class="n">Current</span><span class="p">.</span><span class="n">Value</span>
+        
+        <span class="k">if</span> <span class="n">buy_signal</span><span class="p">:</span> <span class="bp">self</span><span class="p">.</span><span class="n">SetHoldings</span><span class="p">(</span><span class="n">symbol</span><span class="p">,</span><span class="mi">1</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">sell_signal</span><span class="p">:</span> <span class="bp">self</span><span class="p">.</span><span class="n">SetHoldings</span><span class="p">(</span><span class="n">symbol</span><span class="p">,</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+        
+        <span class="k">if</span> <span class="bp">self</span><span class="p">.</span><span class="n">Portfolio</span><span class="p">.</span><span class="n">Invested</span><span class="p">:</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="p">.</span><span class="n">Portfolio</span><span class="p">[</span><span class="n">symbol</span><span class="p">].</span><span class="n">IsLong</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">buy_signal</span><span class="p">:</span>
+                <span class="bp">self</span><span class="p">.</span><span class="n">Liquidate</span><span class="p">(</span><span class="n">symbol</span><span class="p">)</span>
+                
+            <span class="k">if</span> <span class="bp">self</span><span class="p">.</span><span class="n">Portfolio</span><span class="p">[</span><span class="n">symbol</span><span class="p">].</span><span class="n">IsShort</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">sell_signal</span><span class="p">:</span>
+                <span class="bp">self</span><span class="p">.</span><span class="n">Liquidate</span><span class="p">(</span><span class="n">symbol</span><span class="p">)</span>
+</pre></td></tr></tbody></table></code></pre></figure>
+
+<p><img src="/assets/images/model1_backtest.png" alt="model1_backtest" />
+<img src="/assets/images/model1_stats.png" alt="model1_stats" /></p>
+
+<p>The model 1 performs badly.</p>
+
+<p>The idea is to change Mean Reversion Strategy to Momentum Strategy by switching sell and buy signal and modify the RSI period and BollingerBands’ period and standard deviation.</p>
+
+<p>Version 2 uses 4-hour aggregates.
+It is a momentum strategy where it assumes the price will maintain its momentum for a while</p>
+
+<p>BB uses past 20 data points and 1.5 standard deviation for bands
+RSI uses past 10 data points</p>
+
+<p>The model buys when RSI &lt; 40 AND Price &lt; BB Upper Band</p>
+
+<p>The model sells when RSI &gt; 60 AND Price &gt; BB Lower Band</p>
+
+<figure class="highlight"><pre><code class="language-python" data-lang="python"><table class="rouge-table"><tbody><tr><td class="gutter gl"><pre class="lineno">1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+26
+27
+28
+29
+30
+31
+32
+33
+34
+35
+</pre></td><td class="code"><pre><span class="c1">#original 
+</span><span class="k">class</span> <span class="nc">Algo101_Version_2</span><span class="p">(</span><span class="n">QCAlgorithm</span><span class="p">):</span>
+
+    <span class="k">def</span> <span class="nf">Initialize</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="p">.</span><span class="n">SetStartDate</span><span class="p">(</span><span class="mi">2020</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>  <span class="c1"># Set Start Date
+</span>        <span class="bp">self</span><span class="p">.</span><span class="n">SetEndDate</span><span class="p">(</span><span class="mi">2020</span><span class="p">,</span><span class="mi">10</span><span class="p">,</span><span class="mi">1</span><span class="p">)</span> <span class="c1">#Comment
+</span>        <span class="bp">self</span><span class="p">.</span><span class="n">SetCash</span><span class="p">(</span><span class="mi">100000</span><span class="p">)</span>  <span class="c1"># Set Strategy Cash
+</span>        <span class="n">symbol</span> <span class="o">=</span> <span class="s">"SPY"</span>
+        <span class="bp">self</span><span class="p">.</span><span class="n">ticker</span> <span class="o">=</span> <span class="bp">self</span><span class="p">.</span><span class="n">AddEquity</span><span class="p">(</span><span class="n">symbol</span><span class="p">,</span><span class="n">Resolution</span><span class="p">.</span><span class="n">Hour</span><span class="p">).</span><span class="n">Symbol</span>
+        <span class="bp">self</span><span class="p">.</span><span class="n">rsi</span> <span class="o">=</span> <span class="bp">self</span><span class="p">.</span><span class="n">RSI</span><span class="p">(</span><span class="n">symbol</span><span class="p">,</span> <span class="mi">10</span><span class="p">,</span> <span class="n">MovingAverageType</span><span class="p">.</span><span class="n">Simple</span><span class="p">,</span><span class="n">Resolution</span><span class="p">.</span><span class="n">Hour</span><span class="p">)</span>
+        <span class="bp">self</span><span class="p">.</span><span class="n">bb</span> <span class="o">=</span> <span class="bp">self</span><span class="p">.</span><span class="n">BB</span><span class="p">(</span><span class="n">symbol</span><span class="p">,</span><span class="mi">20</span><span class="p">,</span> <span class="mf">1.5</span><span class="p">,</span> <span class="n">MovingAverageType</span><span class="p">.</span><span class="n">Simple</span><span class="p">,</span><span class="n">Resolution</span><span class="p">.</span><span class="n">Hour</span><span class="p">)</span>
+        <span class="bp">self</span><span class="p">.</span><span class="n">RegisterIndicator</span><span class="p">(</span><span class="n">symbol</span><span class="p">,</span> <span class="bp">self</span><span class="p">.</span><span class="n">rsi</span><span class="p">,</span> <span class="n">timedelta</span><span class="p">(</span><span class="n">hours</span> <span class="o">=</span> <span class="mi">4</span><span class="p">))</span>
+        <span class="bp">self</span><span class="p">.</span><span class="n">RegisterIndicator</span><span class="p">(</span><span class="n">symbol</span><span class="p">,</span> <span class="bp">self</span><span class="p">.</span><span class="n">bb</span><span class="p">,</span> <span class="n">timedelta</span><span class="p">(</span><span class="n">hours</span> <span class="o">=</span> <span class="mi">4</span><span class="p">))</span> 
+        
+        <span class="bp">self</span><span class="p">.</span><span class="n">SetWarmup</span><span class="p">(</span><span class="n">timedelta</span><span class="p">(</span><span class="mi">30</span><span class="p">))</span>
+
+    <span class="k">def</span> <span class="nf">OnData</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">):</span>
+        <span class="n">symbol</span> <span class="o">=</span> <span class="s">"SPY"</span>
+        <span class="k">if</span> <span class="n">data</span><span class="p">[</span><span class="bp">self</span><span class="p">.</span><span class="n">ticker</span><span class="p">]</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span> <span class="k">return</span>
+        <span class="k">if</span> <span class="p">(</span><span class="ow">not</span> <span class="bp">self</span><span class="p">.</span><span class="n">rsi</span><span class="p">.</span><span class="n">IsReady</span><span class="p">)</span> <span class="ow">or</span> <span class="p">(</span><span class="ow">not</span> <span class="bp">self</span><span class="p">.</span><span class="n">bb</span><span class="p">.</span><span class="n">IsReady</span><span class="p">):</span> <span class="k">return</span>
+
+        <span class="n">value</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="bp">self</span><span class="p">.</span><span class="n">ticker</span><span class="p">].</span><span class="n">Value</span>
+        
+        <span class="n">sell_signal</span> <span class="o">=</span> <span class="bp">self</span><span class="p">.</span><span class="n">rsi</span><span class="p">.</span><span class="n">Current</span><span class="p">.</span><span class="n">Value</span> <span class="o">&lt;</span> <span class="mi">40</span> <span class="ow">and</span> <span class="n">value</span> <span class="o">&lt;</span> <span class="bp">self</span><span class="p">.</span><span class="n">bb</span><span class="p">.</span><span class="n">LowerBand</span><span class="p">.</span><span class="n">Current</span><span class="p">.</span><span class="n">Value</span>
+        <span class="n">buy_signal</span> <span class="o">=</span> <span class="bp">self</span><span class="p">.</span><span class="n">rsi</span><span class="p">.</span><span class="n">Current</span><span class="p">.</span><span class="n">Value</span> <span class="o">&gt;</span> <span class="mi">60</span> <span class="ow">and</span> <span class="n">value</span> <span class="o">&gt;</span> <span class="bp">self</span><span class="p">.</span><span class="n">bb</span><span class="p">.</span><span class="n">UpperBand</span><span class="p">.</span><span class="n">Current</span><span class="p">.</span><span class="n">Value</span>
+        
+        <span class="k">if</span> <span class="n">buy_signal</span><span class="p">:</span> <span class="bp">self</span><span class="p">.</span><span class="n">SetHoldings</span><span class="p">(</span><span class="n">symbol</span><span class="p">,</span><span class="mi">1</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">sell_signal</span><span class="p">:</span> <span class="bp">self</span><span class="p">.</span><span class="n">SetHoldings</span><span class="p">(</span><span class="n">symbol</span><span class="p">,</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+        
+        <span class="k">if</span> <span class="bp">self</span><span class="p">.</span><span class="n">Portfolio</span><span class="p">.</span><span class="n">Invested</span><span class="p">:</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="p">.</span><span class="n">Portfolio</span><span class="p">[</span><span class="n">symbol</span><span class="p">].</span><span class="n">IsLong</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">buy_signal</span><span class="p">:</span>
+                <span class="bp">self</span><span class="p">.</span><span class="n">Liquidate</span><span class="p">(</span><span class="n">symbol</span><span class="p">)</span>
+                
+            <span class="k">if</span> <span class="bp">self</span><span class="p">.</span><span class="n">Portfolio</span><span class="p">[</span><span class="n">symbol</span><span class="p">].</span><span class="n">IsShort</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">sell_signal</span><span class="p">:</span>
+                <span class="bp">self</span><span class="p">.</span><span class="n">Liquidate</span><span class="p">(</span><span class="n">symbol</span><span class="p">)</span>
+</pre></td></tr></tbody></table></code></pre></figure>
+
+<p><img src="/assets/images/model2_backtest.png" alt="model2_backtest" />
+<img src="/assets/images/model2_stats.png" alt="model2_stats" /></p>
+
+<p>Model 2 has a better return after modification.</p>
+:ET

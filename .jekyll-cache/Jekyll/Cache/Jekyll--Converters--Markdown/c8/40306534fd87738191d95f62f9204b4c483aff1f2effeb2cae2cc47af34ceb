@@ -1,0 +1,157 @@
+I"IK<p><a href="/assets/html/star_wars_api.html">Star Wars API Jupyter Notebook HTML</a></p>
+
+<p>The following is the same content as above but reformatted:</p>
+
+<h3>Intro</h3>
+
+<p>Exploring the Star Wars API. This is an open and free-to-use API that provides all information you could possibly need about Star Wars.
+You can read about the project on the page <code>https://swapi.dev/about</code> and access the technical documentation for the API on the page <code>https://swapi.dev/documentation </code></p>
+
+<p>Using an API requires that you get the relevant information from its documentation. This API has great documentation, so be sure to check it carefully. The documentation contains all the details you need to answer the questions below.</p>
+
+<h3>Example 1</h3>
+
+<p>You can access information about 10 planets in Star Wars by sending a get request (without any parameters) to</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>http://swapi.dev/api/planets/
+</code></pre></div></div>
+
+<p>1.1) A for loop to print out the names of all 10 planets</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kn">import</span> <span class="nn">requests</span><span class="p">,</span> <span class="n">json</span>
+<span class="n">url</span> <span class="o">=</span> <span class="s">"http://swapi.dev/api/planets/"</span>
+<span class="n">response</span> <span class="o">=</span> <span class="n">requests</span><span class="p">.</span><span class="n">get</span><span class="p">(</span><span class="n">url</span><span class="p">)</span>
+<span class="n">data</span> <span class="o">=</span> <span class="n">json</span><span class="p">.</span><span class="n">loads</span><span class="p">(</span><span class="n">response</span><span class="p">.</span><span class="n">text</span><span class="p">)</span>
+<span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">10</span><span class="p">):</span>
+    <span class="k">print</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="s">'results'</span><span class="p">][</span><span class="n">i</span><span class="p">][</span><span class="s">'name'</span><span class="p">])</span>
+</code></pre></div></div>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>OUT[1]:
+Tatooine
+Alderaan
+Yavin IV
+Hoth
+Dagobah
+Bespin
+Endor
+Naboo
+Coruscant
+Kamino
+</code></pre></div></div>
+
+<p>1.2) A function called get_planet_population that takes as an argument a string called ‘planet_name’.</p>
+
+<ul>
+  <li>the population of that planet as a number, if that planet is among the 10 planets listed in the data returned by an API call to 
+<code>http://swapi.dev/api/planets/</code> and the API lists its population; or</li>
+  <li>the special Python value None, if that planet is among the 10 planets listed in the data returned by an API call to <code>http://swapi.dev/api/planets/</code> and the API tells you the population is ‘unknown’.</li>
+  <li>the string “unknown planet”, if that planet is not among the 10 planets listed in the data returned by an API call to <code>http://swapi.dev/api/planets/</code>.</li>
+</ul>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">def</span> <span class="nf">get_planet_population</span><span class="p">(</span><span class="n">planet_name</span><span class="p">):</span>
+    <span class="kn">import</span> <span class="nn">requests</span><span class="p">,</span> <span class="n">json</span>
+    <span class="n">url</span> <span class="o">=</span> <span class="s">"http://swapi.dev/api/planets/"</span>
+    <span class="n">response</span> <span class="o">=</span> <span class="n">requests</span><span class="p">.</span><span class="n">get</span><span class="p">(</span><span class="n">url</span><span class="p">)</span>
+    <span class="n">data</span> <span class="o">=</span> <span class="n">json</span><span class="p">.</span><span class="n">loads</span><span class="p">(</span><span class="n">response</span><span class="p">.</span><span class="n">text</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">10</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">planet_name</span> <span class="o">==</span> <span class="n">data</span><span class="p">[</span><span class="s">'results'</span><span class="p">][</span><span class="n">i</span><span class="p">][</span><span class="s">'name'</span><span class="p">]:</span>
+            <span class="k">if</span> <span class="n">data</span><span class="p">[</span><span class="s">'results'</span><span class="p">][</span><span class="n">i</span><span class="p">][</span><span class="s">'population'</span><span class="p">]</span> <span class="o">==</span> <span class="s">'unknown'</span><span class="p">:</span>
+                <span class="k">return</span> <span class="bp">None</span>
+            <span class="k">return</span> <span class="n">data</span><span class="p">[</span><span class="s">'results'</span><span class="p">][</span><span class="n">i</span><span class="p">][</span><span class="s">'population'</span><span class="p">]</span>
+    <span class="k">return</span> <span class="s">"unknown planet"</span>
+
+<span class="k">print</span><span class="p">(</span><span class="n">get_planet_population</span><span class="p">(</span><span class="s">"Tatooine"</span><span class="p">))</span> <span class="c1">## vanilla exmaple planet
+</span><span class="k">print</span><span class="p">(</span><span class="n">get_planet_population</span><span class="p">(</span><span class="s">"Hoth"</span><span class="p">))</span> <span class="c1">## planet with unknown population
+</span><span class="k">print</span><span class="p">(</span><span class="n">get_planet_population</span><span class="p">(</span><span class="s">"XYZ"</span><span class="p">))</span> <span class="c1">## planet that doesn't exit
+</span></code></pre></div></div>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>OUT[2]:
+200000
+None
+unknown planet
+</code></pre></div></div>
+
+<p>1.3) Print the names of all planets, from among the 10 planets returned by a call to <code>http://swapi.dev/api/planets/</code>, that have a population less than or equal to 30000000 and whose climate description includes the word ‘temperate’.</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kn">import</span> <span class="nn">requests</span><span class="p">,</span> <span class="n">json</span>
+<span class="n">url</span> <span class="o">=</span> <span class="s">"http://swapi.dev/api/planets/"</span>
+<span class="n">response</span> <span class="o">=</span> <span class="n">requests</span><span class="p">.</span><span class="n">get</span><span class="p">(</span><span class="n">url</span><span class="p">)</span>
+<span class="n">data</span> <span class="o">=</span> <span class="n">json</span><span class="p">.</span><span class="n">loads</span><span class="p">(</span><span class="n">response</span><span class="p">.</span><span class="n">text</span><span class="p">)</span>
+<span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">10</span><span class="p">):</span>
+    <span class="k">if</span>  <span class="n">data</span><span class="p">[</span><span class="s">'results'</span><span class="p">][</span><span class="n">i</span><span class="p">][</span><span class="s">'population'</span><span class="p">]</span> <span class="o">!=</span> <span class="s">'unknown'</span>  <span class="ow">and</span> <span class="nb">int</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="s">'results'</span><span class="p">][</span><span class="n">i</span><span class="p">][</span><span class="s">'population'</span><span class="p">])</span> <span class="o">&lt;=</span> <span class="mi">30000000</span> <span class="ow">and</span> \
+        <span class="s">'temperate'</span> <span class="ow">in</span> <span class="n">data</span><span class="p">[</span><span class="s">'results'</span><span class="p">][</span><span class="n">i</span><span class="p">][</span><span class="s">'climate'</span><span class="p">]:</span>
+        <span class="k">print</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="s">'results'</span><span class="p">][</span><span class="n">i</span><span class="p">][</span><span class="s">'name'</span><span class="p">])</span>
+</code></pre></div></div>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>OUT[3]:
+Yavin IV
+Bespin
+Endor
+</code></pre></div></div>
+
+<h3>Example 2</h3>
+
+<p>In this exmaple, I will use a while loop to issue requests for information about all starships in Star Wars. The API to use is located at
+<code>http://swapi.dev/api/starships/</code>
+Note that the data you get back is a dictionary that contains a key called ‘next’. The value for that key is the URL to which you should send the next request using requests.get() to fetch the additional batch of information about the following 10 starships.</p>
+
+<p>2.1) Retrieve information about all starships available via this API and store it in a list called ‘starships’.</p>
+
+<p>The typical way to fetch all results from an API is to use a while loop that will retrieve a batch of 10 results, add them to a list (or similar data structure) and then send another request for more results if the value for the key ‘next’ in the dictionary in the previous response contained a URL. When you retrieve the final batch of results and no more results are available, the server will send you a dictionary that will probably still contain results you need to add to the list but the value for key ‘next’ will be None (rather than a URL). Therefore, one common strategy is to have your while loop end when the value for key ‘next’ == None. Notice that None is a special value in Python (like True or False) and is not surrounded in quotes!</p>
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">starships</span> <span class="o">=</span> <span class="p">[]</span>
+<span class="kn">import</span> <span class="nn">requests</span><span class="p">,</span> <span class="n">json</span>
+<span class="n">url</span> <span class="o">=</span> <span class="s">"http://swapi.dev/api/starships/"</span>
+<span class="n">number</span> <span class="o">=</span> <span class="mi">1</span>
+<span class="n">parameters</span> <span class="o">=</span> <span class="p">{</span><span class="s">'page'</span><span class="p">:</span> <span class="n">number</span><span class="p">}</span>
+<span class="n">response</span> <span class="o">=</span> <span class="n">requests</span><span class="p">.</span><span class="n">get</span><span class="p">(</span><span class="n">url</span><span class="p">,</span> <span class="n">parameters</span><span class="p">)</span>
+<span class="n">data</span> <span class="o">=</span> <span class="n">json</span><span class="p">.</span><span class="n">loads</span><span class="p">(</span><span class="n">response</span><span class="p">.</span><span class="n">text</span><span class="p">)</span>
+<span class="k">while</span> <span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="s">'next'</span><span class="p">]</span><span class="o">!=</span> <span class="bp">None</span><span class="p">):</span>
+    <span class="n">response</span> <span class="o">=</span> <span class="n">requests</span><span class="p">.</span><span class="n">get</span><span class="p">(</span><span class="n">url</span><span class="p">,</span> <span class="n">parameters</span><span class="p">)</span>
+    <span class="n">data</span> <span class="o">=</span> <span class="n">json</span><span class="p">.</span><span class="n">loads</span><span class="p">(</span><span class="n">response</span><span class="p">.</span><span class="n">text</span><span class="p">)</span>
+    <span class="n">length</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="s">'results'</span><span class="p">])</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">length</span><span class="p">):</span>
+        <span class="n">starships</span><span class="p">.</span><span class="n">append</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="s">'results'</span><span class="p">][</span><span class="n">i</span><span class="p">][</span><span class="s">'name'</span><span class="p">])</span>
+    <span class="n">number</span> <span class="o">+=</span> <span class="mi">1</span>
+    <span class="n">parameters</span> <span class="o">=</span> <span class="p">{</span><span class="s">'page'</span><span class="p">:</span> <span class="n">number</span><span class="p">}</span>
+<span class="k">print</span><span class="p">(</span><span class="n">starships</span><span class="p">)</span>
+</code></pre></div></div>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>OUT[4]:
+['CR90 corvette', 'Star Destroyer', 'Sentinel-class landing craft', 'Death Star', 
+'Millennium Falcon', 'Y-wing', 'X-wing', 'TIE Advanced x1', 'Executor', 
+'Rebel transport', 'Slave 1', 'Imperial shuttle', 'EF76 Nebulon-B escort frigate', 
+'Calamari Cruiser', 'A-wing', 'B-wing', 'Republic Cruiser', 'Droid control ship', 
+'Naboo fighter', 'Naboo Royal Starship', 'Scimitar', 'J-type diplomatic barge', 
+'AA-9 Coruscant freighter', 'Jedi starfighter', 'H-type Nubian yacht', 
+'Republic Assault ship', 'Solar Sailer', 'Trade Federation cruiser', 
+'Theta-class T-2c shuttle', 'Republic attack cruiser', 'Naboo star skiff', 
+'Jedi Interceptor', 'arc-170', 'Banking clan frigte', 'Belbullab-22 starfighter', 'V-wing']
+</code></pre></div></div>
+
+<p>2.2) Print out the name of the fastest starship Star Wars. As indicated in the API documentation, speed is given by the MGLT (Maximum number of Megalights) attribute of a starship.</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">fastest_starship</span> <span class="o">=</span> <span class="s">''</span>
+<span class="n">max_speed</span> <span class="o">=</span> <span class="mi">0</span>
+<span class="kn">import</span> <span class="nn">requests</span><span class="p">,</span> <span class="n">json</span>
+<span class="n">url</span> <span class="o">=</span> <span class="s">"http://swapi.dev/api/starships/"</span>
+<span class="n">number</span> <span class="o">=</span> <span class="mi">1</span>
+<span class="n">parameters</span> <span class="o">=</span> <span class="p">{</span><span class="s">'page'</span><span class="p">:</span> <span class="n">number</span><span class="p">}</span>
+<span class="n">response</span> <span class="o">=</span> <span class="n">requests</span><span class="p">.</span><span class="n">get</span><span class="p">(</span><span class="n">url</span><span class="p">,</span> <span class="n">parameters</span><span class="p">)</span>
+<span class="n">data</span> <span class="o">=</span> <span class="n">json</span><span class="p">.</span><span class="n">loads</span><span class="p">(</span><span class="n">response</span><span class="p">.</span><span class="n">text</span><span class="p">)</span>
+<span class="k">while</span> <span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="s">'next'</span><span class="p">]</span><span class="o">!=</span> <span class="bp">None</span><span class="p">):</span>
+    <span class="n">response</span> <span class="o">=</span> <span class="n">requests</span><span class="p">.</span><span class="n">get</span><span class="p">(</span><span class="n">url</span><span class="p">,</span> <span class="n">parameters</span><span class="p">)</span>
+    <span class="n">data</span> <span class="o">=</span> <span class="n">json</span><span class="p">.</span><span class="n">loads</span><span class="p">(</span><span class="n">response</span><span class="p">.</span><span class="n">text</span><span class="p">)</span>
+    <span class="n">length</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="s">'results'</span><span class="p">])</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">length</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">data</span><span class="p">[</span><span class="s">'results'</span><span class="p">][</span><span class="n">i</span><span class="p">][</span><span class="s">'MGLT'</span><span class="p">]</span> <span class="o">!=</span> <span class="s">'unknown'</span> <span class="ow">and</span> <span class="nb">int</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="s">'results'</span><span class="p">][</span><span class="n">i</span><span class="p">][</span><span class="s">'MGLT'</span><span class="p">])</span> <span class="o">&gt;</span> <span class="n">max_speed</span><span class="p">:</span>
+            <span class="n">max_speed</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="s">'results'</span><span class="p">][</span><span class="n">i</span><span class="p">][</span><span class="s">'MGLT'</span><span class="p">])</span>
+            <span class="n">fastest_starship</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="s">'results'</span><span class="p">][</span><span class="n">i</span><span class="p">][</span><span class="s">'name'</span><span class="p">]</span>
+    <span class="n">number</span> <span class="o">+=</span> <span class="mi">1</span>
+    <span class="n">parameters</span> <span class="o">=</span> <span class="p">{</span><span class="s">'page'</span><span class="p">:</span> <span class="n">number</span><span class="p">}</span>
+<span class="k">print</span><span class="p">(</span><span class="s">"The fastest starship is %s and its MGLT(speed) is %d"</span> <span class="o">%</span><span class="p">(</span><span class="n">fastest_starship</span><span class="p">,</span> <span class="n">max_speed</span><span class="p">))</span>
+</code></pre></div></div>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>OUT[5]:
+The fastest starship is A-wing and its MGLT(speed) is 120
+</code></pre></div></div>
+:ET
