@@ -41,6 +41,12 @@ var store = [{
         "url": "/computer%20science/star_wars_api/",
         "teaser": null
       },{
+        "title": "Santa Truth",
+        "excerpt":"Growing in the East, I have never understood the fascination that westerners have about Santa Claus. But I do know that it is culturally inappropriate to tell kids that Santa Claus doesn’t exist. Let us therefore indulge a thought experiment. Let us say a 5 year old kid, Kevin, who...","categories": ["Philosophy"],
+        "tags": ["Essay"],
+        "url": "/philosophy/Santa_truth/",
+        "teaser": null
+      },{
         "title": "Hidden Markov Model and Part-of-Speech Tagging",
         "excerpt":"We know that to model any problem using a Hidden Markov Model we need a set of observations and a set of possible states. The states in an HMM are hidden. In the part of speech tagging problem, the observations are the words themselves in the given sequence. As for...","categories": [],
         "tags": [],
