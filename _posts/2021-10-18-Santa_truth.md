@@ -1,6 +1,7 @@
 ---
 title: "Santa Truth"
 excerpt_separator: <!--more-->
+author_profile: false
 tags:
   - Essay
 categories:
