@@ -42,7 +42,7 @@ var store = [{
         "teaser": null
       },{
         "title": "Santa Truth",
-        "excerpt":"Growing in the East, I have never understood the fascination that westerners have about Santa Claus. But I do know that it is culturally inappropriate to tell kids that Santa Claus doesn’t exist. Let us therefore indulge a thought experiment. Let us say a 5 year old kid, Kevin, who...","categories": ["Philosophy"],
+        "excerpt":"Growing up in the East, I have never understood the fascination that westerners have about Santa Claus. But I do know that it is culturally inappropriate to tell kids that Santa Claus doesn’t exist. Let us therefore indulge a thought experiment. Let us say a 5 year old kid, Kevin,...","categories": ["Philosophy"],
         "tags": ["Essay"],
         "url": "/philosophy/Santa_truth/",
         "teaser": null
