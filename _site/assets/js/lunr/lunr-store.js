@@ -47,6 +47,12 @@ var store = [{
         "url": "/philosophy/Santa_truth/",
         "teaser": null
       },{
+        "title": "Big Data MovieLens",
+        "excerpt":"Data Split Alternating Least Square Recommendation systems has been all around us. When we watch movies, listen to music, or order takeouts, we are all exposing our personal information, which allows com- panies to analyze our preferences and recommend items alike for better promotion and user engagement. In this project...","categories": [],
+        "tags": [],
+        "url": "/projects/p10_big_data_movielens/",
+        "teaser": "/assets/images/als.jpg"
+      },{
         "title": "Hidden Markov Model and Part-of-Speech Tagging",
         "excerpt":"We know that to model any problem using a Hidden Markov Model we need a set of observations and a set of possible states. The states in an HMM are hidden. In the part of speech tagging problem, the observations are the words themselves in the given sequence. As for...","categories": [],
         "tags": [],
