@@ -8,7 +8,7 @@ comments: false
 
 Biography
 
-I am Zhehan Shi, a first-year graduate student in NYU Center for Data Science. I am a data scientist who have experience in software engineering. 
+I am Zhehan Shi, a second year graduate student in NYU Center for Data Science. I am a data scientist who have experience in software engineering. 
 
 [Resume](/assets/files/resume.pdf)
 
