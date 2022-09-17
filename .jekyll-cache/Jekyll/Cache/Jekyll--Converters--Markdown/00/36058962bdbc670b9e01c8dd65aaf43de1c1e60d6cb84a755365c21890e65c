@@ -1,0 +1,12 @@
+I"ª<p>Data Split
+<img src="/assets/images/data_split.png" alt="image1" /></p>
+
+<p>Alternating Least Square
+<img src="/assets/images/als.jpg" alt="image2" /></p>
+
+<p>Recommendation systems has been all around us. When we watch movies, listen to music, or order takeouts, we are all exposing our personal information, which allows companies to analyze our preferences and recommend items alike for better promotion and user engagement. In this project we aim at building a recommendation system with the MovieLens dataset using various models, including popularity baseline model and latent factor model using Sparkâ€™s alternating least squares (ALS) method, and try to find the best hyper-parameters for best recommendation.</p>
+
+<p><a href="https://github.com/cyberzzhhss/big_data_MovieLens">My github project</a></p>
+
+<p><a href="https://github.com/cyberzzhhss/big_data_MovieLens/blob/master/detailedReport.pdf">My detailed report</a></p>
+:ET

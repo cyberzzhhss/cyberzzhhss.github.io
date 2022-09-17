@@ -47,10 +47,16 @@ var store = [{
         "url": "/philosophy/Santa_truth/",
         "teaser": null
       },{
-        "title": "Big Data MovieLens",
-        "excerpt":"Data Split Alternating Least Square Recommendation systems has been all around us. When we watch movies, listen to music, or order takeouts, we are all exposing our personal information, which allows com- panies to analyze our preferences and recommend items alike for better promotion and user engagement. In this project...","categories": [],
+        "title": "Almgren Chriss Market Impact Model",
+        "excerpt":"Liquidation Paths Price Impact Limit Order Book Realized Cost In thie project, we worked with more than 100GB+ 3-month millisecond-level high-frequency NYSE trades and quotes tick data of more than 1000 tickers to calibrate the Almgren market impact model by applying nonlinear regression. We also formulated the Almgren-Chriss optimal execution...","categories": [],
         "tags": [],
-        "url": "/projects/p10_big_data_movielens/",
+        "url": "/projects/p10_almgren_market_impact_model/",
+        "teaser": "/assets/images/trade_activity.png"
+      },{
+        "title": "Big Data MovieLens",
+        "excerpt":"Data Split Alternating Least Square Recommendation systems has been all around us. When we watch movies, listen to music, or order takeouts, we are all exposing our personal information, which allows companies to analyze our preferences and recommend items alike for better promotion and user engagement. In this project we...","categories": [],
+        "tags": [],
+        "url": "/projects/p11_big_data_movielens/",
         "teaser": "/assets/images/als.jpg"
       },{
         "title": "Hidden Markov Model and Part-of-Speech Tagging",

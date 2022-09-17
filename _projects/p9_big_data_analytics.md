@@ -1,6 +1,6 @@
 ---
 title: "Big Data Analytics"
-excerpt: "Analysis of Boston Restaurants’ Cleanliness from Yelp and Boston Department Data Using Big Data Tools"
+excerpt: "Analysis of Boston restaurants’ cleanliness from Yelp and Boston Health Department data using Big Data tools"
 last_modified_at: 2021-5-10
 header:
   teaser: /assets/images/big_data_graph.jpg

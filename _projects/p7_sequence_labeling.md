@@ -1,6 +1,6 @@
 ---
 title: "Sequence Labeling"
-excerpt: "A python program to create features to label noun sequence using Maximum-entropy Markov model"
+excerpt: "A python program to create features to label noun sequence using maximum-entropy Markov model"
 last_modified_at: 2020-10-26
 header:
   teaser: /assets/images/sequence_labeling.png
