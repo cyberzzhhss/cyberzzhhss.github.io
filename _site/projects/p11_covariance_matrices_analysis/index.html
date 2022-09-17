@@ -3,8 +3,8 @@
   <head>
     <meta charset="utf-8">
 
-<!-- begin _includes/seo.html --><title>Mathematical Finance Notebook - Zhehan Shi</title>
-<meta name="description" content="Using Jupyter Notebook with python kernel to price options">
+<!-- begin _includes/seo.html --><title>Covariance Matrix Estimators Analysis - Zhehan Shi</title>
+<meta name="description" content="Compare the performance of different covariance matrix estimators for out-of-sample volatility of the Markowitz portfolio">
 
 
   <meta name="author" content="Zhehan Shi">
@@ -16,15 +16,15 @@
 <meta property="og:type" content="article">
 <meta property="og:locale" content="en_US">
 <meta property="og:site_name" content="Zhehan Shi">
-<meta property="og:title" content="Mathematical Finance Notebook">
-<meta property="og:url" content="/projects/p2_math_finance/">
+<meta property="og:title" content="Covariance Matrix Estimators Analysis">
+<meta property="og:url" content="/projects/p11_covariance_matrices_analysis/">
 
 
-  <meta property="og:description" content="Using Jupyter Notebook with python kernel to price options">
+  <meta property="og:description" content="Compare the performance of different covariance matrix estimators for out-of-sample volatility of the Markowitz portfolio">
 
 
 
-  <meta property="og:image" content="/assets/images/stock_market.jpg">
+  <meta property="og:image" content="/assets/images/cov_matrices.png">
 
 
 
@@ -34,7 +34,7 @@
 
 
 
-  <meta property="article:modified_time" content="2019-11-21T00:00:00-05:00">
+  <meta property="article:modified_time" content="2022-04-22T00:00:00-04:00">
 
 
 
@@ -43,7 +43,7 @@
   
 
 
-<link rel="canonical" href="/projects/p2_math_finance/">
+<link rel="canonical" href="/projects/p11_covariance_matrices_analysis/">
 
 
 
@@ -168,15 +168,15 @@
 
 
   <article class="page" itemscope itemtype="https://schema.org/CreativeWork">
-    <meta itemprop="headline" content="Mathematical Finance Notebook">
-    <meta itemprop="description" content="Using Jupyter Notebook with python kernel to price options">
+    <meta itemprop="headline" content="Covariance Matrix Estimators Analysis">
+    <meta itemprop="description" content="Compare the performance of different covariance matrix estimators for out-of-sample volatility of the Markowitz portfolio">
     <meta itemprop="datePublished" content="2022-09-17T18:04:03-04:00">
-    <meta itemprop="dateModified" content="2019-11-21T00:00:00-05:00">
+    <meta itemprop="dateModified" content="2022-04-22T00:00:00-04:00">
 
     <div class="page__inner-wrap">
       
         <header>
-          <h1 id="page-title" class="page__title" itemprop="headline">Mathematical Finance Notebook
+          <h1 id="page-title" class="page__title" itemprop="headline">Covariance Matrix Estimators Analysis
 </h1>
           
 
@@ -186,16 +186,19 @@
 
       <section class="page__content" itemprop="text">
         
-        <p><img src="/assets/images/brown.png" alt="information_retrieval" /></p>
+        <p>Comparison of the optimal shrinkage function that maps the empirical eigenvalue $\lambda_i$ onto ‘cleaned’ version, $\xi_i$</p>
 
-<p>Pricing option using Brownian Motion.</p>
+<p><img src="/assets/images/cov_matrices.png" alt="image1" /></p>
 
-<p><a href="/assets/html/option_pricing_brownian_motion.html">Notebook HTML</a></p>
+<p>Formula</p>
 
-<p><a href="https://github.com/cyberzzhhss/mf-jupyter-nb/blob/main/option_pricing_brownian_motion.ipynb">Notebook Github</a></p>
+<p><img src="/assets/images/rie_estimator.png" alt="image2" /></p>
 
-<p>Viewing jupyter notebook from github might show format error for equations.</p>
+<p>The question of building reliable estimators of covariance or of correlation matrices has a long history in finance, and more generally in multivariate statistical analysis. The performance of any mean-variance optimization scheme closely depends on the variance-covariance matrices. Therefore, it is of utmost importance to select a suitable metric against which candidate methods of covariance matrix estimators can be tested. In this section, I compare three commonly used covariance matrix estimators – the empirical covariance, the “eigenvalue clipping” covariance estimator, and the “optimal shrinkage” estimator by the out-of-sample volatility of the Markowitz portfolios built from each estimator.</p>
 
+<p><a href="https://github.com/cyberzzhhss/covariance_matrix_estimation">My github project</a></p>
+
+<p><a href="https://github.com/cyberzzhhss/covariance_matrix_estimation/blob/master/report.pdf">My detailed report</a></p>
 
         
       </section>
@@ -206,7 +209,7 @@
 
 
         
-  <p class="page__date"><strong><i class="fas fa-fw fa-calendar-alt" aria-hidden="true"></i> Updated:</strong> <time datetime="2019-11-21">November 21, 2019</time></p>
+  <p class="page__date"><strong><i class="fas fa-fw fa-calendar-alt" aria-hidden="true"></i> Updated:</strong> <time datetime="2022-04-22">April 22, 2022</time></p>
 
 
       </footer>
@@ -216,11 +219,11 @@
       
   <nav class="pagination">
     
-      <a href="/projects/p1_hmm_tagger/" class="pagination--pager" title="Hidden Markov Model and Part-of-Speech Tagging
+      <a href="/projects/p10_almgren_market_impact_model/" class="pagination--pager" title="Almgren Chriss Market Impact Model
 ">Previous</a>
     
     
-      <a href="/projects/p3_information_retrieval/" class="pagination--pager" title="Information Retrieval using Term Frequency–Inverse Document Frequency
+      <a href="/projects/p12_big_data_movielens/" class="pagination--pager" title="Big Data MovieLens
 ">Next</a>
     
   </nav>

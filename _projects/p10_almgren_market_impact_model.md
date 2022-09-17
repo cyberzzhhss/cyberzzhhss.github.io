@@ -7,15 +7,19 @@ header:
 ---
 
 Liquidation Paths
+
 ![image1]({{site.url}}{{site.baseurl}}/assets/images/liquidation_paths.png)
 
 Price Impact 
+
 ![image2]({{site.url}}{{site.baseurl}}/assets/images/price_impact.png)
 
 Limit Order Book
+
 ![image3]({{site.url}}{{site.baseurl}}/assets/images/trade_activity.png)
 
 Realized Cost
+
 ![image4]({{site.url}}{{site.baseurl}}/assets/images/realized_cost
 .png)
 

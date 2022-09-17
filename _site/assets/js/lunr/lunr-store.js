@@ -53,10 +53,16 @@ var store = [{
         "url": "/projects/p10_almgren_market_impact_model/",
         "teaser": "/assets/images/trade_activity.png"
       },{
+        "title": "Covariance Matrix Estimators Analysis",
+        "excerpt":"Comparison of the optimal shrinkage function that maps the empirical eigenvalue $\\lambda_i$ onto ‘cleaned’ version, $\\xi_i$ Formula The question of building reliable estimators of covariance or of correlation matrices has a long history in finance, and more generally in multivariate statistical analysis. The performance of any mean-variance optimization scheme closely...","categories": [],
+        "tags": [],
+        "url": "/projects/p11_covariance_matrices_analysis/",
+        "teaser": "/assets/images/cov_matrices.png"
+      },{
         "title": "Big Data MovieLens",
         "excerpt":"Data Split Alternating Least Square Recommendation systems has been all around us. When we watch movies, listen to music, or order takeouts, we are all exposing our personal information, which allows companies to analyze our preferences and recommend items alike for better promotion and user engagement. In this project we...","categories": [],
         "tags": [],
-        "url": "/projects/p11_big_data_movielens/",
+        "url": "/projects/p12_big_data_movielens/",
         "teaser": "/assets/images/als.jpg"
       },{
         "title": "Hidden Markov Model and Part-of-Speech Tagging",
