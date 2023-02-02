@@ -47,22 +47,28 @@ var store = [{
         "url": "/philosophy/Santa_truth/",
         "teaser": null
       },{
-        "title": "Almgren Chriss Market Impact Model",
-        "excerpt":"Liquidation Paths Price Impact Limit Order Book Realized Cost In thie project, we worked with more than 100GB+ 3-month millisecond-level high-frequency NYSE trades and quotes tick data of more than 1000 tickers to calibrate the Almgren market impact model by applying nonlinear regression. We also formulated the Almgren-Chriss optimal execution...","categories": [],
+        "title": "Object Detection using Vicreg and RetinaNet",
+        "excerpt":"Example 1 For this project we aim at carrying out an object detection task with variable sized input. We first researched on recent state-of-the-art methods, and then performed our downstream task using VICreg (Variance-Invariance-Covariance Regularization) (Bardes et al., 2021) to pretrain our ResNet backbone and RetinaNet (Lin et al., 2017)...","categories": [],
         "tags": [],
-        "url": "/projects/p10_almgren_market_impact_model/",
+        "url": "/projects/p10_object_detection/",
+        "teaser": "/assets/images/cv_dog.jpg"
+      },{
+        "title": "Almgren Chriss Market Impact Model",
+        "excerpt":"Liquidation Paths Price Impact Limit Order Book Realized Cost In this project, we worked with more than 100GB+ 3-month millisecond-level high-frequency NYSE trades and quotes tick data of more than 1000 tickers to calibrate the Almgren market impact model by applying nonlinear regression. We also formulated the Almgren-Chriss optimal execution...","categories": [],
+        "tags": [],
+        "url": "/projects/p11_almgren_market_impact_model/",
         "teaser": "/assets/images/trade_activity.png"
       },{
         "title": "Covariance Matrix Estimators Analysis",
         "excerpt":"Comparison of the optimal shrinkage function that maps the empirical eigenvalue $\\lambda_i$ onto ‘cleaned’ version, $\\xi_i$ Formula The question of building reliable estimators of covariance or of correlation matrices has a long history in finance, and more generally in multivariate statistical analysis. The performance of any mean-variance optimization scheme closely...","categories": [],
         "tags": [],
-        "url": "/projects/p11_covariance_matrices_analysis/",
+        "url": "/projects/p12_covariance_matrices_analysis/",
         "teaser": "/assets/images/cov_matrices.png"
       },{
         "title": "Big Data MovieLens",
         "excerpt":"Data Split Alternating Least Square Recommendation systems has been all around us. When we watch movies, listen to music, or order takeouts, we are all exposing our personal information, which allows companies to analyze our preferences and recommend items alike for better promotion and user engagement. In this project we...","categories": [],
         "tags": [],
-        "url": "/projects/p12_big_data_movielens/",
+        "url": "/projects/p13_big_data_movielens/",
         "teaser": "/assets/images/als.jpg"
       },{
         "title": "Hidden Markov Model and Part-of-Speech Tagging",

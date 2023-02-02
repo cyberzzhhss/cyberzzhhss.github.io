@@ -24,7 +24,7 @@ Realized Cost
 .png)
 
 
-In thie project, we worked with more than 100GB+ 3-month millisecond-level high-frequency NYSE trades and quotes tick data of more than 1000 tickers to calibrate the Almgren market impact model by applying nonlinear regression.
+In this project, we worked with more than 100GB+ 3-month millisecond-level high-frequency NYSE trades and quotes tick data of more than 1000 tickers to calibrate the Almgren market impact model by applying nonlinear regression.
 
 We also formulated the Almgren-Chriss optimal execution problem as a stochastic control problem and derived the Hamilton–Jacobi–Bellman equation and solved for the control and value function.
 
