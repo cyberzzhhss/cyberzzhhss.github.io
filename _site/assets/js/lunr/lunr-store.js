@@ -71,6 +71,12 @@ var store = [{
         "url": "/projects/p13_big_data_movielens/",
         "teaser": "/assets/images/als.jpg"
       },{
+        "title": "An amendament to bertology",
+        "excerpt":"BERT architecture For this project we proposed a brand new method to study Bert models’ ability to utilize numeracy in several tasks, namely, classification and numeric-related question answering. RoBerta is a variant of the Bert model that was developed by Facebook AI. We compare roBerta model’s performance on the original...","categories": [],
+        "tags": [],
+        "url": "/projects/p14_bertology_amendament/",
+        "teaser": "/assets/images/bert.png"
+      },{
         "title": "Hidden Markov Model and Part-of-Speech Tagging",
         "excerpt":"We know that to model any problem using a Hidden Markov Model we need a set of observations and a set of possible states. The states in an HMM are hidden. In the part of speech tagging problem, the observations are the words themselves in the given sequence. As for...","categories": [],
         "tags": [],
