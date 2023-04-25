@@ -26,7 +26,7 @@ var store = [{
         "title": "Quantconnect Trending System",
         "excerpt":"Quantconnect is World’s Leading Algorithmic Trading Platform It provides a free algorithm backtesting tool and financial data so engineers can design algorithmic trading strategies. The following is a simple Trending System. It is for demo purpose only. The model uses Bollinger Bands(BB) and Relative Strength Index(RSI) Version 1 uses 4-hour...","categories": ["Finance"],
         "tags": ["Quant"],
-        "url": "/finance/Quant_strategy/",
+        "url": "/finance/quant_trending_system/",
         "teaser": null
       },{
         "title": "Web Scraping 101",
@@ -44,7 +44,13 @@ var store = [{
         "title": "Santa Truth",
         "excerpt":"Growing up in the East, I have never understood the fascination that westerners have about Santa Claus. But I do know that it is culturally inappropriate to tell kids that Santa Claus doesn’t exist. Let us therefore indulge a thought experiment. Let us say a 5 year old kid, Kevin,...","categories": ["Philosophy"],
         "tags": ["Essay"],
-        "url": "/philosophy/Santa_truth/",
+        "url": "/philosophy/santa_truth/",
+        "teaser": null
+      },{
+        "title": "Transformer Architecture Tutorial",
+        "excerpt":"Here is the list of good resources to understand transformer architecture.           Distilled AI on Transformer            Harvard Annotated Transformer            Fast.ai Transformer Tutorial            Dive into Deep Learning on Transformer            The Little Book of Deep Learning       ","categories": ["Computer Science","Data Science"],
+        "tags": ["Artificial Intelligence","Machine Learning"],
+        "url": "/computer%20science/data%20science/transformer_tutorial/",
         "teaser": null
       },{
         "title": "Object Detection using Vicreg and RetinaNet",
