@@ -24,5 +24,7 @@ Here is the list of good resources to understand transformer architecture.
 
 5. [The Little Book of Deep Learning](https://fleuret.org/public/lbdl.pdf)
 
+6. [Understanding Deep Learning](https://udlbook.github.io/udlbook/)
+
 
 

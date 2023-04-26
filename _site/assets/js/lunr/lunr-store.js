@@ -47,8 +47,14 @@ var store = [{
         "url": "/philosophy/santa_truth/",
         "teaser": null
       },{
+        "title": "Curiosity & Perserverance",
+        "excerpt":"This is a good tweet.   Riding my first #ebike today and it feels like the future has arrived. &mdash; Ben Cichy (@bencichy) November 22, 2019   ","categories": ["Philosohpy"],
+        "tags": ["Quotes"],
+        "url": "/philosohpy/perserverance/",
+        "teaser": null
+      },{
         "title": "Transformer Architecture Tutorial",
-        "excerpt":"Here is the list of good resources to understand transformer architecture.           Distilled AI on Transformer            Harvard Annotated Transformer            Fast.ai Transformer Tutorial            Dive into Deep Learning on Transformer            The Little Book of Deep Learning       ","categories": ["Computer Science","Data Science"],
+        "excerpt":"Here is the list of good resources to understand transformer architecture.           Distilled AI on Transformer            Harvard Annotated Transformer            Fast.ai Transformer Tutorial            Dive into Deep Learning on Transformer            The Little Book of Deep Learning            Understanding Deep Learning       ","categories": ["Computer Science","Data Science"],
         "tags": ["Artificial Intelligence","Machine Learning"],
         "url": "/computer%20science/data%20science/transformer_tutorial/",
         "teaser": null
