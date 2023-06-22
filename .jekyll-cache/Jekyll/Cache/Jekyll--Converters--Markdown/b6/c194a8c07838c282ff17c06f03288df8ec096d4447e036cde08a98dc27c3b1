@@ -1,0 +1,27 @@
+I"¯<p><a href="https://readnumber.streamlit.app/">Web application link</a></p>
+
+<p>Example 1</p>
+
+<p><img src="/assets/images/handwritten.png" alt="image1" /></p>
+
+<p>This project is a combination of machine learning and web app development.</p>
+
+<ul>
+  <li>
+    <p>A project to create a digit recognition web application using Streamlit</p>
+  </li>
+  <li>
+    <p>Developed a pipeline to train and validate a model on the MNIST Handwritten dataset.</p>
+  </li>
+  <li>
+    <p>Fine-tuned the model until having a model that could confidently make inferences.</p>
+  </li>
+  <li>
+    <p>Constructed an intuitive and user-friendly web interface using the Streamlit Python library.</p>
+  </li>
+</ul>
+
+<p>A robust web app where users can draw a digit and the application, using the trained model, outputs the probabilities of what the drawn digit might be.</p>
+
+<p><a href="https://github.com/cyberzzhhss/webApp4writtenDigits">My github project</a></p>
+:ET

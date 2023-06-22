@@ -3,8 +3,8 @@
   <head>
     <meta charset="utf-8">
 
-<!-- begin _includes/seo.html --><title>Hidden Markov Model and Part-of-Speech Tagging - Zhehan Shi</title>
-<meta name="description" content="A python implementation of part-of-speech tagging using Hidden Markov Model">
+<!-- begin _includes/seo.html --><title>Handwritten Digits Recognition Web Application  - Zhehan Shi</title>
+<meta name="description" content="Using convolutional neural network (CNN) to recognize handwritten digits on a web application">
 
 
   <meta name="author" content="Zhehan Shi">
@@ -16,15 +16,15 @@
 <meta property="og:type" content="article">
 <meta property="og:locale" content="en_US">
 <meta property="og:site_name" content="Zhehan Shi">
-<meta property="og:title" content="Hidden Markov Model and Part-of-Speech Tagging">
-<meta property="og:url" content="/projects/p1_hmm_tagger/">
+<meta property="og:title" content="Handwritten Digits Recognition Web Application">
+<meta property="og:url" content="/projects/p10_app4digits/">
 
 
-  <meta property="og:description" content="A python implementation of part-of-speech tagging using Hidden Markov Model">
+  <meta property="og:description" content="Using convolutional neural network (CNN) to recognize handwritten digits on a web application">
 
 
 
-  <meta property="og:image" content="/assets/images/hmm.png">
+  <meta property="og:image" content="/assets/images/handwritten.png">
 
 
 
@@ -34,7 +34,7 @@
 
 
 
-  <meta property="article:modified_time" content="2020-10-05T00:00:00-04:00">
+  <meta property="article:modified_time" content="2023-06-20T00:00:00-04:00">
 
 
 
@@ -43,7 +43,7 @@
   
 
 
-<link rel="canonical" href="/projects/p1_hmm_tagger/">
+<link rel="canonical" href="/projects/p10_app4digits/">
 
 
 
@@ -171,15 +171,15 @@
 
 
   <article class="page" itemscope itemtype="https://schema.org/CreativeWork">
-    <meta itemprop="headline" content="Hidden Markov Model and Part-of-Speech Tagging">
-    <meta itemprop="description" content="A python implementation of part-of-speech tagging using Hidden Markov Model">
+    <meta itemprop="headline" content="Handwritten Digits Recognition Web Application">
+    <meta itemprop="description" content="Using convolutional neural network (CNN) to recognize handwritten digits on a web application">
     <meta itemprop="datePublished" content="2023-06-22T18:40:11-04:00">
-    <meta itemprop="dateModified" content="2020-10-05T00:00:00-04:00">
+    <meta itemprop="dateModified" content="2023-06-20T00:00:00-04:00">
 
     <div class="page__inner-wrap">
       
         <header>
-          <h1 id="page-title" class="page__title" itemprop="headline">Hidden Markov Model and Part-of-Speech Tagging
+          <h1 id="page-title" class="page__title" itemprop="headline">Handwritten Digits Recognition Web Application
 </h1>
           
 
@@ -189,24 +189,32 @@
 
       <section class="page__content" itemprop="text">
         
-        <p><img src="/assets/images/hmm2.svg" alt="hidden_markov_model2" /></p>
+        <p><a href="https://readnumber.streamlit.app/">Web application link</a></p>
 
-<p>We know that to model any problem using a Hidden Markov Model we need a set of observations and a set of possible states. The states in an HMM are hidden.</p>
+<p>Example 1</p>
 
-<p>In the part of speech tagging problem, the observations are the words themselves in the given sequence.</p>
+<p><img src="/assets/images/handwritten.png" alt="image1" /></p>
 
-<p>As for the states, which are hidden, these would be the POS tags for the words.</p>
+<p>This project is a combination of machine learning and web app development.</p>
 
-<p><img src="/assets/images/hmm.png" alt="hidden_markov_model" /></p>
+<ul>
+  <li>
+    <p>A project to create a digit recognition web application using Streamlit</p>
+  </li>
+  <li>
+    <p>Developed a pipeline to train and validate a model on the MNIST Handwritten dataset.</p>
+  </li>
+  <li>
+    <p>Fine-tuned the model until having a model that could confidently make inferences.</p>
+  </li>
+  <li>
+    <p>Constructed an intuitive and user-friendly web interface using the Streamlit Python library.</p>
+  </li>
+</ul>
 
-<p>The transition probabilities would be like <strong>P(VP | NP)</strong> which means the probability of the current word having a tag of Verb Phrase given that the previous tag was a Noun Phrase.</p>
+<p>A robust web app where users can draw a digit and the application, using the trained model, outputs the probabilities of what the drawn digit might be.</p>
 
-<p>Emission probabilities would be <strong>P(Joe | NP)</strong>, which means the probability that the word is, say, Joe given that the tag is a Noun Phrase.</p>
-
-<p><a href="https://github.com/cyberzzhhss/hmm_pos_tagger">My github project</a></p>
-
-<p><a href="https://github.com/cyberzzhhss/hmm_pos_tagger/blob/main/hmm_pos_tagger.py">Code</a></p>
-
+<p><a href="https://github.com/cyberzzhhss/webApp4writtenDigits">My github project</a></p>
 
         
       </section>
@@ -217,7 +225,7 @@
 
 
         
-  <p class="page__date"><strong><i class="fas fa-fw fa-calendar-alt" aria-hidden="true"></i> Updated:</strong> <time datetime="2020-10-05">October 5, 2020</time></p>
+  <p class="page__date"><strong><i class="fas fa-fw fa-calendar-alt" aria-hidden="true"></i> Updated:</strong> <time datetime="2023-06-20">June 20, 2023</time></p>
 
 
       </footer>
@@ -227,11 +235,10 @@
       
   <nav class="pagination">
     
-      <a href="/projects/p15_bertology_amendament/" class="pagination--pager" title="An amendament to bertology
-">Previous</a>
+      <a href="#" class="pagination--pager disabled">Previous</a>
     
     
-      <a href="/projects/p2_math_finance/" class="pagination--pager" title="Mathematical Finance Notebook
+      <a href="/projects/p11_object_detection/" class="pagination--pager" title="Object Detection using Vicreg and RetinaNet
 ">Next</a>
     
   </nav>
