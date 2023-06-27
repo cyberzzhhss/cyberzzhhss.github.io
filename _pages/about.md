@@ -14,7 +14,7 @@ I have background in software engineering.
 
 I have MS in Data Science from NYU
 
-I have Computer Science and Math from NYU.
+I have BA in Computer Science and BA in Math from NYU.
 
 I love data science, coding and financial markets.
 
