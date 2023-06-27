@@ -3,8 +3,8 @@
   <head>
     <meta charset="utf-8">
 
-<!-- begin _includes/seo.html --><title>Object Detection using Vicreg and RetinaNet - Zhehan Shi</title>
-<meta name="description" content="Using deep learning methods to pretrain and finetune on images for object detection">
+<!-- begin _includes/seo.html --><title>Big Data MovieLens - Zhehan Shi</title>
+<meta name="description" content="A collaborative-filter based recommender system for movie recommendation">
 
 
   <meta name="author" content="Zhehan Shi">
@@ -16,15 +16,15 @@
 <meta property="og:type" content="article">
 <meta property="og:locale" content="en_US">
 <meta property="og:site_name" content="Zhehan Shi">
-<meta property="og:title" content="Object Detection using Vicreg and RetinaNet">
-<meta property="og:url" content="/projects/p11_object_detection/">
+<meta property="og:title" content="Big Data MovieLens">
+<meta property="og:url" content="/projects/p15_big_data_movielens/">
 
 
-  <meta property="og:description" content="Using deep learning methods to pretrain and finetune on images for object detection">
+  <meta property="og:description" content="A collaborative-filter based recommender system for movie recommendation">
 
 
 
-  <meta property="og:image" content="/assets/images/cv_dog.jpg">
+  <meta property="og:image" content="/assets/images/als.jpg">
 
 
 
@@ -34,7 +34,7 @@
 
 
 
-  <meta property="article:modified_time" content="2022-12-20T00:00:00-05:00">
+  <meta property="article:modified_time" content="2022-05-10T00:00:00-04:00">
 
 
 
@@ -43,7 +43,7 @@
   
 
 
-<link rel="canonical" href="/projects/p11_object_detection/">
+<link rel="canonical" href="/projects/p15_big_data_movielens/">
 
 
 
@@ -171,15 +171,15 @@
 
 
   <article class="page" itemscope itemtype="https://schema.org/CreativeWork">
-    <meta itemprop="headline" content="Object Detection using Vicreg and RetinaNet">
-    <meta itemprop="description" content="Using deep learning methods to pretrain and finetune on images for object detection">
+    <meta itemprop="headline" content="Big Data MovieLens">
+    <meta itemprop="description" content="A collaborative-filter based recommender system for movie recommendation">
     <meta itemprop="datePublished" content="2023-06-26T22:13:03-04:00">
-    <meta itemprop="dateModified" content="2022-12-20T00:00:00-05:00">
+    <meta itemprop="dateModified" content="2022-05-10T00:00:00-04:00">
 
     <div class="page__inner-wrap">
       
         <header>
-          <h1 id="page-title" class="page__title" itemprop="headline">Object Detection using Vicreg and RetinaNet
+          <h1 id="page-title" class="page__title" itemprop="headline">Big Data MovieLens
 </h1>
           
 
@@ -189,16 +189,17 @@
 
       <section class="page__content" itemprop="text">
         
-        <p>Example 1</p>
+        <p>Data Split
+<img src="/assets/images/data_split.png" alt="image1" /></p>
 
-<p><img src="/assets/images/cv_sample
-.png" alt="image1" /></p>
+<p>Alternating Least Square
+<img src="/assets/images/als.jpg" alt="image2" /></p>
 
-<p>For this project we aim at carrying out an object detection task with variable sized input. We first researched on recent state-of-the-art methods, and then performed our downstream task using VICreg (Variance-Invariance-Covariance Regularization) (Bardes et al., 2021) to pretrain our ResNet backbone and RetinaNet (Lin et al., 2017) to finetune on labeled images. Our team achieved a mAP score of 0.125 on validation dataset and we identified several ways to improve upon our current approach as well as proposed novel methods that we should try out.</p>
+<p>Recommendation systems has been all around us. When we watch movies, listen to music, or order takeouts, we are all exposing our personal information, which allows companies to analyze our preferences and recommend items alike for better promotion and user engagement. In this project we aim at building a recommendation system with the MovieLens dataset using various models, including popularity baseline model and latent factor model using Spark’s alternating least squares (ALS) method, and try to find the best hyper-parameters for best recommendation.</p>
 
-<p><a href="https://github.com/cyberzzhhss/object_detect">My github project</a></p>
+<p><a href="https://github.com/cyberzzhhss/big_data_MovieLens">My github project</a></p>
 
-<p><a href="https://github.com/cyberzzhhss/object_detect/blob/master/report.pdf">My detailed report</a></p>
+<p><a href="https://github.com/cyberzzhhss/big_data_MovieLens/blob/master/detailedReport.pdf">My detailed report</a></p>
 
         
       </section>
@@ -209,7 +210,7 @@
 
 
         
-  <p class="page__date"><strong><i class="fas fa-fw fa-calendar-alt" aria-hidden="true"></i> Updated:</strong> <time datetime="2022-12-20">December 20, 2022</time></p>
+  <p class="page__date"><strong><i class="fas fa-fw fa-calendar-alt" aria-hidden="true"></i> Updated:</strong> <time datetime="2022-05-10">May 10, 2022</time></p>
 
 
       </footer>
@@ -219,11 +220,11 @@
       
   <nav class="pagination">
     
-      <a href="/projects/p10_app4digits/" class="pagination--pager" title="Handwritten Digits Recognition Web Application
+      <a href="/projects/p14_covariance_matrices_analysis/" class="pagination--pager" title="Covariance Matrix Estimators Analysis
 ">Previous</a>
     
     
-      <a href="/projects/p12_photorealistic_neural_style_transfer/" class="pagination--pager" title="Photorealistic Style Transfer
+      <a href="/projects/p16_bertology_amendament/" class="pagination--pager" title="An amendament to bertology
 ">Next</a>
     
   </nav>

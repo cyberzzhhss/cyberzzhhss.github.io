@@ -1,0 +1,12 @@
+I"ƒ<p>Example 1</p>
+
+<p><img src="/assets/images/cv_nst1.png" alt="image1" /></p>
+
+<p><img src="/assets/images/cv_nst2.png" alt="image2" /></p>
+
+<p>We focused on a variant of Whitening and Coloring Transforms (WCT) called PhotoWCT, which specializes in photorealistic style transfer. We experimented with how training on different model architectures and layers affects the preservation of the original content structure in the stylized image. We used the Structural Similarity Index Measure (SSIM) as their main qualitative metric. We also dicussed different training and inference paradigms, as well as smoothing techniques, and presents visual and quantitative results of their experiments.</p>
+
+<p><a href="https://github.com/cyberzzhhss/neuralStyleTransfer">My github project</a></p>
+
+<p><a href="https://github.com/cyberzzhhss/neuralStyleTransfer/blob/main/report.pdf">My detailed report</a></p>
+:ET

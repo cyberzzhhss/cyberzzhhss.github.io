@@ -71,28 +71,34 @@ var store = [{
         "url": "/projects/p11_object_detection/",
         "teaser": "/assets/images/cv_dog.jpg"
       },{
+        "title": "Photorealistic Style Transfer",
+        "excerpt":"Example 1 We focused on a variant of Whitening and Coloring Transforms (WCT) called PhotoWCT, which specializes in photorealistic style transfer. We experimented with how training on different model architectures and layers affects the preservation of the original content structure in the stylized image. We used the Structural Similarity Index...","categories": [],
+        "tags": [],
+        "url": "/projects/p12_photorealistic_neural_style_transfer/",
+        "teaser": "/assets/images/cv_nst2.png"
+      },{
         "title": "Almgren Chriss Market Impact Model",
         "excerpt":"Liquidation Paths Price Impact Limit Order Book Realized Cost In this project, we worked with more than 100GB+ 3-month millisecond-level high-frequency NYSE trades and quotes tick data of more than 1000 tickers to calibrate the Almgren market impact model by applying nonlinear regression. We also formulated the Almgren-Chriss optimal execution...","categories": [],
         "tags": [],
-        "url": "/projects/p12_almgren_market_impact_model/",
+        "url": "/projects/p13_almgren_market_impact_model/",
         "teaser": "/assets/images/trade_activity.png"
       },{
         "title": "Covariance Matrix Estimators Analysis",
         "excerpt":"Comparison of the optimal shrinkage function that maps the empirical eigenvalue $\\lambda_i$ onto ‘cleaned’ version, $\\xi_i$ Formula The question of building reliable estimators of covariance or of correlation matrices has a long history in finance, and more generally in multivariate statistical analysis. The performance of any mean-variance optimization scheme closely...","categories": [],
         "tags": [],
-        "url": "/projects/p13_covariance_matrices_analysis/",
+        "url": "/projects/p14_covariance_matrices_analysis/",
         "teaser": "/assets/images/cov_matrices.png"
       },{
         "title": "Big Data MovieLens",
         "excerpt":"Data Split Alternating Least Square Recommendation systems has been all around us. When we watch movies, listen to music, or order takeouts, we are all exposing our personal information, which allows companies to analyze our preferences and recommend items alike for better promotion and user engagement. In this project we...","categories": [],
         "tags": [],
-        "url": "/projects/p14_big_data_movielens/",
+        "url": "/projects/p15_big_data_movielens/",
         "teaser": "/assets/images/als.jpg"
       },{
         "title": "An amendament to bertology",
         "excerpt":"BERT architecture For this project we proposed a brand new method to study Bert models’ ability to utilize numeracy in several tasks, namely, classification and numeric-related question answering. RoBerta is a variant of the Bert model that was developed by Facebook AI. We compare roBerta model’s performance on the original...","categories": [],
         "tags": [],
-        "url": "/projects/p15_bertology_amendament/",
+        "url": "/projects/p16_bertology_amendament/",
         "teaser": "/assets/images/bert.png"
       },{
         "title": "Hidden Markov Model and Part-of-Speech Tagging",
