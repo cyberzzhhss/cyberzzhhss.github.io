@@ -24,12 +24,21 @@ Skills:
 
 Python:
 ![Python](https://img.shields.io/badge/-Python-3776AB?style=flat&logo=python&logoColor=white)
-![PyTorch](https://img.shields.io/badge/-PyTorch-EE4C2C?style=flat&logo=pytorch)
-![TensorFlow](https://img.shields.io/badge/-TensorFlow-FF6F00?style=flat&logo=tensorflow)
-![PyTorch](https://img.shields.io/badge/-PyTorch-EE4C2C?style=flat&logo=pytorch&logoColor=white)
 ![Scipy](https://img.shields.io/badge/-Scipy-333333?style=flat&logo=scipy)
 ![Numpy](https://img.shields.io/badge/-Numpy-333333?style=flat&logo=numpy)
 ![Pandas](https://img.shields.io/badge/-Pandas-333333?style=flat&logo=pandas)
+
+
+Deep Learning:
+![PyTorch](https://img.shields.io/badge/-PyTorch-EE4C2C?style=flat&logo=pytorch&logoColor=white)
+![TensorFlow](https://img.shields.io/badge/-TensorFlow-FF6F00?style=flat&logo=tensorflow&logoColor=white)
+[![Hugging Face Transformers](https://img.shields.io/badge/Transformers-Hugging%20Face-%23007ACC)](https://huggingface.co/transformers/)
+
+Computer Vision:
+![OpenCV](https://img.shields.io/badge/-OpenCV-333333?style=flat&logo=opencv)
+
+Natural Language Processing:
+![Spacy](https://img.shields.io/badge/-Spacy-333333?style=flat&logo=spacy)
 
 Big Data:
 ![Spark](https://img.shields.io/badge/-Spark-333333?style=flat&logo=apache-spark)
@@ -55,12 +64,12 @@ Containers:
 
 IDE:
 ![Visual Studio Code](https://img.shields.io/badge/-Visual%20Studio%20Code-007ACC?style=flat&logo=visual-studio-code)
-![Sublime Text](https://img.shields.io/badge/-Sublime%20Text-FF9800?style=flat&logo=sublime-text)
+![Sublime Text](https://img.shields.io/badge/-Sublime%20Text-FF9800?style=flat&logo=sublime-text&logoColor=white)
 ![Atom](https://img.shields.io/badge/-Atom-66595C?style=flat&logo=atom)
 
 Other:
-[![JavaScript](https://img.shields.io/badge/-JavaScript-333333?style=flat&logo=javascript)](https://developer.mozilla.org/en-US/docs/Web/JavaScript)
-[![Java](https://img.shields.io/badge/-Java-007396?style=flat&logo=java)](https://www.java.com/)
-[![C++](https://img.shields.io/badge/-C++-00599C?style=flat&logo=c%2B%2B)](https://isocpp.org/)
-[![OpenMP](https://img.shields.io/badge/-OpenMP-333333?style=flat&logo=openmp)](https://www.openmp.org/)
-[![MPI](https://img.shields.io/badge/-MPI-333333?style=flat&logo=mpi)](https://www.open-mpi.org/)
+![JavaScript](https://img.shields.io/badge/-JavaScript-333333?style=flat&logo=javascript)
+![Java](https://img.shields.io/badge/Java-ED8B00?style=flat&logo=openjdk&logoColor=white) 
+![C++](https://img.shields.io/badge/-C++-00599C?style=flat&logo=c%2B%2B) 
+![OpenMP](https://img.shields.io/badge/-OpenMP-333333?style=flat&logo=openmp)
+![MPI](https://img.shields.io/badge/-MPI-333333?style=flat&logo=mpi) 
