@@ -3,8 +3,8 @@
   <head>
     <meta charset="utf-8">
 
-<!-- begin _includes/seo.html --><title>Handwritten Digits Recognition Web Application  - Zhehan Shi</title>
-<meta name="description" content="Using convolutional neural network (CNN) to recognize handwritten digits on a web application">
+<!-- begin _includes/seo.html --><title>Covariance Matrix Estimators Analysis - Zhehan Shi</title>
+<meta name="description" content="Compare the performance of different covariance matrix estimators for out-of-sample volatility of the Markowitz portfolio">
 
 
   <meta name="author" content="Zhehan Shi">
@@ -16,34 +16,34 @@
 <meta property="og:type" content="article">
 <meta property="og:locale" content="en_US">
 <meta property="og:site_name" content="Zhehan Shi">
-<meta property="og:title" content="Handwritten Digits Recognition Web Application">
-<meta property="og:url" content="/projects/p10_app4digits/">
+<meta property="og:title" content="Covariance Matrix Estimators Analysis">
+<meta property="og:url" content="/projects/p15_covariance_matrices_analysis/">
 
 
-  <meta property="og:description" content="Using convolutional neural network (CNN) to recognize handwritten digits on a web application">
-
-
-
-  <meta property="og:image" content="/assets/images/handwritten.png">
+  <meta property="og:description" content="Compare the performance of different covariance matrix estimators for out-of-sample volatility of the Markowitz portfolio">
 
 
 
-
-
-  <meta property="article:published_time" content="2023-06-26T22:13:03-04:00">
-
-
-
-  <meta property="article:modified_time" content="2023-06-20T00:00:00-04:00">
+  <meta property="og:image" content="/assets/images/cov_matrices.png">
 
 
 
-  
+
+
+  <meta property="article:published_time" content="2023-06-26T23:35:51-04:00">
+
+
+
+  <meta property="article:modified_time" content="2022-04-22T00:00:00-04:00">
+
+
 
   
 
+  
 
-<link rel="canonical" href="/projects/p10_app4digits/">
+
+<link rel="canonical" href="/projects/p15_covariance_matrices_analysis/">
 
 
 
@@ -171,15 +171,15 @@
 
 
   <article class="page" itemscope itemtype="https://schema.org/CreativeWork">
-    <meta itemprop="headline" content="Handwritten Digits Recognition Web Application">
-    <meta itemprop="description" content="Using convolutional neural network (CNN) to recognize handwritten digits on a web application">
-    <meta itemprop="datePublished" content="2023-06-26T22:13:03-04:00">
-    <meta itemprop="dateModified" content="2023-06-20T00:00:00-04:00">
+    <meta itemprop="headline" content="Covariance Matrix Estimators Analysis">
+    <meta itemprop="description" content="Compare the performance of different covariance matrix estimators for out-of-sample volatility of the Markowitz portfolio">
+    <meta itemprop="datePublished" content="2023-06-26T23:35:51-04:00">
+    <meta itemprop="dateModified" content="2022-04-22T00:00:00-04:00">
 
     <div class="page__inner-wrap">
       
         <header>
-          <h1 id="page-title" class="page__title" itemprop="headline">Handwritten Digits Recognition Web Application
+          <h1 id="page-title" class="page__title" itemprop="headline">Covariance Matrix Estimators Analysis
 </h1>
           
 
@@ -189,32 +189,19 @@
 
       <section class="page__content" itemprop="text">
         
-        <p><a href="https://readnumber.streamlit.app/">Web application link</a></p>
+        <p>Comparison of the optimal shrinkage function that maps the empirical eigenvalue $\lambda_i$ onto ‘cleaned’ version, $\xi_i$</p>
 
-<p>Example 1</p>
+<p><img src="/assets/images/cov_matrices.png" alt="image1" /></p>
 
-<p><img src="/assets/images/handwritten.png" alt="image1" /></p>
+<p>Formula</p>
 
-<p>This project is a combination of machine learning and web app development.</p>
+<p><img src="/assets/images/rie_estimator.png" alt="image2" /></p>
 
-<ul>
-  <li>
-    <p>A project to create a digit recognition web application using Streamlit</p>
-  </li>
-  <li>
-    <p>Developed a pipeline to train and validate a model on the MNIST Handwritten dataset.</p>
-  </li>
-  <li>
-    <p>Fine-tuned the model until having a model that could confidently make inferences.</p>
-  </li>
-  <li>
-    <p>Constructed an intuitive and user-friendly web interface using the Streamlit Python library.</p>
-  </li>
-</ul>
+<p>The question of building reliable estimators of covariance or of correlation matrices has a long history in finance, and more generally in multivariate statistical analysis. The performance of any mean-variance optimization scheme closely depends on the variance-covariance matrices. Therefore, it is of utmost importance to select a suitable metric against which candidate methods of covariance matrix estimators can be tested. In this section, I compare three commonly used covariance matrix estimators – the empirical covariance, the “eigenvalue clipping” covariance estimator, and the “optimal shrinkage” estimator by the out-of-sample volatility of the Markowitz portfolios built from each estimator.</p>
 
-<p>A robust web app where users can draw a digit and the application, using the trained model, outputs the probabilities of what the drawn digit might be.</p>
+<p><a href="https://github.com/cyberzzhhss/covariance_matrix_estimation">My github project</a></p>
 
-<p><a href="https://github.com/cyberzzhhss/webApp4writtenDigits">My github project</a></p>
+<p><a href="https://github.com/cyberzzhhss/covariance_matrix_estimation/blob/master/report.pdf">My detailed report</a></p>
 
         
       </section>
@@ -225,7 +212,7 @@
 
 
         
-  <p class="page__date"><strong><i class="fas fa-fw fa-calendar-alt" aria-hidden="true"></i> Updated:</strong> <time datetime="2023-06-20">June 20, 2023</time></p>
+  <p class="page__date"><strong><i class="fas fa-fw fa-calendar-alt" aria-hidden="true"></i> Updated:</strong> <time datetime="2022-04-22">April 22, 2022</time></p>
 
 
       </footer>
@@ -235,10 +222,11 @@
       
   <nav class="pagination">
     
-      <a href="#" class="pagination--pager disabled">Previous</a>
+      <a href="/projects/p14_almgren_market_impact_model/" class="pagination--pager" title="Almgren Chriss Market Impact Model
+">Previous</a>
     
     
-      <a href="/projects/p11_object_detection/" class="pagination--pager" title="Object Detection using Vicreg and RetinaNet
+      <a href="/projects/p16_big_data_movielens/" class="pagination--pager" title="Big Data MovieLens
 ">Next</a>
     
   </nav>
