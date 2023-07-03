@@ -18,7 +18,7 @@ I have BA in Computer Science and BA in Math from NYU.
 
 I love data science, coding and financial markets.
 
-[Resume](/assets/files/zhehan_shi_resume.pdf)
+[Resume](/assets/files/resume.pdf)
 
 Skills:
 
