@@ -17,7 +17,7 @@
 <meta property="og:locale" content="en_US">
 <meta property="og:site_name" content="Zhehan Shi">
 <meta property="og:title" content="Quantconnect Trending System">
-<meta property="og:url" content="/finance/Quant_strategy/">
+<meta property="og:url" content="/finance/quant_trending_system/">
 
 
   <meta property="og:description" content="Quantconnect is World’s Leading Algorithmic Trading Platform It provides a free algorithm backtesting tool and financial data so engineers can design algorithmic trading strategies.  The following is a simple Trending System. It is for demo purpose only.  The model uses Bollinger Bands(BB) and Relative Strength Index(RSI)  Version 1 uses 4-hour aggregates. It is a Mean reverting strategy where it assumes SPY will revert to its historical mean.  BB uses past 30 data points and 2 standard deviation for bands RSI uses past 14 data points  The model sells when RSI &gt; 70 AND Price &gt; BB Upper Band  The model buys when RSI &lt; 30 AND Price &lt; BB Lower Band  1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31 32 33 34 35 #original  class Algo101_Version_1(QCAlgorithm):      def Initialize(self):         self.SetStartDate(2020, 1, 1)  # Set Start Date         self.SetEndDate(2020,10,1) #Comment         self.SetCash(100000)  # Set Strategy Cash         symbol = &quot;SPY&quot;         self.ticker = self.AddEquity(symbol,Resolution.Hour).Symbol         self.rsi = self.RSI(symbol, 14, MovingAverageType.Simple,Resolution.Hour)         self.bb = self.BB(symbol,30, 2, MovingAverageType.Simple,Resolution.Hour)         self.RegisterIndicator(symbol, self.rsi, timedelta(hours = 4))         self.RegisterIndicator(symbol, self.bb, timedelta(hours = 4))                   self.SetWarmup(timedelta(30))      def OnData(self, data):         symbol = &quot;SPY&quot;         if data[self.ticker] is None: return         if (not self.rsi.IsReady) or (not self.bb.IsReady): return          value = data[self.ticker].Value                  buy_signal = self.rsi.Current.Value &lt; 30 and value &lt; self.bb.LowerBand.Current.Value         sell_signal = self.rsi.Current.Value &gt; 70 and value &gt; self.bb.UpperBand.Current.Value                  if buy_signal: self.SetHoldings(symbol,1)         if sell_signal: self.SetHoldings(symbol,-1)                  if self.Portfolio.Invested:             if self.Portfolio[symbol].IsLong and not buy_signal:                 self.Liquidate(symbol)                              if self.Portfolio[symbol].IsShort and not sell_signal:                 self.Liquidate(symbol)      The model 1 performs badly.  The idea is to change Mean Reversion Strategy to Momentum Strategy by switching sell and buy signal and modify the RSI period and BollingerBands’ period and standard deviation.  Version 2 uses 4-hour aggregates. It is a momentum strategy where it assumes the price will maintain its momentum for a while  BB uses past 20 data points and 1.5 standard deviation for bands RSI uses past 10 data points  The model buys when RSI &lt; 40 AND Price &lt; BB Upper Band  The model sells when RSI &gt; 60 AND Price &gt; BB Lower Band  1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31 32 33 34 35 #original  class Algo101_Version_2(QCAlgorithm):      def Initialize(self):         self.SetStartDate(2020, 1, 1)  # Set Start Date         self.SetEndDate(2020,10,1) #Comment         self.SetCash(100000)  # Set Strategy Cash         symbol = &quot;SPY&quot;         self.ticker = self.AddEquity(symbol,Resolution.Hour).Symbol         self.rsi = self.RSI(symbol, 10, MovingAverageType.Simple,Resolution.Hour)         self.bb = self.BB(symbol,20, 1.5, MovingAverageType.Simple,Resolution.Hour)         self.RegisterIndicator(symbol, self.rsi, timedelta(hours = 4))         self.RegisterIndicator(symbol, self.bb, timedelta(hours = 4))                   self.SetWarmup(timedelta(30))      def OnData(self, data):         symbol = &quot;SPY&quot;         if data[self.ticker] is None: return         if (not self.rsi.IsReady) or (not self.bb.IsReady): return          value = data[self.ticker].Value                  sell_signal = self.rsi.Current.Value &lt; 40 and value &lt; self.bb.LowerBand.Current.Value         buy_signal = self.rsi.Current.Value &gt; 60 and value &gt; self.bb.UpperBand.Current.Value                  if buy_signal: self.SetHoldings(symbol,1)         if sell_signal: self.SetHoldings(symbol,-1)                  if self.Portfolio.Invested:             if self.Portfolio[symbol].IsLong and not buy_signal:                 self.Liquidate(symbol)                              if self.Portfolio[symbol].IsShort and not sell_signal:                 self.Liquidate(symbol)      Model 2 has a better return after modification.">
@@ -39,7 +39,7 @@
   
 
 
-<link rel="canonical" href="/finance/Quant_strategy/">
+<link rel="canonical" href="/finance/quant_trending_system/">
 
 
 
@@ -96,7 +96,10 @@
     <!-- start custom head snippets -->
 
 <!-- insert favicons. use https://realfavicongenerator.net/ -->
-
+<link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+<link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
+<link rel="manifest" href="/site.webmanifest">
 <!-- end custom head snippets -->
 
   </head>
@@ -439,11 +442,11 @@ RSI uses past 10 data points</p>
       <section class="page__share">
   
 
-  <a href="https://twitter.com/intent/tweet?text=Quantconnect+Trending+System%20%2Ffinance%2FQuant_strategy%2F" class="btn btn--twitter" onclick="window.open(this.href, 'window', 'left=20,top=20,width=500,height=500,toolbar=1,resizable=0'); return false;" title="Share on Twitter"><i class="fab fa-fw fa-twitter" aria-hidden="true"></i><span> Twitter</span></a>
+  <a href="https://twitter.com/intent/tweet?text=Quantconnect+Trending+System%20%2Ffinance%2Fquant_trending_system%2F" class="btn btn--twitter" onclick="window.open(this.href, 'window', 'left=20,top=20,width=500,height=500,toolbar=1,resizable=0'); return false;" title="Share on Twitter"><i class="fab fa-fw fa-twitter" aria-hidden="true"></i><span> Twitter</span></a>
 
-  <a href="https://www.facebook.com/sharer/sharer.php?u=%2Ffinance%2FQuant_strategy%2F" class="btn btn--facebook" onclick="window.open(this.href, 'window', 'left=20,top=20,width=500,height=500,toolbar=1,resizable=0'); return false;" title="Share on Facebook"><i class="fab fa-fw fa-facebook" aria-hidden="true"></i><span> Facebook</span></a>
+  <a href="https://www.facebook.com/sharer/sharer.php?u=%2Ffinance%2Fquant_trending_system%2F" class="btn btn--facebook" onclick="window.open(this.href, 'window', 'left=20,top=20,width=500,height=500,toolbar=1,resizable=0'); return false;" title="Share on Facebook"><i class="fab fa-fw fa-facebook" aria-hidden="true"></i><span> Facebook</span></a>
 
-  <a href="https://www.linkedin.com/shareArticle?mini=true&url=%2Ffinance%2FQuant_strategy%2F" class="btn btn--linkedin" onclick="window.open(this.href, 'window', 'left=20,top=20,width=500,height=500,toolbar=1,resizable=0'); return false;" title="Share on LinkedIn"><i class="fab fa-fw fa-linkedin" aria-hidden="true"></i><span> LinkedIn</span></a>
+  <a href="https://www.linkedin.com/shareArticle?mini=true&url=%2Ffinance%2Fquant_trending_system%2F" class="btn btn--linkedin" onclick="window.open(this.href, 'window', 'left=20,top=20,width=500,height=500,toolbar=1,resizable=0'); return false;" title="Share on LinkedIn"><i class="fab fa-fw fa-linkedin" aria-hidden="true"></i><span> LinkedIn</span></a>
 </section>
 
 
@@ -469,6 +472,98 @@ RSI uses past 10 data points</p>
     <div class="page__related">
       <h4 class="page__related-title">You May Also Enjoy</h4>
       <div class="grid__wrapper">
+        
+          
+
+
+
+<div class="grid__item">
+  <article class="archive__item" itemscope itemtype="https://schema.org/CreativeWork">
+    
+    <h2 class="archive__item-title no_toc" itemprop="headline">
+      
+        <a href="/computer%20science/data%20science/transformer_tutorial/" rel="permalink">Transformer Architecture Tutorial
+</a>
+      
+    </h2>
+    
+
+  <p class="page__meta">
+    
+
+    
+
+    
+      
+      
+
+      <span class="page__meta-readtime">
+        <i class="far fa-clock" aria-hidden="true"></i>
+        
+          less than 1 minute read
+        
+      </span>
+    
+  </p>
+
+
+    <p class="archive__item-excerpt" itemprop="description">Here is the list of good resources to understand transformer architecture.
+
+
+  
+    Distilled AI on Transformer
+  
+  
+    Harvard Annotated Transformer
+  
+  ...</p>
+  </article>
+</div>
+
+        
+          
+
+
+
+<div class="grid__item">
+  <article class="archive__item" itemscope itemtype="https://schema.org/CreativeWork">
+    
+    <h2 class="archive__item-title no_toc" itemprop="headline">
+      
+        <a href="/philosohpy/perserverance/" rel="permalink">Curiosity &amp; Perserverance
+</a>
+      
+    </h2>
+    
+
+  <p class="page__meta">
+    
+
+    
+
+    
+      
+      
+
+      <span class="page__meta-readtime">
+        <i class="far fa-clock" aria-hidden="true"></i>
+        
+          less than 1 minute read
+        
+      </span>
+    
+  </p>
+
+
+    <p class="archive__item-excerpt" itemprop="description">This is a good tweet.
+
+Riding my first #ebike today and it feels like the future has arrived.&mdash; Ben Cichy (@bencichy) November 22, 2019
+
+
+</p>
+  </article>
+</div>
+
         
           
 
@@ -554,91 +649,6 @@ Exploring the Star Wars API. This is an open and fre...</p>
 </div>
 
         
-          
-
-
-
-<div class="grid__item">
-  <article class="archive__item" itemscope itemtype="https://schema.org/CreativeWork">
-    
-    <h2 class="archive__item-title no_toc" itemprop="headline">
-      
-        <a href="/computer%20science/web_scraping_101/" rel="permalink">Web Scraping 101
-</a>
-      
-    </h2>
-    
-
-  <p class="page__meta">
-    
-
-    
-
-    
-      
-      
-
-      <span class="page__meta-readtime">
-        <i class="far fa-clock" aria-hidden="true"></i>
-        
-          less than 1 minute read
-        
-      </span>
-    
-  </p>
-
-
-    <p class="archive__item-excerpt" itemprop="description">This is a simple example of web scraping from wikipedia using python
-It requires two libraries: beautifulsoup4, requests
-
-import requests
-import sys
-import b...</p>
-  </article>
-</div>
-
-        
-          
-
-
-
-<div class="grid__item">
-  <article class="archive__item" itemscope itemtype="https://schema.org/CreativeWork">
-    
-    <h2 class="archive__item-title no_toc" itemprop="headline">
-      
-        <a href="/statistics/time_series_analysis_101/" rel="permalink">Time Series Analysis 101
-</a>
-      
-    </h2>
-    
-
-  <p class="page__meta">
-    
-
-    
-
-    
-      
-      
-
-      <span class="page__meta-readtime">
-        <i class="far fa-clock" aria-hidden="true"></i>
-        
-          2 minute read
-        
-      </span>
-    
-  </p>
-
-
-    <p class="archive__item-excerpt" itemprop="description">These are all classical models of forecasting based on time series
-data, with slight differences. This post focuses on the conceptual
-differences to gain an ...</p>
-  </article>
-</div>
-
-        
       </div>
     </div>
   
@@ -689,7 +699,7 @@ differences to gain an ...</p>
   </ul>
 </div>
  -->
-<div class="page__footer-copyright">&copy; <!-- 2023  -->Zhehan Shi<!-- . Powered by <a href="https://jekyllrb.com" rel="nofollow">Jekyll</a> &amp; --></div>
+<div class="page__footer-copyright">&copy; <!-- 2024  -->Zhehan Shi<!-- . Powered by <a href="https://jekyllrb.com" rel="nofollow">Jekyll</a> &amp; --></div>
 
       </footer>
     </div>
@@ -705,17 +715,6 @@ differences to gain an ...</p>
 <script src="/assets/js/lunr/lunr-en.js"></script>
 
 
-
-
-    <div id="fb-root"></div>
-<script>(function(d, s, id) {
-  var js, fjs = d.getElementsByTagName(s)[0];
-  if (d.getElementById(id)) return;
-  js = d.createElement(s); js.id = id;
-  js.src = "//connect.facebook.net/en_US/sdk.js#xfbml=1&version=v2.5";
-  fjs.parentNode.insertBefore(js, fjs);
-}(document, 'script', 'facebook-jssdk'));</script>
-  
 
 
 

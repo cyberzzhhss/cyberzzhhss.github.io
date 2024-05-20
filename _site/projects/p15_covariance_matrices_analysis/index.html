@@ -3,8 +3,8 @@
   <head>
     <meta charset="utf-8">
 
-<!-- begin _includes/seo.html --><title>Object Detection using Vicreg and RetinaNet - Zhehan Shi</title>
-<meta name="description" content="Using deep learning methods to pretrain and finetune on images for object detection">
+<!-- begin _includes/seo.html --><title>Covariance Matrix Estimators Analysis - Zhehan Shi</title>
+<meta name="description" content="Compare the performance of different covariance matrix estimators for out-of-sample volatility of the Markowitz portfolio">
 
 
   <meta name="author" content="Zhehan Shi">
@@ -16,34 +16,34 @@
 <meta property="og:type" content="article">
 <meta property="og:locale" content="en_US">
 <meta property="og:site_name" content="Zhehan Shi">
-<meta property="og:title" content="Object Detection using Vicreg and RetinaNet">
-<meta property="og:url" content="/projects/p10_object_detection/">
+<meta property="og:title" content="Covariance Matrix Estimators Analysis">
+<meta property="og:url" content="/projects/p15_covariance_matrices_analysis/">
 
 
-  <meta property="og:description" content="Using deep learning methods to pretrain and finetune on images for object detection">
-
-
-
-  <meta property="og:image" content="/assets/images/cv_dog.jpg">
+  <meta property="og:description" content="Compare the performance of different covariance matrix estimators for out-of-sample volatility of the Markowitz portfolio">
 
 
 
-
-
-  <meta property="article:published_time" content="2023-02-02T14:32:18-04:00">
-
-
-
-  <meta property="article:modified_time" content="2022-12-20T00:00:00-04:00">
+  <meta property="og:image" content="/assets/images/cov_matrices.png">
 
 
 
-  
+
+
+  <meta property="article:published_time" content="2024-05-19T21:41:29-04:00">
+
+
+
+  <meta property="article:modified_time" content="2022-04-22T00:00:00-04:00">
+
+
 
   
 
+  
 
-<link rel="canonical" href="/projects/p10_object_detection/">
+
+<link rel="canonical" href="/projects/p15_covariance_matrices_analysis/">
 
 
 
@@ -100,7 +100,10 @@
     <!-- start custom head snippets -->
 
 <!-- insert favicons. use https://realfavicongenerator.net/ -->
-
+<link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+<link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
+<link rel="manifest" href="/site.webmanifest">
 <!-- end custom head snippets -->
 
   </head>
@@ -168,15 +171,15 @@
 
 
   <article class="page" itemscope itemtype="https://schema.org/CreativeWork">
-    <meta itemprop="headline" content="Object Detection using Vicreg and RetinaNet">
-    <meta itemprop="description" content="Using deep learning methods to pretrain and finetune on images for object detection">
-    <meta itemprop="datePublished" content="2023-02-02T14:32:18-04:00">
-    <meta itemprop="dateModified" content="2022-12-20T00:00:00-04:00">
+    <meta itemprop="headline" content="Covariance Matrix Estimators Analysis">
+    <meta itemprop="description" content="Compare the performance of different covariance matrix estimators for out-of-sample volatility of the Markowitz portfolio">
+    <meta itemprop="datePublished" content="2024-05-19T21:41:29-04:00">
+    <meta itemprop="dateModified" content="2022-04-22T00:00:00-04:00">
 
     <div class="page__inner-wrap">
       
         <header>
-          <h1 id="page-title" class="page__title" itemprop="headline">Object Detection using Vicreg and RetinaNet
+          <h1 id="page-title" class="page__title" itemprop="headline">Covariance Matrix Estimators Analysis
 </h1>
           
 
@@ -186,16 +189,19 @@
 
       <section class="page__content" itemprop="text">
         
-        <p>Example 1</p>
+        <p>Comparison of the optimal shrinkage function that maps the empirical eigenvalue $\lambda_i$ onto ‘cleaned’ version, $\xi_i$</p>
 
-<p><img src="/assets/images/cv_sample
-.png" alt="image1" /></p>
+<p><img src="/assets/images/cov_matrices.png" alt="image1" /></p>
 
-<p>For this project we aim at carrying out an object detection task with variable sized input. We first researched on recent state-of-the-art methods, and then performed our downstream task using VICreg (Variance-Invariance-Covariance Regularization) (Bardes et al., 2021) to pretrain our ResNet backbone and RetinaNet (Lin et al., 2017) to finetune on labeled images. Our team achieved a mAP score of 0.125 on validation dataset and we identified several ways to improve upon our current approach as well as proposed novel methods that we should try out.</p>
+<p>Formula</p>
 
-<p><a href="https://github.com/cyberzzhhss/object_detect">My github project</a></p>
+<p><img src="/assets/images/rie_estimator.png" alt="image2" /></p>
 
-<p><a href="https://github.com/cyberzzhhss/object_detect/blob/master/report.pdf">My detailed report</a></p>
+<p>The question of building reliable estimators of covariance or of correlation matrices has a long history in finance, and more generally in multivariate statistical analysis. The performance of any mean-variance optimization scheme closely depends on the variance-covariance matrices. Therefore, it is of utmost importance to select a suitable metric against which candidate methods of covariance matrix estimators can be tested. In this section, I compare three commonly used covariance matrix estimators – the empirical covariance, the “eigenvalue clipping” covariance estimator, and the “optimal shrinkage” estimator by the out-of-sample volatility of the Markowitz portfolios built from each estimator.</p>
+
+<p><a href="https://github.com/cyberzzhhss/covariance_matrix_estimation">My github project</a></p>
+
+<p><a href="https://github.com/cyberzzhhss/covariance_matrix_estimation/blob/master/report.pdf">My detailed report</a></p>
 
         
       </section>
@@ -206,7 +212,7 @@
 
 
         
-  <p class="page__date"><strong><i class="fas fa-fw fa-calendar-alt" aria-hidden="true"></i> Updated:</strong> <time datetime="2022-12-20">December 20, 2022</time></p>
+  <p class="page__date"><strong><i class="fas fa-fw fa-calendar-alt" aria-hidden="true"></i> Updated:</strong> <time datetime="2022-04-22">April 22, 2022</time></p>
 
 
       </footer>
@@ -216,10 +222,11 @@
       
   <nav class="pagination">
     
-      <a href="#" class="pagination--pager disabled">Previous</a>
+      <a href="/projects/p14_almgren_market_impact_model/" class="pagination--pager" title="Almgren Chriss Market Impact Model
+">Previous</a>
     
     
-      <a href="/projects/p11_almgren_market_impact_model/" class="pagination--pager" title="Almgren Chriss Market Impact Model
+      <a href="/projects/p16_big_data_movielens/" class="pagination--pager" title="Big Data MovieLens
 ">Next</a>
     
   </nav>
@@ -277,7 +284,7 @@
   </ul>
 </div>
  -->
-<div class="page__footer-copyright">&copy; <!-- 2023  -->Zhehan Shi<!-- . Powered by <a href="https://jekyllrb.com" rel="nofollow">Jekyll</a> &amp; --></div>
+<div class="page__footer-copyright">&copy; <!-- 2024  -->Zhehan Shi<!-- . Powered by <a href="https://jekyllrb.com" rel="nofollow">Jekyll</a> &amp; --></div>
 
       </footer>
     </div>

@@ -12,6 +12,5 @@ This is an analysis of Boston restaurants’ cleanliness data using our designed
 
 [My github project](https://github.com/cyberzzhhss/BigDataCodeDrop)
 
-[My Medium writeup](https://cyberzzhhss.medium.com/analysis-of-boston-restaurants-cleanliness-from-yelp-and-boston-department-data-using-big-data-a51bc3fdd6c)
 
 [My detailed report](https://github.com/cyberzzhhss/BigDataCodeDrop/blob/main/Big_Data_Writeup.pdf)

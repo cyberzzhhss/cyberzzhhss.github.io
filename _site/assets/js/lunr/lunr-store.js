@@ -26,7 +26,7 @@ var store = [{
         "title": "Quantconnect Trending System",
         "excerpt":"Quantconnect is World’s Leading Algorithmic Trading Platform It provides a free algorithm backtesting tool and financial data so engineers can design algorithmic trading strategies. The following is a simple Trending System. It is for demo purpose only. The model uses Bollinger Bands(BB) and Relative Strength Index(RSI) Version 1 uses 4-hour...","categories": ["Finance"],
         "tags": ["Quant"],
-        "url": "/finance/Quant_strategy/",
+        "url": "/finance/quant_trending_system/",
         "teaser": null
       },{
         "title": "Web Scraping 101",
@@ -47,29 +47,65 @@ var store = [{
         "url": "/philosophy/Santa_truth/",
         "teaser": null
       },{
+        "title": "Curiosity & Perserverance",
+        "excerpt":"This is a good tweet.   Riding my first #ebike today and it feels like the future has arrived. &mdash; Ben Cichy (@bencichy) November 22, 2019   ","categories": ["Philosohpy"],
+        "tags": ["Quotes"],
+        "url": "/philosohpy/perserverance/",
+        "teaser": null
+      },{
+        "title": "Transformer Architecture Tutorial",
+        "excerpt":"Here is the list of good resources to understand transformer architecture.           Distilled AI on Transformer            Harvard Annotated Transformer            Fast.ai Transformer Tutorial            Dive into Deep Learning on Transformer            The Little Book of Deep Learning            Understanding Deep Learning       ","categories": ["Computer Science","Data Science"],
+        "tags": ["Artificial Intelligence","Machine Learning"],
+        "url": "/computer%20science/data%20science/transformer_tutorial/",
+        "teaser": null
+      },{
+        "title": "Question Answering (SQuAD)",
+        "excerpt":"This task is about extractive question answering, where questions are posed about a document and answers are identified as spans of text within the document itself. Conducted data pre-processing pipeline such as that included tokenization of questions and context, handling long contexts using stride, and mapping correct answer positions into...","categories": [],
+        "tags": [],
+        "url": "/projects/p10_question_answering/",
+        "teaser": "/assets/images/qa_bot.jpg"
+      },{
+        "title": "Handwritten Digits Recognition Web Application ",
+        "excerpt":"Web application link Example 1 This project is a combination of machine learning and web app development. A project to create a digit recognition web application using Streamlit Developed a pipeline to train and validate a model on the MNIST Handwritten dataset. Fine-tuned the model until having a model that...","categories": [],
+        "tags": [],
+        "url": "/projects/p11_app4digits/",
+        "teaser": "/assets/images/handwritten.png"
+      },{
         "title": "Object Detection using Vicreg and RetinaNet",
         "excerpt":"Example 1 For this project we aim at carrying out an object detection task with variable sized input. We first researched on recent state-of-the-art methods, and then performed our downstream task using VICreg (Variance-Invariance-Covariance Regularization) (Bardes et al., 2021) to pretrain our ResNet backbone and RetinaNet (Lin et al., 2017)...","categories": [],
         "tags": [],
-        "url": "/projects/p10_object_detection/",
+        "url": "/projects/p12_object_detection/",
         "teaser": "/assets/images/cv_dog.jpg"
+      },{
+        "title": "Photorealistic Style Transfer",
+        "excerpt":"Example 1 We focused on a variant of Whitening and Coloring Transforms (WCT) called PhotoWCT, which specializes in photorealistic style transfer. We experimented with how training on different model architectures and layers affects the preservation of the original content structure in the stylized image. We used the Structural Similarity Index...","categories": [],
+        "tags": [],
+        "url": "/projects/p13_photorealistic_neural_style_transfer/",
+        "teaser": "/assets/images/cv_nst2.png"
       },{
         "title": "Almgren Chriss Market Impact Model",
         "excerpt":"Liquidation Paths Price Impact Limit Order Book Realized Cost In this project, we worked with more than 100GB+ 3-month millisecond-level high-frequency NYSE trades and quotes tick data of more than 1000 tickers to calibrate the Almgren market impact model by applying nonlinear regression. We also formulated the Almgren-Chriss optimal execution...","categories": [],
         "tags": [],
-        "url": "/projects/p11_almgren_market_impact_model/",
+        "url": "/projects/p14_almgren_market_impact_model/",
         "teaser": "/assets/images/trade_activity.png"
       },{
         "title": "Covariance Matrix Estimators Analysis",
         "excerpt":"Comparison of the optimal shrinkage function that maps the empirical eigenvalue $\\lambda_i$ onto ‘cleaned’ version, $\\xi_i$ Formula The question of building reliable estimators of covariance or of correlation matrices has a long history in finance, and more generally in multivariate statistical analysis. The performance of any mean-variance optimization scheme closely...","categories": [],
         "tags": [],
-        "url": "/projects/p12_covariance_matrices_analysis/",
+        "url": "/projects/p15_covariance_matrices_analysis/",
         "teaser": "/assets/images/cov_matrices.png"
       },{
         "title": "Big Data MovieLens",
         "excerpt":"Data Split Alternating Least Square Recommendation systems has been all around us. When we watch movies, listen to music, or order takeouts, we are all exposing our personal information, which allows companies to analyze our preferences and recommend items alike for better promotion and user engagement. In this project we...","categories": [],
         "tags": [],
-        "url": "/projects/p13_big_data_movielens/",
+        "url": "/projects/p16_big_data_movielens/",
         "teaser": "/assets/images/als.jpg"
+      },{
+        "title": "An amendament to bertology",
+        "excerpt":"BERT architecture For this project we proposed a brand new method to study Bert models’ ability to utilize numeracy in several tasks, namely, classification and numeric-related question answering. RoBerta is a variant of the Bert model that was developed by Facebook AI. We compare roBerta model’s performance on the original...","categories": [],
+        "tags": [],
+        "url": "/projects/p17_bertology_amendament/",
+        "teaser": "/assets/images/bert.png"
       },{
         "title": "Hidden Markov Model and Part-of-Speech Tagging",
         "excerpt":"We know that to model any problem using a Hidden Markov Model we need a set of observations and a set of possible states. The states in an HMM are hidden. In the part of speech tagging problem, the observations are the words themselves in the given sequence. As for...","categories": [],
@@ -120,7 +156,7 @@ var store = [{
         "teaser": "/assets/images/gol.gif"
       },{
         "title": "Big Data Analytics",
-        "excerpt":"   This is an analysis of Boston restaurants’ cleanliness data using our designed metrics from the data provided by Yelp and Boston government. The data manipulations for tables were done using Hive, and regression analyses were done using Spark.   My github project   My Medium writeup   My detailed report  ","categories": [],
+        "excerpt":"   This is an analysis of Boston restaurants’ cleanliness data using our designed metrics from the data provided by Yelp and Boston government. The data manipulations for tables were done using Hive, and regression analyses were done using Spark.   My github project   My detailed report  ","categories": [],
         "tags": [],
         "url": "/projects/p9_big_data_analytics/",
         "teaser": "/assets/images/big_data_graph.jpg"

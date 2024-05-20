@@ -3,8 +3,8 @@
   <head>
     <meta charset="utf-8">
 
-<!-- begin _includes/seo.html --><title>Big Data MovieLens - Zhehan Shi</title>
-<meta name="description" content="A collaborative-filter based recommender system for movie recommendation">
+<!-- begin _includes/seo.html --><title>Question Answering (SQuAD) - Zhehan Shi</title>
+<meta name="description" content="A question answering bot that extract the answer from a paragraph.">
 
 
   <meta name="author" content="Zhehan Shi">
@@ -16,34 +16,34 @@
 <meta property="og:type" content="article">
 <meta property="og:locale" content="en_US">
 <meta property="og:site_name" content="Zhehan Shi">
-<meta property="og:title" content="Big Data MovieLens">
-<meta property="og:url" content="/projects/p13_big_data_movielens/">
+<meta property="og:title" content="Question Answering (SQuAD)">
+<meta property="og:url" content="/projects/p10_question_answering/">
 
 
-  <meta property="og:description" content="A collaborative-filter based recommender system for movie recommendation">
-
-
-
-  <meta property="og:image" content="/assets/images/als.jpg">
+  <meta property="og:description" content="A question answering bot that extract the answer from a paragraph.">
 
 
 
-
-
-  <meta property="article:published_time" content="2023-02-02T14:32:18-04:00">
-
-
-
-  <meta property="article:modified_time" content="2022-05-10T00:00:00-04:00">
+  <meta property="og:image" content="/assets/images/qa_bot.jpg">
 
 
 
-  
+
+
+  <meta property="article:published_time" content="2024-05-19T21:41:29-04:00">
+
+
+
+  <meta property="article:modified_time" content="2023-03-10T00:00:00-05:00">
+
+
 
   
 
+  
 
-<link rel="canonical" href="/projects/p13_big_data_movielens/">
+
+<link rel="canonical" href="/projects/p10_question_answering/">
 
 
 
@@ -100,7 +100,10 @@
     <!-- start custom head snippets -->
 
 <!-- insert favicons. use https://realfavicongenerator.net/ -->
-
+<link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+<link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
+<link rel="manifest" href="/site.webmanifest">
 <!-- end custom head snippets -->
 
   </head>
@@ -168,15 +171,15 @@
 
 
   <article class="page" itemscope itemtype="https://schema.org/CreativeWork">
-    <meta itemprop="headline" content="Big Data MovieLens">
-    <meta itemprop="description" content="A collaborative-filter based recommender system for movie recommendation">
-    <meta itemprop="datePublished" content="2023-02-02T14:32:18-04:00">
-    <meta itemprop="dateModified" content="2022-05-10T00:00:00-04:00">
+    <meta itemprop="headline" content="Question Answering (SQuAD)">
+    <meta itemprop="description" content="A question answering bot that extract the answer from a paragraph.">
+    <meta itemprop="datePublished" content="2024-05-19T21:41:29-04:00">
+    <meta itemprop="dateModified" content="2023-03-10T00:00:00-05:00">
 
     <div class="page__inner-wrap">
       
         <header>
-          <h1 id="page-title" class="page__title" itemprop="headline">Big Data MovieLens
+          <h1 id="page-title" class="page__title" itemprop="headline">Question Answering (SQuAD)
 </h1>
           
 
@@ -186,17 +189,26 @@
 
       <section class="page__content" itemprop="text">
         
-        <p>Data Split
-<img src="/assets/images/data_split.png" alt="image1" /></p>
+        <p><img src="/assets/images/qa_bot.jpg" alt="image1" /></p>
 
-<p>Alternating Least Square
-<img src="/assets/images/als.jpg" alt="image2" /></p>
+<p>This task is about extractive question answering, where questions are posed about a document and answers are identified as spans of text within the document itself.</p>
 
-<p>Recommendation systems has been all around us. When we watch movies, listen to music, or order takeouts, we are all exposing our personal information, which allows companies to analyze our preferences and recommend items alike for better promotion and user engagement. In this project we aim at building a recommendation system with the MovieLens dataset using various models, including popularity baseline model and latent factor model using Spark’s alternating least squares (ALS) method, and try to find the best hyper-parameters for best recommendation.</p>
+<ul>
+  <li>
+    <p>Conducted data pre-processing pipeline such as that included tokenization of questions and context, handling long contexts using stride, and mapping correct answer positions into tokenized sequences.</p>
+  </li>
+  <li>
+    <p>Finetuned a pre-trained Transformer model, BERT, for a question-answering task on SQuAD (Stanford Question Answering Dataset) dataset, consisting of over 107,000 question-answer pairs.</p>
+  </li>
+  <li>
+    <p>Evaluated BERT on the question-answering task from a given context with F1 score of 88.65% and an exact match score of 81.04%.</p>
+  </li>
+  <li>
+    <p>Published the model on Hugging Face platform for interactive access.</p>
+  </li>
+</ul>
 
-<p><a href="https://github.com/cyberzzhhss/big_data_MovieLens">My github project</a></p>
-
-<p><a href="https://github.com/cyberzzhhss/big_data_MovieLens/blob/master/detailedReport.pdf">My detailed report</a></p>
+<p><a href="https://huggingface.co/andrewshi/bert-finetuned-squad">Demo at Hugging Face</a></p>
 
         
       </section>
@@ -207,7 +219,7 @@
 
 
         
-  <p class="page__date"><strong><i class="fas fa-fw fa-calendar-alt" aria-hidden="true"></i> Updated:</strong> <time datetime="2022-05-10">May 10, 2022</time></p>
+  <p class="page__date"><strong><i class="fas fa-fw fa-calendar-alt" aria-hidden="true"></i> Updated:</strong> <time datetime="2023-03-10">March 10, 2023</time></p>
 
 
       </footer>
@@ -217,11 +229,10 @@
       
   <nav class="pagination">
     
-      <a href="/projects/p12_covariance_matrices_analysis/" class="pagination--pager" title="Covariance Matrix Estimators Analysis
-">Previous</a>
+      <a href="#" class="pagination--pager disabled">Previous</a>
     
     
-      <a href="/projects/p1_hmm_tagger/" class="pagination--pager" title="Hidden Markov Model and Part-of-Speech Tagging
+      <a href="/projects/p11_app4digits/" class="pagination--pager" title="Handwritten Digits Recognition Web Application
 ">Next</a>
     
   </nav>
@@ -279,7 +290,7 @@
   </ul>
 </div>
  -->
-<div class="page__footer-copyright">&copy; <!-- 2023  -->Zhehan Shi<!-- . Powered by <a href="https://jekyllrb.com" rel="nofollow">Jekyll</a> &amp; --></div>
+<div class="page__footer-copyright">&copy; <!-- 2024  -->Zhehan Shi<!-- . Powered by <a href="https://jekyllrb.com" rel="nofollow">Jekyll</a> &amp; --></div>
 
       </footer>
     </div>
