@@ -1,10 +1,8 @@
-I"Á<p><img src="/assets/images/big_data_graph.jpg" alt="image" /></p>
+I"<p><img src="/assets/images/big_data_graph.jpg" alt="image" /></p>
 
 <p>This is an analysis of Boston restaurantsâ€™ cleanliness data using our designed metrics from the data provided by Yelp and Boston government. The data manipulations for tables were done using Hive, and regression analyses were done using Spark.</p>
 
 <p><a href="https://github.com/cyberzzhhss/BigDataCodeDrop">My github project</a></p>
-
-<p><a href="https://cyberzzhhss.medium.com/analysis-of-boston-restaurants-cleanliness-from-yelp-and-boston-department-data-using-big-data-a51bc3fdd6c">My Medium writeup</a></p>
 
 <p><a href="https://github.com/cyberzzhhss/BigDataCodeDrop/blob/main/Big_Data_Writeup.pdf">My detailed report</a></p>
 :ET

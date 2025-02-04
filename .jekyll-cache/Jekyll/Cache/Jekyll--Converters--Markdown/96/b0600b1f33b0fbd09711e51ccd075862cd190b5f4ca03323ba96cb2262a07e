@@ -1,0 +1,21 @@
+I"<p><img src="/assets/images/qa_bot.jpg" alt="image1" /></p>
+
+<p>This task is about extractive question answering, where questions are posed about a document and answers are identified as spans of text within the document itself.</p>
+
+<ul>
+  <li>
+    <p>Conducted data pre-processing pipeline such as that included tokenization of questions and context, handling long contexts using stride, and mapping correct answer positions into tokenized sequences.</p>
+  </li>
+  <li>
+    <p>Finetuned a pre-trained Transformer model, BERT, for a question-answering task on SQuAD (Stanford Question Answering Dataset) dataset, consisting of over 107,000 question-answer pairs.</p>
+  </li>
+  <li>
+    <p>Evaluated BERT on the question-answering task from a given context with F1 score of 88.65% and an exact match score of 81.04%.</p>
+  </li>
+  <li>
+    <p>Published the model on Hugging Face platform for interactive access.</p>
+  </li>
+</ul>
+
+<p><a href="https://huggingface.co/andrewshi/bert-finetuned-squad">Demo at Hugging Face</a></p>
+:ET

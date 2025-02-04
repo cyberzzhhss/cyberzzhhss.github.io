@@ -1,0 +1,7 @@
+I"<p>BERT architecture
+<img src="/assets/images/bert.png" alt="image1" /></p>
+
+<p>For this project we proposed a brand new method to study Bert models’ ability to utilize numeracy in several tasks, namely, classification and numeric-related question answering. RoBerta is a variant of the Bert model that was developed by Facebook AI. We compare roBerta model’s performance on the original dataset and on a customized dataset where all numbers are masked with a special <NUM> token. From the results we obtained, we observed that the model performs better when finetuned on the masked dataset and tested on the original datasts. We conclude that masking numbers help Bert models understand and utilize numeracy.</NUM></p>
+
+<p><a href="/assets/files/bertology_amendament.pdf">Report</a></p>
+:ET
