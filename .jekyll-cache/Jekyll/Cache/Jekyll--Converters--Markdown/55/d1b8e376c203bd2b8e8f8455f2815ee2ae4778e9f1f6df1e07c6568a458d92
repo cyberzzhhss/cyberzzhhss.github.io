@@ -1,0 +1,68 @@
+I"<p>Biography</p>
+
+<p>I am Zhehan Shi, a data scientist.</p>
+
+<p>I have background in software engineering.</p>
+
+<p>I have MS in Data Science from NYU</p>
+
+<p>I have BA in Computer Science and BA in Math from NYU.</p>
+
+<p>I love data science, coding and financial markets.</p>
+
+<!-- [Resume](/assets/files/resume.pdf) -->
+
+<p>Skills:</p>
+
+<p>Python:
+<img src="https://img.shields.io/badge/-Polars-007ACC?style=flat&amp;logo=polars&amp;logoColor=white" alt="Polars" />
+<img src="https://img.shields.io/badge/-Python-3776AB?style=flat&amp;logo=python&amp;logoColor=white" alt="Python" />
+<img src="https://img.shields.io/badge/-Scipy-333333?style=flat&amp;logo=scipy" alt="Scipy" />
+<img src="https://img.shields.io/badge/-Numpy-333333?style=flat&amp;logo=numpy" alt="Numpy" />
+<img src="https://img.shields.io/badge/-Pandas-333333?style=flat&amp;logo=pandas" alt="Pandas" /></p>
+
+<p>Deep Learning:
+<img src="https://img.shields.io/badge/-PyTorch-EE4C2C?style=flat&amp;logo=pytorch&amp;logoColor=white" alt="PyTorch" />
+<img src="https://img.shields.io/badge/-Hugging%20Face-00000?style=flat&amp;logo=huggingface&amp;logoColor=yellow" alt="Hugging Face" />
+<img src="https://img.shields.io/badge/-TensorFlow-FF6F00?style=flat&amp;logo=tensorflow&amp;logoColor=white" alt="TensorFlow" /></p>
+
+<p>Computer Vision:
+<img src="https://img.shields.io/badge/-OpenCV-333333?style=flat&amp;logo=opencv" alt="OpenCV" /></p>
+
+<p>Natural Language Processing:
+<img src="https://img.shields.io/badge/-Spacy-333333?style=flat&amp;logo=spacy" alt="Spacy" /></p>
+
+<p>Big Data:
+<img src="https://img.shields.io/badge/-Spark-333333?style=flat&amp;logo=apache-spark" alt="Spark" />
+<img src="https://img.shields.io/badge/-Hadoop-333333?style=flat&amp;logo=apache-hadoop" alt="Hadoop" /></p>
+
+<p>R:
+<img src="https://img.shields.io/badge/-R-276DC3?style=flat&amp;logo=r&amp;logoColor=white" alt="R" />
+<img src="https://img.shields.io/badge/-RStudio-75AADB?style=flat&amp;logo=rstudio&amp;logoColor=white" alt="RStudio" /></p>
+
+<p>Database:
+<img src="https://img.shields.io/badge/-MongoDB-47A248?style=flat&amp;logo=mongodb&amp;logoColor=white" alt="MongoDB" />
+<img src="https://img.shields.io/badge/-MySQL-4479A1?style=flat&amp;logo=mysql&amp;logoColor=white" alt="MySQL" />
+<img src="https://img.shields.io/badge/-PostgreSQL-336791?style=flat&amp;logo=postgresql&amp;logoColor=white" alt="PostgreSQL" />
+<img src="https://img.shields.io/badge/SQLite-%2307405e.svg?logo=sqlite&amp;logoColor=white" alt="SQLite" /></p>
+
+<p>Cloud:
+<img src="https://img.shields.io/badge/-AWS-232F3E?style=flat&amp;logo=amazon-aws" alt="AWS" />
+<img src="https://img.shields.io/badge/-Azure-0089D6?style=flat&amp;logo=microsoft-azure" alt="Azure" /></p>
+
+<p>Containers:
+<img src="https://img.shields.io/badge/-Kubernetes-333333?style=flat&amp;logo=kubernetes" alt="Kubernetes" />
+<img src="https://img.shields.io/badge/-Docker-333333?style=flat&amp;logo=docker" alt="Docker" /></p>
+
+<p>IDE:
+<img src="https://img.shields.io/badge/-Visual%20Studio%20Code-007ACC?style=flat&amp;logo=visual-studio-code" alt="Visual Studio Code" />
+<img src="https://img.shields.io/badge/-Sublime%20Text-FF9800?style=flat&amp;logo=sublime-text&amp;logoColor=white" alt="Sublime Text" />
+<img src="https://img.shields.io/badge/-Atom-66595C?style=flat&amp;logo=atom" alt="Atom" /></p>
+
+<p>Other:
+<img src="https://img.shields.io/badge/-JavaScript-333333?style=flat&amp;logo=javascript" alt="JavaScript" />
+<img src="https://img.shields.io/badge/Java-ED8B00?style=flat&amp;logo=openjdk&amp;logoColor=white" alt="Java" /> 
+<img src="https://img.shields.io/badge/-C++-00599C?style=flat&amp;logo=c%2B%2B" alt="C++" /> 
+<img src="https://img.shields.io/badge/-OpenMP-333333?style=flat&amp;logo=openmp" alt="OpenMP" />
+<img src="https://img.shields.io/badge/-MPI-333333?style=flat&amp;logo=mpi" alt="MPI" /></p>
+:ET

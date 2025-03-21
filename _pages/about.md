@@ -23,6 +23,7 @@ I love data science, coding and financial markets.
 Skills:
 
 Python:
+![Polars](https://img.shields.io/badge/-Polars-007ACC?style=flat&logo=polars&logoColor=white)
 ![Python](https://img.shields.io/badge/-Python-3776AB?style=flat&logo=python&logoColor=white)
 ![Scipy](https://img.shields.io/badge/-Scipy-333333?style=flat&logo=scipy)
 ![Numpy](https://img.shields.io/badge/-Numpy-333333?style=flat&logo=numpy)
@@ -31,8 +32,9 @@ Python:
 
 Deep Learning:
 ![PyTorch](https://img.shields.io/badge/-PyTorch-EE4C2C?style=flat&logo=pytorch&logoColor=white)
+![Hugging Face](https://img.shields.io/badge/-Hugging%20Face-333333?style=flat&logo=huggingface&logoColor=yellow)
 ![TensorFlow](https://img.shields.io/badge/-TensorFlow-FF6F00?style=flat&logo=tensorflow&logoColor=white)
-[![Hugging Face Transformers](https://img.shields.io/badge/Transformers-Hugging%20Face-%23007ACC)](https://huggingface.co/transformers/)
+
 
 Computer Vision:
 ![OpenCV](https://img.shields.io/badge/-OpenCV-333333?style=flat&logo=opencv)
@@ -52,6 +54,9 @@ Database:
 ![MongoDB](https://img.shields.io/badge/-MongoDB-47A248?style=flat&logo=mongodb&logoColor=white)
 ![MySQL](https://img.shields.io/badge/-MySQL-4479A1?style=flat&logo=mysql&logoColor=white)
 ![PostgreSQL](https://img.shields.io/badge/-PostgreSQL-336791?style=flat&logo=postgresql&logoColor=white)
+![SQLite](https://img.shields.io/badge/SQLite-%2307405e.svg?logo=sqlite&logoColor=white)
+
+
 
 Cloud:
 ![AWS](https://img.shields.io/badge/-AWS-232F3E?style=flat&logo=amazon-aws)
