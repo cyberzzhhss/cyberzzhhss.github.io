@@ -8,6 +8,9 @@ tags:
   - Time Series Analysis
 ---
 
+[Repost from Kasim Te](https://www.kasimte.com/what-are-the-differences-among-autoregression-moving-average-arma-and-arima-for-time-series-forecasting)
+
+
 These are all classical models of forecasting based on time series
 data, with slight differences. This post focuses on the conceptual
 differences to gain an intuition and overview.

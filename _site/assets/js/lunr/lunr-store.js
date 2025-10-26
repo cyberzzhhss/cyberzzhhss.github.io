@@ -18,7 +18,7 @@ var store = [{
         "teaser": null
       },{
         "title": "Time Series Analysis 101",
-        "excerpt":"These are all classical models of forecasting based on time series data, with slight differences. This post focuses on the conceptual differences to gain an intuition and overview. Autoregressive model Autoregression refers to a regression model based on itself (“auto”). Basically, it takes p number of time steps before the...","categories": ["Statistics"],
+        "excerpt":"Repost from Kasim Te These are all classical models of forecasting based on time series data, with slight differences. This post focuses on the conceptual differences to gain an intuition and overview. Autoregressive model Autoregression refers to a regression model based on itself (“auto”). Basically, it takes p number of...","categories": ["Statistics"],
         "tags": ["Time Series Analysis"],
         "url": "/statistics/time_series_analysis_101/",
         "teaser": null
@@ -57,6 +57,12 @@ var store = [{
         "excerpt":"Here is the list of good resources to understand transformer architecture.           Distilled AI on Transformer            Harvard Annotated Transformer            Fast.ai Transformer Tutorial            Dive into Deep Learning on Transformer            The Little Book of Deep Learning            Understanding Deep Learning       ","categories": ["Computer Science","Data Science"],
         "tags": ["Artificial Intelligence","Machine Learning"],
         "url": "/computer%20science/data%20science/transformer_tutorial/",
+        "teaser": null
+      },{
+        "title": "Energy-Based Models & Structured Prediction",
+        "excerpt":"Energy-Based Models (EBMs) assign a scalar energy to configurations of variables and perform inference by minimizing energy. Intro We tackle structured prediction for text recognition: transcribing a word image into characters of variable length. We (1) build a synthetic dataset, (2) pretrain a sliding-window CNN on single characters, (3) align...","categories": ["Computer Science"],
+        "tags": ["Energy-Based Models","Dynamic Programming","Viterbi","PyTorch"],
+        "url": "/computer%20science/energy_based_model_character_recognition/",
         "teaser": null
       },{
         "title": "Question Answering (SQuAD)",

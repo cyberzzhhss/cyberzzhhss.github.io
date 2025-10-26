@@ -1,0 +1,1083 @@
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    <meta charset="utf-8">
+
+<!-- begin _includes/seo.html --><title>Energy-Based Models &amp; Structured Prediction - Zhehan Shi</title>
+<meta name="description" content="Energy-Based Models (EBMs) assign a scalar energy to configurations of variables and perform inference by minimizing energy.    Intro  We tackle structured prediction for text recognition: transcribing a word image into characters of variable length.  We (1) build a synthetic dataset, (2) pretrain a sliding-window CNN on single characters, (3) align windowed predictions to labels with a Viterbi dynamic program, (4) train an EBM using cross-entropy along the best path, and (5) compare to a Connectionist Temporal Classification CTC (Graph Transducer Networks GTN) approach.  Complete Notebook  EBMs + Structured Prediction Jupyter Notebook HTML  Kaggle Source from sumanyumuku98  This used to be a homework in NYU Deep Learning class taught by Alfredo Canziani and Yann LeCun, and someone reshared it in Kaggle. I had the luck to take their class, and I am grateful someone had kept a better record of this than I did.  Highlights    Sliding-window CNN outputs K×27 energies (26 letters + blank).   Viterbi finds the minimum-energy alignment between windows and targets.   EBM training: sum of cross-entropies along the Viterbi path.   GTN/CTC alternative: graph-based, batched training without manual DP.   Works on synthetic and “handwritten-style” fonts; simple collapse decoding recovers text.   Example 1 — Dataset, Model, Single-Character Pretraining  # --- Imports &amp; setup --- from PIL import ImageDraw, ImageFont, Image import string, random, time, copy import torch from torch import nn from torch.optim import Adam import torch.optim as optim from collections import Counter from tqdm.notebook import tqdm import torchvision from torchvision import transforms from matplotlib import pyplot as plt  torch.manual_seed(0)  # --- Constants --- ALPHABET_SIZE = 27  # 26 letters + 1 blank/divider BETWEEN = 26  # --- Basic transforms --- simple_transforms = transforms.Compose([transforms.ToTensor()])  # --- Synthetic dataset of word images --- class SimpleWordsDataset(torch.utils.data.IterableDataset):     def __init__(self, max_length, len=100, jitter=False, noise=False):         self.max_length = max_length         self.transforms = transforms.ToTensor()         self.len = len         self.jitter = jitter         self.noise = noise        def __len__(self):         return self.len      def __iter__(self):         for _ in range(self.len):             text = &#39;&#39;.join([random.choice(string.ascii_lowercase) for _ in range(self.max_length)])             img = self.draw_text(text, jitter=self.jitter, noise=self.noise)             yield img, text        def draw_text(self, text, length=None, jitter=False, noise=False):         if length is None:             length = 18 * len(text)         img = Image.new(&#39;L&#39;, (length, 32))         fnt = ImageFont.truetype(&quot;fonts/Anonymous.ttf&quot;, 20)          d = ImageDraw.Draw(img)         pos = (random.randint(0, 7), 5) if jitter else (0, 5)         d.text(pos, text, fill=1, font=fnt)          img = self.transforms(img)         img[img &gt; 0] = 1          if noise:             img += torch.bernoulli(torch.ones_like(img) * 0.1)             img = img.clamp(0, 1)         return img[0]  # --- Sliding window CNN (character-sized kernel) --- class SimpleNet(torch.nn.Module):     def __init__(self):         super().__init__()         self.conv = nn.Conv2d(1, 512, kernel_size=(32, 18), stride=(1, 4), padding=&quot;valid&quot;)         self.linear = nn.Linear(512, ALPHABET_SIZE)     def forward(self, x):         # Input: (B, 1, 32, W) -&gt; Conv over width -&gt; squeeze height -&gt; (B,K,512) -&gt; Linear -&gt; (B,K,27)         return self.linear(self.conv(x).squeeze(dim=-2).permute(0, 2, 1))  # --- Helpers for plotting (optional) --- def plot_energies(ce):     fig = plt.figure(dpi=200)     ax = plt.axes()     im = ax.imshow(ce.cpu().T)     ax.set_xlabel(&#39;window locations →&#39;); ax.xaxis.set_label_position(&#39;top&#39;)     ax.set_ylabel(&#39;← classes&#39;); ax.set_xticks([]); ax.set_yticks([])     cax = fig.add_axes([ax.get_position().x1+0.01,ax.get_position().y0,0.02,ax.get_position().height])     plt.colorbar(im, cax=cax)  # --- One-character pretraining --- def cross_entropy(energies, *args, **kwargs):     # Energies -&gt; minimize =&gt; use log-soft-argmin (negate energies)     return nn.functional.cross_entropy(-1 * energies, *args, **kwargs)  def simple_collate_fn(samples):     images, annotations = zip(*samples)     images = list(images)     annotations = list(annotations)     annotations = list(map(lambda c: torch.tensor(ord(c) - ord(&#39;a&#39;)), annotations))     m_width = max(18, max([i.shape[1] for i in images]))     for i in range(len(images)):         images[i] = torch.nn.functional.pad(images[i], (0, m_width - images[i].shape[-1]))     if len(images) == 1:         return images[0].unsqueeze(0), torch.stack(annotations)     else:         return torch.stack(images), torch.stack(annotations)  def train_model(model, epochs, dataloader, criterion, optimizer):     model.train()     pbar = tqdm(range(epochs))     for _ in pbar:         train_loss = 0.0         for images, target in dataloader:             images = images.unsqueeze(1)  # (B,1,32,W)             optimizer.zero_grad()             out = model(images)          # (B,K,27), for 1 char K==1             loss = criterion(out.squeeze(), target=target)             loss.backward(); optimizer.step()             train_loss += loss.item()         train_loss /= len(dataloader)         pbar.set_postfix({&#39;Train Loss&#39;: train_loss})  # Usage: # sds_1 = SimpleWordsDataset(1, len=1000, jitter=True, noise=False) # loader_1 = torch.utils.data.DataLoader(sds_1, batch_size=16, num_workers=0, collate_fn=simple_collate_fn) # model = SimpleNet() # optimizer = Adam(model.parameters(), lr=1e-2) # train_model(model, 15, loader_1, cross_entropy, optimizer)  # Accuracy check on single-char: def get_accuracy(model, dataset):     cnt = 0     for img, label in dataset:         energies = model(img.unsqueeze(0).unsqueeze(0))[0, 0]  # (27,)         pred = energies.argmin(dim=-1)         cnt += int(pred == (ord(label[0]) - ord(&#39;a&#39;)))     return cnt / len(dataset)  # tds = SimpleWordsDataset(1, len=100) # assert get_accuracy(model, tds) == 1.0   Highlights    One-character dataset &amp; padding collate.   SimpleNet ensures (32×18) receptive field → per-window energies over 27 classes.   Example 2 — Alignment Utilities &amp; Viterbi (Dynamic Programming)  # --- Path/CE matrices (vectorized) --- def build_path_matrix(energies, targets):     &quot;&quot;&quot;     energies: (B, L, 27)     targets:  (B, T) integer indices in [0..26]     returns:  (B, L, T) where out[b,i,k] = energies[b,i,targets[b,k]]     &quot;&quot;&quot;     L = energies.shape[1]     targets_exp = targets.unsqueeze(1).repeat(1, L, 1)      # (B,L,T)     return torch.gather(energies, 2, targets_exp)           # (B,L,T)  def build_ce_matrix(energies, targets):     &quot;&quot;&quot;     ce[b,i,k] = CE(energies[b,i], targets[b,k])     returns: (B, L, T)     &quot;&quot;&quot;     L, T = energies.shape[1], targets.shape[-1]     energies4 = energies.permute(0, 2, 1).unsqueeze(-1).repeat(1,1,1,T)  # (B,27,L,T)     targets4  = targets.unsqueeze(1).repeat(1, L, 1)                      # (B,L,T)     return cross_entropy(energies4, targets4, reduction=&#39;none&#39;)  # --- Label transform: interleave blanks: &#39;cat&#39; -&gt; c _ a _ t _ --- def transform_word(s):     encoded = []     for c in s:         encoded.append(ord(c) - ord(&#39;a&#39;))         encoded.append(BETWEEN)     return torch.tensor(encoded)  # len = 2*len(s)  # --- Path validity &amp; energy --- def checkValidMapping(path, T):     for i in range(1, len(path)):         if path[i] &lt; path[i-1]:             return False     return True  def path_energy(pm, path):     &quot;&quot;&quot;     pm: (L,T) energies for (window, target-pos)     path: list of length L with target indices     &quot;&quot;&quot;     T = pm.shape[1]     if not checkValidMapping(path, T):         return torch.tensor(2**30)     energy = 0.0     for i, c in enumerate(path):         energy += pm[i, c]     return energy  # --- Viterbi (DP) to find best path --- def find_path(pm):     &quot;&quot;&quot;     pm: (L,T) energy matrix     returns: (free_energy, path_points, dp)       - free_energy: sum on best path       - path_points: list of (i,j) along best path       - dp: DP table (L,T)     &quot;&quot;&quot;     L, T = pm.shape     dp = torch.zeros((L, T), device=pm.device)     parent = [[None]*T for _ in range(L)]     dp[0,0] = pm[0,0]; parent[0][0] = (0,0)     for j in range(1, T):         dp[0,j] = 2**30         parent[0][j] = (0, j)     for i in range(1, L):         dp[i,0] = dp[i-1,0] + pm[i,0]         parent[i][0] = (i-1,0)     for i in range(1, L):         for j in range(1, T):             a, b = dp[i-1,j], dp[i-1,j-1]             if a &lt; b:                 dp[i,j] = a + pm[i,j]; parent[i][j] = (i-1, j)             else:                 dp[i,j] = b + pm[i,j]; parent[i][j] = (i-1, j-1)     # Backtrack: pick best j in last row     j = torch.argmin(dp[L-1]).item()     path = []     for i in range(L-1, -1, -1):         path.append(j)         _, j = parent[i][j]     path.reverse()     points = list(zip(range(L), path))     return (path_energy(pm, path), points, dp)  # --- Example usage (alphabet image) --- # alphabet = SimpleWordsDataset(1).draw_text(string.ascii_lowercase, 340) # energies = model(alphabet.view(1,1,*alphabet.shape))   # (1,L,27) # targets  = transform_word(string.ascii_lowercase).unsqueeze(0)  # (1,T) # pm = build_path_matrix(energies, targets)              # (1,L,T) # free_energy, path, dp = find_path(pm[0])   Highlights    build_path_matrix gathers per-window energy for each label position.   find_path implements the minimum-energy monotone alignment.   Diagonal-ish best paths appear as the model improves.   Example 3 — Train EBM with Viterbi Alignments  def collate_fn(samples):     &quot;&quot;&quot;Collate for multi-char: pad images to same width; interleave blanks in labels and pad with BETWEEN.&quot;&quot;&quot;     images, annotations = zip(*samples)     images, annotations = list(images), list(annotations)     annotations = list(map(transform_word, annotations))     m_width = max(18, max([i.shape[1] for i in images]))     m_len   = max(3, max([s.shape[0] for s in annotations]))     for i in range(len(images)):         images[i] = torch.nn.functional.pad(images[i], (0, m_width - images[i].shape[-1]))         annotations[i] = torch.nn.functional.pad(annotations[i], (0, m_len - annotations[i].shape[0]), value=BETWEEN)     if len(images) == 1:         return images[0].unsqueeze(0), torch.stack(annotations)     else:         return torch.stack(images), torch.stack(annotations)  def train_ebm_model(model, num_epochs, train_loader, criterion, optimizer):     &quot;&quot;&quot;Train EBM using best-path (Viterbi) alignments.&quot;&quot;&quot;     pbar = tqdm(range(num_epochs))     model.train()     for _ in pbar:         total = 0.0         for samples, targets in train_loader:             optimizer.zero_grad()             energies = model(samples.unsqueeze(1))           # (B,L,27)             pm = build_path_matrix(energies, targets)        # (B,L,T)             batch_losses = []             for b in range(pm.shape[0]):                 free_energy, best_path, _ = find_path(pm[b])  # best_path: list[(i,j)]                 j_indices = [ij[1] for ij in best_path]       # target indices along path                 # Sum CE along best path:                 batch_losses.append(criterion(energies[b], targets[b, j_indices]))             loss = sum(batch_losses)             total += loss.item()             loss.backward(); optimizer.step()         pbar.set_postfix({&#39;train_loss&#39;: total / len(train_loader.dataset)})  # Usage: # sds2 = SimpleWordsDataset(2, 2500) # loader2 = torch.utils.data.DataLoader(sds2, batch_size=32, num_workers=0, collate_fn=collate_fn) # ebm_model = copy.deepcopy(model) # optimizer = Adam(ebm_model.parameters(), lr=1e-3) # train_ebm_model(ebm_model, 15, loader2, cross_entropy, optimizer)   Highlights    Loss is the sum of cross-entropies along the Viterbi path.   Works but slow due to per-sample DP; suitable for teaching/demo.   Example 4 — GTN / CTC: Graph-Based Training &amp; Viterbi  # --- GTN-based CTC loss and Viterbi (adapted) --- import torch.nn.functional as F import gtn  class CTCLossFunction(torch.autograd.Function):     @staticmethod     def create_ctc_graph(target, blank_idx):         g_criterion = gtn.Graph(False)         L = len(target); S = 2 * L + 1         for l in range(S):             idx = (l - 1) // 2             g_criterion.add_node(l == 0, l == S - 1 or l == S - 2)             label = target[idx] if l % 2 else blank_idx             g_criterion.add_arc(l, l, label)             if l &gt; 0:                 g_criterion.add_arc(l - 1, l, label)             if l % 2 and l &gt; 1 and label != target[idx - 1]:                 g_criterion.add_arc(l - 2, l, label)         g_criterion.arc_sort(False)         return g_criterion      @staticmethod     def forward(ctx, log_probs, targets, blank_idx=0, reduction=&quot;none&quot;):         B, T, C = log_probs.shape         losses, scales, emissions_graphs = [None]*B, [None]*B, [None]*B          def process(b):             g_emissions = gtn.linear_graph(T, C, log_probs.requires_grad)             cpu_data = log_probs[b].cpu().contiguous()             g_emissions.set_weights(cpu_data.data_ptr())             g_criterion = CTCLossFunction.create_ctc_graph(targets[b], blank_idx)             g_loss = gtn.negate(gtn.forward_score(gtn.intersect(g_emissions, g_criterion)))             scale = 1.0             if reduction == &quot;mean&quot;:                 L = len(targets[b]); scale = 1.0 / L if L &gt; 0 else scale             elif reduction != &quot;none&quot;:                 raise ValueError(&quot;invalid reduction&quot;)             losses[b], scales[b], emissions_graphs[b] = g_loss, scale, g_emissions          gtn.parallel_for(process, range(B))         ctx.auxiliary_data = (losses, scales, emissions_graphs, log_probs.shape)         loss = torch.tensor([losses[b].item() * scales[b] for b in range(B)])         return torch.mean(loss.cuda() if log_probs.is_cuda else loss)      @staticmethod     def backward(ctx, grad_output):         losses, scales, emissions_graphs, in_shape = ctx.auxiliary_data         B, T, C = in_shape         input_grad = torch.empty((B, T, C))         def process(b):             gtn.backward(losses[b], False)             emissions = emissions_graphs[b]             grad = emissions.grad().weights_to_numpy()             input_grad[b] = torch.from_numpy(grad).view(1, T, C) * scales[b]         gtn.parallel_for(process, range(B))         if grad_output.is_cuda:             input_grad = input_grad.cuda()         input_grad *= grad_output / B         return (input_grad, None, None, None)  CTCLoss = CTCLossFunction.apply  def viterbi(energies, targets, blank_idx=0):     outputs = -1 * energies     B, T, C = outputs.shape     paths, scores, emissions_graphs = [None]*B, [None]*B, [None]*B     def process(b):         L = len(targets[b])         g_emissions = gtn.linear_graph(T, C, outputs.requires_grad)         cpu_data = outputs[b].cpu().contiguous()         g_emissions.set_weights(cpu_data.data_ptr())         g_criterion = CTCLossFunction.create_ctc_graph(targets[b], blank_idx)         g_inter = gtn.intersect(g_emissions, g_criterion)         g_score = gtn.viterbi_score(g_inter)         g_path = gtn.viterbi_path(g_inter)         l = 0; mapped = []         for p in g_path.labels_to_list():             if 2*p &lt; L:                 l = p; mapped.append(2*p)             else:                 mapped.append(2*l + 1)         paths[b] = mapped         scores[b] = -1 * g_score.item()         emissions_graphs[b] = g_emissions     gtn.parallel_for(process, range(B))     return (scores, paths)  def train_gtn_model(model, num_epochs, train_loader, criterion, optimizer):     pbar = tqdm(range(num_epochs))     model.train()     device = torch.device(&quot;cuda:0&quot;) if torch.cuda.is_available() else torch.device(&quot;cpu&quot;)     model.to(device)     for _ in pbar:         total = 0.0         for samples, targets in train_loader:             samples, targets = samples.to(device), targets.to(device)             optimizer.zero_grad()             outputs = model(samples.unsqueeze(1))          # (B,L,27)             log_probs = F.log_softmax(-1.0 * outputs, dim=-1)             loss = criterion(log_probs, targets)           # CTC             total += loss.item()             loss.backward(); optimizer.step()         pbar.set_postfix({&#39;train_loss&#39;: total / len(train_loader.dataset)})  # Usage: # sds3 = SimpleWordsDataset(3, 2500) # loader3 = torch.utils.data.DataLoader(sds3, batch_size=32, num_workers=0, collate_fn=collate_fn) # gtn_model = copy.deepcopy(model) # optimizer = Adam(gtn_model.parameters(), lr=1e-3) # train_gtn_model(gtn_model, 15, loader3, CTCLoss, optimizer)   Highlights    CTC = alignment graph A_y ∘ emissions graph E.   Training uses log-softmax and CTCLoss.   viterbi via GTN yields best path and score without manual DP loops.   Example 5 — From Scratch (No Pretraining) &amp; Handwritten-Style Font  # --- No-pretraining: GTN/CTC directly on multi-character data --- # sds_np = SimpleWordsDataset(3, 2500) # loader_np = torch.utils.data.DataLoader(sds_np, batch_size=32, num_workers=0, collate_fn=collate_fn) # gtn_no_pretrained = SimpleNet() # optimizer = Adam(gtn_no_pretrained.parameters(), lr=1e-3) # train_gtn_model(gtn_no_pretrained, 20, loader_np, CTCLoss, optimizer)  # --- Custom &quot;handwritten-style&quot; font dataset --- class CustomWordsDataset(torch.utils.data.IterableDataset):     def __init__(self, max_length, len=100, jitter=False, noise=False, custom_fonts_path=None):         self.max_length = max_length         self.transforms = transforms.ToTensor()         self.len = len         self.jitter = jitter         self.noise = noise         self.custom_fonts_path = custom_fonts_path        def __len__(self):         return self.len      def __iter__(self):         for _ in range(self.len):             text = &#39;&#39;.join([random.choice(string.ascii_lowercase) for _ in range(self.max_length)])             img = self.draw_text(text, jitter=self.jitter, noise=self.noise)             yield img, text        def draw_text(self, text, length=None, jitter=False, noise=False):         if length is None:             length = 18 * len(text)         img = Image.new(&#39;L&#39;, (length, 32))         fnt = ImageFont.truetype(&quot;fonts/Anonymous.ttf&quot; if not self.custom_fonts_path else self.custom_fonts_path, 20)         d = ImageDraw.Draw(img)         pos = (random.randint(0, 7), 5) if jitter else (0, 5)         d.text(pos, text, fill=1, font=fnt)         img = self.transforms(img)         img[img &gt; 0] = 1          if noise:             img += torch.bernoulli(torch.ones_like(img) * 0.1)             img = img.clamp(0, 1)         return img[0]  # Usage (after downloading a font to ./fonts/3dumb/2Dumb.ttf): # sds_hw = CustomWordsDataset(3, 2500, custom_fonts_path=&quot;./fonts/3dumb/2Dumb.ttf&quot;) # loader_hw = torch.utils.data.DataLoader(sds_hw, batch_size=32, num_workers=0, collate_fn=collate_fn) # gtn_hw = SimpleNet() # optimizer = Adam(gtn_hw.parameters(), lr=1e-3) # train_gtn_model(gtn_hw, 20, loader_hw, CTCLoss, optimizer)   Highlights    Training from scratch with GTN/CTC works, though convergence can be slower.   Domain shift (e.g., handwritten font) lowers scores; still decodes plausible strings.   Example 6 — Decoding (Collapse Repeats, Drop Blanks)  def indices_to_str(indices):     &quot;&quot;&quot;     Collapse heuristic:       1) Map 0..25 -&gt; letters; 26 -&gt; &#39;_&#39;       2) Split by &#39;_&#39; segments; take the most frequent char per segment       3) Remove &#39;_&#39; between segments -&gt; final string with &#39;_&#39; as segment delimiter (optional)     &quot;&quot;&quot;     out = []     for ind in indices:         out.append(&#39;_&#39; if ind == BETWEEN else chr(ind + ord(&#39;a&#39;)))     segments = &quot;&quot;.join(out).split(&#39;_&#39;)     collapsed = [Counter(seg).most_common(1)[0][0] for seg in segments if seg]     return &quot;_&quot;.join(collapsed)  # or &quot;&quot;.join(collapsed) to remove underscores entirely  # Example: # img = SimpleWordsDataset(5, len=1).draw_text(&#39;hello&#39;) # energies = ebm_model(img.unsqueeze(0).unsqueeze(0)) # min_indices = energies[0].argmin(dim=-1) # print(indices_to_str(min_indices))">
+
+
+  <meta name="author" content="Zhehan Shi">
+  
+  <meta property="article:author" content="Zhehan Shi">
+  
+
+
+<meta property="og:type" content="article">
+<meta property="og:locale" content="en_US">
+<meta property="og:site_name" content="Zhehan Shi">
+<meta property="og:title" content="Energy-Based Models &amp; Structured Prediction">
+<meta property="og:url" content="/computer%20science/energy_based_model_character_recognition/">
+
+
+  <meta property="og:description" content="Energy-Based Models (EBMs) assign a scalar energy to configurations of variables and perform inference by minimizing energy.    Intro  We tackle structured prediction for text recognition: transcribing a word image into characters of variable length.  We (1) build a synthetic dataset, (2) pretrain a sliding-window CNN on single characters, (3) align windowed predictions to labels with a Viterbi dynamic program, (4) train an EBM using cross-entropy along the best path, and (5) compare to a Connectionist Temporal Classification CTC (Graph Transducer Networks GTN) approach.  Complete Notebook  EBMs + Structured Prediction Jupyter Notebook HTML  Kaggle Source from sumanyumuku98  This used to be a homework in NYU Deep Learning class taught by Alfredo Canziani and Yann LeCun, and someone reshared it in Kaggle. I had the luck to take their class, and I am grateful someone had kept a better record of this than I did.  Highlights    Sliding-window CNN outputs K×27 energies (26 letters + blank).   Viterbi finds the minimum-energy alignment between windows and targets.   EBM training: sum of cross-entropies along the Viterbi path.   GTN/CTC alternative: graph-based, batched training without manual DP.   Works on synthetic and “handwritten-style” fonts; simple collapse decoding recovers text.   Example 1 — Dataset, Model, Single-Character Pretraining  # --- Imports &amp; setup --- from PIL import ImageDraw, ImageFont, Image import string, random, time, copy import torch from torch import nn from torch.optim import Adam import torch.optim as optim from collections import Counter from tqdm.notebook import tqdm import torchvision from torchvision import transforms from matplotlib import pyplot as plt  torch.manual_seed(0)  # --- Constants --- ALPHABET_SIZE = 27  # 26 letters + 1 blank/divider BETWEEN = 26  # --- Basic transforms --- simple_transforms = transforms.Compose([transforms.ToTensor()])  # --- Synthetic dataset of word images --- class SimpleWordsDataset(torch.utils.data.IterableDataset):     def __init__(self, max_length, len=100, jitter=False, noise=False):         self.max_length = max_length         self.transforms = transforms.ToTensor()         self.len = len         self.jitter = jitter         self.noise = noise        def __len__(self):         return self.len      def __iter__(self):         for _ in range(self.len):             text = &#39;&#39;.join([random.choice(string.ascii_lowercase) for _ in range(self.max_length)])             img = self.draw_text(text, jitter=self.jitter, noise=self.noise)             yield img, text        def draw_text(self, text, length=None, jitter=False, noise=False):         if length is None:             length = 18 * len(text)         img = Image.new(&#39;L&#39;, (length, 32))         fnt = ImageFont.truetype(&quot;fonts/Anonymous.ttf&quot;, 20)          d = ImageDraw.Draw(img)         pos = (random.randint(0, 7), 5) if jitter else (0, 5)         d.text(pos, text, fill=1, font=fnt)          img = self.transforms(img)         img[img &gt; 0] = 1          if noise:             img += torch.bernoulli(torch.ones_like(img) * 0.1)             img = img.clamp(0, 1)         return img[0]  # --- Sliding window CNN (character-sized kernel) --- class SimpleNet(torch.nn.Module):     def __init__(self):         super().__init__()         self.conv = nn.Conv2d(1, 512, kernel_size=(32, 18), stride=(1, 4), padding=&quot;valid&quot;)         self.linear = nn.Linear(512, ALPHABET_SIZE)     def forward(self, x):         # Input: (B, 1, 32, W) -&gt; Conv over width -&gt; squeeze height -&gt; (B,K,512) -&gt; Linear -&gt; (B,K,27)         return self.linear(self.conv(x).squeeze(dim=-2).permute(0, 2, 1))  # --- Helpers for plotting (optional) --- def plot_energies(ce):     fig = plt.figure(dpi=200)     ax = plt.axes()     im = ax.imshow(ce.cpu().T)     ax.set_xlabel(&#39;window locations →&#39;); ax.xaxis.set_label_position(&#39;top&#39;)     ax.set_ylabel(&#39;← classes&#39;); ax.set_xticks([]); ax.set_yticks([])     cax = fig.add_axes([ax.get_position().x1+0.01,ax.get_position().y0,0.02,ax.get_position().height])     plt.colorbar(im, cax=cax)  # --- One-character pretraining --- def cross_entropy(energies, *args, **kwargs):     # Energies -&gt; minimize =&gt; use log-soft-argmin (negate energies)     return nn.functional.cross_entropy(-1 * energies, *args, **kwargs)  def simple_collate_fn(samples):     images, annotations = zip(*samples)     images = list(images)     annotations = list(annotations)     annotations = list(map(lambda c: torch.tensor(ord(c) - ord(&#39;a&#39;)), annotations))     m_width = max(18, max([i.shape[1] for i in images]))     for i in range(len(images)):         images[i] = torch.nn.functional.pad(images[i], (0, m_width - images[i].shape[-1]))     if len(images) == 1:         return images[0].unsqueeze(0), torch.stack(annotations)     else:         return torch.stack(images), torch.stack(annotations)  def train_model(model, epochs, dataloader, criterion, optimizer):     model.train()     pbar = tqdm(range(epochs))     for _ in pbar:         train_loss = 0.0         for images, target in dataloader:             images = images.unsqueeze(1)  # (B,1,32,W)             optimizer.zero_grad()             out = model(images)          # (B,K,27), for 1 char K==1             loss = criterion(out.squeeze(), target=target)             loss.backward(); optimizer.step()             train_loss += loss.item()         train_loss /= len(dataloader)         pbar.set_postfix({&#39;Train Loss&#39;: train_loss})  # Usage: # sds_1 = SimpleWordsDataset(1, len=1000, jitter=True, noise=False) # loader_1 = torch.utils.data.DataLoader(sds_1, batch_size=16, num_workers=0, collate_fn=simple_collate_fn) # model = SimpleNet() # optimizer = Adam(model.parameters(), lr=1e-2) # train_model(model, 15, loader_1, cross_entropy, optimizer)  # Accuracy check on single-char: def get_accuracy(model, dataset):     cnt = 0     for img, label in dataset:         energies = model(img.unsqueeze(0).unsqueeze(0))[0, 0]  # (27,)         pred = energies.argmin(dim=-1)         cnt += int(pred == (ord(label[0]) - ord(&#39;a&#39;)))     return cnt / len(dataset)  # tds = SimpleWordsDataset(1, len=100) # assert get_accuracy(model, tds) == 1.0   Highlights    One-character dataset &amp; padding collate.   SimpleNet ensures (32×18) receptive field → per-window energies over 27 classes.   Example 2 — Alignment Utilities &amp; Viterbi (Dynamic Programming)  # --- Path/CE matrices (vectorized) --- def build_path_matrix(energies, targets):     &quot;&quot;&quot;     energies: (B, L, 27)     targets:  (B, T) integer indices in [0..26]     returns:  (B, L, T) where out[b,i,k] = energies[b,i,targets[b,k]]     &quot;&quot;&quot;     L = energies.shape[1]     targets_exp = targets.unsqueeze(1).repeat(1, L, 1)      # (B,L,T)     return torch.gather(energies, 2, targets_exp)           # (B,L,T)  def build_ce_matrix(energies, targets):     &quot;&quot;&quot;     ce[b,i,k] = CE(energies[b,i], targets[b,k])     returns: (B, L, T)     &quot;&quot;&quot;     L, T = energies.shape[1], targets.shape[-1]     energies4 = energies.permute(0, 2, 1).unsqueeze(-1).repeat(1,1,1,T)  # (B,27,L,T)     targets4  = targets.unsqueeze(1).repeat(1, L, 1)                      # (B,L,T)     return cross_entropy(energies4, targets4, reduction=&#39;none&#39;)  # --- Label transform: interleave blanks: &#39;cat&#39; -&gt; c _ a _ t _ --- def transform_word(s):     encoded = []     for c in s:         encoded.append(ord(c) - ord(&#39;a&#39;))         encoded.append(BETWEEN)     return torch.tensor(encoded)  # len = 2*len(s)  # --- Path validity &amp; energy --- def checkValidMapping(path, T):     for i in range(1, len(path)):         if path[i] &lt; path[i-1]:             return False     return True  def path_energy(pm, path):     &quot;&quot;&quot;     pm: (L,T) energies for (window, target-pos)     path: list of length L with target indices     &quot;&quot;&quot;     T = pm.shape[1]     if not checkValidMapping(path, T):         return torch.tensor(2**30)     energy = 0.0     for i, c in enumerate(path):         energy += pm[i, c]     return energy  # --- Viterbi (DP) to find best path --- def find_path(pm):     &quot;&quot;&quot;     pm: (L,T) energy matrix     returns: (free_energy, path_points, dp)       - free_energy: sum on best path       - path_points: list of (i,j) along best path       - dp: DP table (L,T)     &quot;&quot;&quot;     L, T = pm.shape     dp = torch.zeros((L, T), device=pm.device)     parent = [[None]*T for _ in range(L)]     dp[0,0] = pm[0,0]; parent[0][0] = (0,0)     for j in range(1, T):         dp[0,j] = 2**30         parent[0][j] = (0, j)     for i in range(1, L):         dp[i,0] = dp[i-1,0] + pm[i,0]         parent[i][0] = (i-1,0)     for i in range(1, L):         for j in range(1, T):             a, b = dp[i-1,j], dp[i-1,j-1]             if a &lt; b:                 dp[i,j] = a + pm[i,j]; parent[i][j] = (i-1, j)             else:                 dp[i,j] = b + pm[i,j]; parent[i][j] = (i-1, j-1)     # Backtrack: pick best j in last row     j = torch.argmin(dp[L-1]).item()     path = []     for i in range(L-1, -1, -1):         path.append(j)         _, j = parent[i][j]     path.reverse()     points = list(zip(range(L), path))     return (path_energy(pm, path), points, dp)  # --- Example usage (alphabet image) --- # alphabet = SimpleWordsDataset(1).draw_text(string.ascii_lowercase, 340) # energies = model(alphabet.view(1,1,*alphabet.shape))   # (1,L,27) # targets  = transform_word(string.ascii_lowercase).unsqueeze(0)  # (1,T) # pm = build_path_matrix(energies, targets)              # (1,L,T) # free_energy, path, dp = find_path(pm[0])   Highlights    build_path_matrix gathers per-window energy for each label position.   find_path implements the minimum-energy monotone alignment.   Diagonal-ish best paths appear as the model improves.   Example 3 — Train EBM with Viterbi Alignments  def collate_fn(samples):     &quot;&quot;&quot;Collate for multi-char: pad images to same width; interleave blanks in labels and pad with BETWEEN.&quot;&quot;&quot;     images, annotations = zip(*samples)     images, annotations = list(images), list(annotations)     annotations = list(map(transform_word, annotations))     m_width = max(18, max([i.shape[1] for i in images]))     m_len   = max(3, max([s.shape[0] for s in annotations]))     for i in range(len(images)):         images[i] = torch.nn.functional.pad(images[i], (0, m_width - images[i].shape[-1]))         annotations[i] = torch.nn.functional.pad(annotations[i], (0, m_len - annotations[i].shape[0]), value=BETWEEN)     if len(images) == 1:         return images[0].unsqueeze(0), torch.stack(annotations)     else:         return torch.stack(images), torch.stack(annotations)  def train_ebm_model(model, num_epochs, train_loader, criterion, optimizer):     &quot;&quot;&quot;Train EBM using best-path (Viterbi) alignments.&quot;&quot;&quot;     pbar = tqdm(range(num_epochs))     model.train()     for _ in pbar:         total = 0.0         for samples, targets in train_loader:             optimizer.zero_grad()             energies = model(samples.unsqueeze(1))           # (B,L,27)             pm = build_path_matrix(energies, targets)        # (B,L,T)             batch_losses = []             for b in range(pm.shape[0]):                 free_energy, best_path, _ = find_path(pm[b])  # best_path: list[(i,j)]                 j_indices = [ij[1] for ij in best_path]       # target indices along path                 # Sum CE along best path:                 batch_losses.append(criterion(energies[b], targets[b, j_indices]))             loss = sum(batch_losses)             total += loss.item()             loss.backward(); optimizer.step()         pbar.set_postfix({&#39;train_loss&#39;: total / len(train_loader.dataset)})  # Usage: # sds2 = SimpleWordsDataset(2, 2500) # loader2 = torch.utils.data.DataLoader(sds2, batch_size=32, num_workers=0, collate_fn=collate_fn) # ebm_model = copy.deepcopy(model) # optimizer = Adam(ebm_model.parameters(), lr=1e-3) # train_ebm_model(ebm_model, 15, loader2, cross_entropy, optimizer)   Highlights    Loss is the sum of cross-entropies along the Viterbi path.   Works but slow due to per-sample DP; suitable for teaching/demo.   Example 4 — GTN / CTC: Graph-Based Training &amp; Viterbi  # --- GTN-based CTC loss and Viterbi (adapted) --- import torch.nn.functional as F import gtn  class CTCLossFunction(torch.autograd.Function):     @staticmethod     def create_ctc_graph(target, blank_idx):         g_criterion = gtn.Graph(False)         L = len(target); S = 2 * L + 1         for l in range(S):             idx = (l - 1) // 2             g_criterion.add_node(l == 0, l == S - 1 or l == S - 2)             label = target[idx] if l % 2 else blank_idx             g_criterion.add_arc(l, l, label)             if l &gt; 0:                 g_criterion.add_arc(l - 1, l, label)             if l % 2 and l &gt; 1 and label != target[idx - 1]:                 g_criterion.add_arc(l - 2, l, label)         g_criterion.arc_sort(False)         return g_criterion      @staticmethod     def forward(ctx, log_probs, targets, blank_idx=0, reduction=&quot;none&quot;):         B, T, C = log_probs.shape         losses, scales, emissions_graphs = [None]*B, [None]*B, [None]*B          def process(b):             g_emissions = gtn.linear_graph(T, C, log_probs.requires_grad)             cpu_data = log_probs[b].cpu().contiguous()             g_emissions.set_weights(cpu_data.data_ptr())             g_criterion = CTCLossFunction.create_ctc_graph(targets[b], blank_idx)             g_loss = gtn.negate(gtn.forward_score(gtn.intersect(g_emissions, g_criterion)))             scale = 1.0             if reduction == &quot;mean&quot;:                 L = len(targets[b]); scale = 1.0 / L if L &gt; 0 else scale             elif reduction != &quot;none&quot;:                 raise ValueError(&quot;invalid reduction&quot;)             losses[b], scales[b], emissions_graphs[b] = g_loss, scale, g_emissions          gtn.parallel_for(process, range(B))         ctx.auxiliary_data = (losses, scales, emissions_graphs, log_probs.shape)         loss = torch.tensor([losses[b].item() * scales[b] for b in range(B)])         return torch.mean(loss.cuda() if log_probs.is_cuda else loss)      @staticmethod     def backward(ctx, grad_output):         losses, scales, emissions_graphs, in_shape = ctx.auxiliary_data         B, T, C = in_shape         input_grad = torch.empty((B, T, C))         def process(b):             gtn.backward(losses[b], False)             emissions = emissions_graphs[b]             grad = emissions.grad().weights_to_numpy()             input_grad[b] = torch.from_numpy(grad).view(1, T, C) * scales[b]         gtn.parallel_for(process, range(B))         if grad_output.is_cuda:             input_grad = input_grad.cuda()         input_grad *= grad_output / B         return (input_grad, None, None, None)  CTCLoss = CTCLossFunction.apply  def viterbi(energies, targets, blank_idx=0):     outputs = -1 * energies     B, T, C = outputs.shape     paths, scores, emissions_graphs = [None]*B, [None]*B, [None]*B     def process(b):         L = len(targets[b])         g_emissions = gtn.linear_graph(T, C, outputs.requires_grad)         cpu_data = outputs[b].cpu().contiguous()         g_emissions.set_weights(cpu_data.data_ptr())         g_criterion = CTCLossFunction.create_ctc_graph(targets[b], blank_idx)         g_inter = gtn.intersect(g_emissions, g_criterion)         g_score = gtn.viterbi_score(g_inter)         g_path = gtn.viterbi_path(g_inter)         l = 0; mapped = []         for p in g_path.labels_to_list():             if 2*p &lt; L:                 l = p; mapped.append(2*p)             else:                 mapped.append(2*l + 1)         paths[b] = mapped         scores[b] = -1 * g_score.item()         emissions_graphs[b] = g_emissions     gtn.parallel_for(process, range(B))     return (scores, paths)  def train_gtn_model(model, num_epochs, train_loader, criterion, optimizer):     pbar = tqdm(range(num_epochs))     model.train()     device = torch.device(&quot;cuda:0&quot;) if torch.cuda.is_available() else torch.device(&quot;cpu&quot;)     model.to(device)     for _ in pbar:         total = 0.0         for samples, targets in train_loader:             samples, targets = samples.to(device), targets.to(device)             optimizer.zero_grad()             outputs = model(samples.unsqueeze(1))          # (B,L,27)             log_probs = F.log_softmax(-1.0 * outputs, dim=-1)             loss = criterion(log_probs, targets)           # CTC             total += loss.item()             loss.backward(); optimizer.step()         pbar.set_postfix({&#39;train_loss&#39;: total / len(train_loader.dataset)})  # Usage: # sds3 = SimpleWordsDataset(3, 2500) # loader3 = torch.utils.data.DataLoader(sds3, batch_size=32, num_workers=0, collate_fn=collate_fn) # gtn_model = copy.deepcopy(model) # optimizer = Adam(gtn_model.parameters(), lr=1e-3) # train_gtn_model(gtn_model, 15, loader3, CTCLoss, optimizer)   Highlights    CTC = alignment graph A_y ∘ emissions graph E.   Training uses log-softmax and CTCLoss.   viterbi via GTN yields best path and score without manual DP loops.   Example 5 — From Scratch (No Pretraining) &amp; Handwritten-Style Font  # --- No-pretraining: GTN/CTC directly on multi-character data --- # sds_np = SimpleWordsDataset(3, 2500) # loader_np = torch.utils.data.DataLoader(sds_np, batch_size=32, num_workers=0, collate_fn=collate_fn) # gtn_no_pretrained = SimpleNet() # optimizer = Adam(gtn_no_pretrained.parameters(), lr=1e-3) # train_gtn_model(gtn_no_pretrained, 20, loader_np, CTCLoss, optimizer)  # --- Custom &quot;handwritten-style&quot; font dataset --- class CustomWordsDataset(torch.utils.data.IterableDataset):     def __init__(self, max_length, len=100, jitter=False, noise=False, custom_fonts_path=None):         self.max_length = max_length         self.transforms = transforms.ToTensor()         self.len = len         self.jitter = jitter         self.noise = noise         self.custom_fonts_path = custom_fonts_path        def __len__(self):         return self.len      def __iter__(self):         for _ in range(self.len):             text = &#39;&#39;.join([random.choice(string.ascii_lowercase) for _ in range(self.max_length)])             img = self.draw_text(text, jitter=self.jitter, noise=self.noise)             yield img, text        def draw_text(self, text, length=None, jitter=False, noise=False):         if length is None:             length = 18 * len(text)         img = Image.new(&#39;L&#39;, (length, 32))         fnt = ImageFont.truetype(&quot;fonts/Anonymous.ttf&quot; if not self.custom_fonts_path else self.custom_fonts_path, 20)         d = ImageDraw.Draw(img)         pos = (random.randint(0, 7), 5) if jitter else (0, 5)         d.text(pos, text, fill=1, font=fnt)         img = self.transforms(img)         img[img &gt; 0] = 1          if noise:             img += torch.bernoulli(torch.ones_like(img) * 0.1)             img = img.clamp(0, 1)         return img[0]  # Usage (after downloading a font to ./fonts/3dumb/2Dumb.ttf): # sds_hw = CustomWordsDataset(3, 2500, custom_fonts_path=&quot;./fonts/3dumb/2Dumb.ttf&quot;) # loader_hw = torch.utils.data.DataLoader(sds_hw, batch_size=32, num_workers=0, collate_fn=collate_fn) # gtn_hw = SimpleNet() # optimizer = Adam(gtn_hw.parameters(), lr=1e-3) # train_gtn_model(gtn_hw, 20, loader_hw, CTCLoss, optimizer)   Highlights    Training from scratch with GTN/CTC works, though convergence can be slower.   Domain shift (e.g., handwritten font) lowers scores; still decodes plausible strings.   Example 6 — Decoding (Collapse Repeats, Drop Blanks)  def indices_to_str(indices):     &quot;&quot;&quot;     Collapse heuristic:       1) Map 0..25 -&gt; letters; 26 -&gt; &#39;_&#39;       2) Split by &#39;_&#39; segments; take the most frequent char per segment       3) Remove &#39;_&#39; between segments -&gt; final string with &#39;_&#39; as segment delimiter (optional)     &quot;&quot;&quot;     out = []     for ind in indices:         out.append(&#39;_&#39; if ind == BETWEEN else chr(ind + ord(&#39;a&#39;)))     segments = &quot;&quot;.join(out).split(&#39;_&#39;)     collapsed = [Counter(seg).most_common(1)[0][0] for seg in segments if seg]     return &quot;_&quot;.join(collapsed)  # or &quot;&quot;.join(collapsed) to remove underscores entirely  # Example: # img = SimpleWordsDataset(5, len=1).draw_text(&#39;hello&#39;) # energies = ebm_model(img.unsqueeze(0).unsqueeze(0)) # min_indices = energies[0].argmin(dim=-1) # print(indices_to_str(min_indices))">
+
+
+
+
+
+
+
+  <meta property="article:published_time" content="2025-10-26T00:00:00-04:00">
+
+
+
+
+
+  
+
+  
+
+
+<link rel="canonical" href="/computer%20science/energy_based_model_character_recognition/">
+
+
+
+
+<script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    
+      "@type": "Person",
+      "name": "Zhehan Shi",
+      "url": "/"
+    
+  }
+</script>
+
+
+
+
+
+
+<!-- end _includes/seo.html -->
+
+
+<link href="/feed.xml" type="application/atom+xml" rel="alternate" title="Zhehan Shi Feed">
+
+<!-- https://t.co/dKP3o1e -->
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<script>
+  document.documentElement.className = document.documentElement.className.replace(/\bno-js\b/g, '') + ' js ';
+</script>
+
+<!-- For all browsers -->
+<link rel="stylesheet" href="/assets/css/main.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6/css/all.min.css">
+
+<!--[if IE]>
+  <style>
+    /* old IE unsupported flexbox fixes */
+    .greedy-nav .site-title {
+      padding-right: 3em;
+    }
+    .greedy-nav button {
+      position: absolute;
+      top: 0;
+      right: 0;
+      height: 100%;
+    }
+  </style>
+<![endif]-->
+
+
+
+    <!-- start custom head snippets -->
+
+<!-- insert favicons. use https://realfavicongenerator.net/ -->
+<link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+<link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
+<link rel="manifest" href="/site.webmanifest">
+<!-- end custom head snippets -->
+
+  </head>
+
+  <body class="layout--single">
+    <nav class="skip-links">
+  <h2 class="screen-reader-text">Skip links</h2>
+  <ul>
+    <li><a href="#site-nav" class="screen-reader-shortcut">Skip to primary navigation</a></li>
+    <li><a href="#main" class="screen-reader-shortcut">Skip to content</a></li>
+    <li><a href="#footer" class="screen-reader-shortcut">Skip to footer</a></li>
+  </ul>
+</nav>
+
+    <!--[if lt IE 9]>
+<div class="notice--danger align-center" style="margin: 0;">You are using an <strong>outdated</strong> browser. Please <a href="https://browsehappy.com/">upgrade your browser</a> to improve your experience.</div>
+<![endif]-->
+
+    
+
+<div class="masthead">
+  <div class="masthead__inner-wrap">
+    <div class="masthead__menu">
+      <nav id="site-nav" class="greedy-nav">
+        
+        <a class="site-title" href="/">
+          Zhehan Shi
+          
+        </a>
+        <ul class="visible-links"><li class="masthead__menu-item">
+              <a href="/">Home</a>
+            </li><li class="masthead__menu-item">
+              <a href="/projects/">Projects</a>
+            </li><li class="masthead__menu-item">
+              <a href="/posts/">Posts</a>
+            </li><li class="masthead__menu-item">
+              <a href="/about/">About</a>
+            </li></ul>
+        
+        <button class="search__toggle" type="button">
+          <span class="visually-hidden">Toggle search</span>
+          <svg class="icon" width="16" height="16" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 15.99 16">
+            <path d="M15.5,13.12L13.19,10.8a1.69,1.69,0,0,0-1.28-.55l-0.06-.06A6.5,6.5,0,0,0,5.77,0,6.5,6.5,0,0,0,2.46,11.59a6.47,6.47,0,0,0,7.74.26l0.05,0.05a1.65,1.65,0,0,0,.5,1.24l2.38,2.38A1.68,1.68,0,0,0,15.5,13.12ZM6.4,2A4.41,4.41,0,1,1,2,6.4,4.43,4.43,0,0,1,6.4,2Z" transform="translate(-.01)"></path>
+          </svg>
+        </button>
+        
+        <button class="greedy-nav__toggle hidden" type="button">
+          <span class="visually-hidden">Toggle menu</span>
+          <div class="navicon"></div>
+        </button>
+        <ul class="hidden-links hidden"></ul>
+      </nav>
+    </div>
+  </div>
+</div>
+
+
+    <div class="initial-content">
+      
+
+
+
+<div id="main" role="main">
+  
+
+
+  <article class="page" itemscope itemtype="https://schema.org/CreativeWork">
+    <meta itemprop="headline" content="Energy-Based Models &amp; Structured Prediction">
+    <meta itemprop="description" content="Energy-Based Models (EBMs) assign a scalar energy to configurations of variables and perform inference by minimizing energy.  IntroWe tackle structured prediction for text recognition: transcribing a word image into characters of variable length.  We (1) build a synthetic dataset, (2) pretrain a sliding-window CNN on single characters, (3) align windowed predictions to labels with a Viterbi dynamic program, (4) train an EBM using cross-entropy along the best path, and (5) compare to a Connectionist Temporal Classification CTC (Graph Transducer Networks GTN) approach.Complete NotebookEBMs + Structured Prediction Jupyter Notebook HTMLKaggle Source from sumanyumuku98This used to be a homework in NYU Deep Learning class taught by Alfredo Canziani and Yann LeCun, and someone reshared it in Kaggle. I had the luck to take their class, and I am grateful someone had kept a better record of this than I did.Highlights  Sliding-window CNN outputs K×27 energies (26 letters + blank).  Viterbi finds the minimum-energy alignment between windows and targets.  EBM training: sum of cross-entropies along the Viterbi path.  GTN/CTC alternative: graph-based, batched training without manual DP.  Works on synthetic and “handwritten-style” fonts; simple collapse decoding recovers text.Example 1 — Dataset, Model, Single-Character Pretraining# --- Imports &amp; setup ---from PIL import ImageDraw, ImageFont, Imageimport string, random, time, copyimport torchfrom torch import nnfrom torch.optim import Adamimport torch.optim as optimfrom collections import Counterfrom tqdm.notebook import tqdmimport torchvisionfrom torchvision import transformsfrom matplotlib import pyplot as plttorch.manual_seed(0)# --- Constants ---ALPHABET_SIZE = 27  # 26 letters + 1 blank/dividerBETWEEN = 26# --- Basic transforms ---simple_transforms = transforms.Compose([transforms.ToTensor()])# --- Synthetic dataset of word images ---class SimpleWordsDataset(torch.utils.data.IterableDataset):    def __init__(self, max_length, len=100, jitter=False, noise=False):        self.max_length = max_length        self.transforms = transforms.ToTensor()        self.len = len        self.jitter = jitter        self.noise = noise      def __len__(self):        return self.len    def __iter__(self):        for _ in range(self.len):            text = &#39;&#39;.join([random.choice(string.ascii_lowercase) for _ in range(self.max_length)])            img = self.draw_text(text, jitter=self.jitter, noise=self.noise)            yield img, text      def draw_text(self, text, length=None, jitter=False, noise=False):        if length is None:            length = 18 * len(text)        img = Image.new(&#39;L&#39;, (length, 32))        fnt = ImageFont.truetype(&quot;fonts/Anonymous.ttf&quot;, 20)        d = ImageDraw.Draw(img)        pos = (random.randint(0, 7), 5) if jitter else (0, 5)        d.text(pos, text, fill=1, font=fnt)        img = self.transforms(img)        img[img &gt; 0] = 1         if noise:            img += torch.bernoulli(torch.ones_like(img) * 0.1)            img = img.clamp(0, 1)        return img[0]# --- Sliding window CNN (character-sized kernel) ---class SimpleNet(torch.nn.Module):    def __init__(self):        super().__init__()        self.conv = nn.Conv2d(1, 512, kernel_size=(32, 18), stride=(1, 4), padding=&quot;valid&quot;)        self.linear = nn.Linear(512, ALPHABET_SIZE)    def forward(self, x):        # Input: (B, 1, 32, W) -&gt; Conv over width -&gt; squeeze height -&gt; (B,K,512) -&gt; Linear -&gt; (B,K,27)        return self.linear(self.conv(x).squeeze(dim=-2).permute(0, 2, 1))# --- Helpers for plotting (optional) ---def plot_energies(ce):    fig = plt.figure(dpi=200)    ax = plt.axes()    im = ax.imshow(ce.cpu().T)    ax.set_xlabel(&#39;window locations →&#39;); ax.xaxis.set_label_position(&#39;top&#39;)    ax.set_ylabel(&#39;← classes&#39;); ax.set_xticks([]); ax.set_yticks([])    cax = fig.add_axes([ax.get_position().x1+0.01,ax.get_position().y0,0.02,ax.get_position().height])    plt.colorbar(im, cax=cax)# --- One-character pretraining ---def cross_entropy(energies, *args, **kwargs):    # Energies -&gt; minimize =&gt; use log-soft-argmin (negate energies)    return nn.functional.cross_entropy(-1 * energies, *args, **kwargs)def simple_collate_fn(samples):    images, annotations = zip(*samples)    images = list(images)    annotations = list(annotations)    annotations = list(map(lambda c: torch.tensor(ord(c) - ord(&#39;a&#39;)), annotations))    m_width = max(18, max([i.shape[1] for i in images]))    for i in range(len(images)):        images[i] = torch.nn.functional.pad(images[i], (0, m_width - images[i].shape[-1]))    if len(images) == 1:        return images[0].unsqueeze(0), torch.stack(annotations)    else:        return torch.stack(images), torch.stack(annotations)def train_model(model, epochs, dataloader, criterion, optimizer):    model.train()    pbar = tqdm(range(epochs))    for _ in pbar:        train_loss = 0.0        for images, target in dataloader:            images = images.unsqueeze(1)  # (B,1,32,W)            optimizer.zero_grad()            out = model(images)          # (B,K,27), for 1 char K==1            loss = criterion(out.squeeze(), target=target)            loss.backward(); optimizer.step()            train_loss += loss.item()        train_loss /= len(dataloader)        pbar.set_postfix({&#39;Train Loss&#39;: train_loss})# Usage:# sds_1 = SimpleWordsDataset(1, len=1000, jitter=True, noise=False)# loader_1 = torch.utils.data.DataLoader(sds_1, batch_size=16, num_workers=0, collate_fn=simple_collate_fn)# model = SimpleNet()# optimizer = Adam(model.parameters(), lr=1e-2)# train_model(model, 15, loader_1, cross_entropy, optimizer)# Accuracy check on single-char:def get_accuracy(model, dataset):    cnt = 0    for img, label in dataset:        energies = model(img.unsqueeze(0).unsqueeze(0))[0, 0]  # (27,)        pred = energies.argmin(dim=-1)        cnt += int(pred == (ord(label[0]) - ord(&#39;a&#39;)))    return cnt / len(dataset)# tds = SimpleWordsDataset(1, len=100)# assert get_accuracy(model, tds) == 1.0Highlights  One-character dataset &amp; padding collate.  SimpleNet ensures (32×18) receptive field → per-window energies over 27 classes.Example 2 — Alignment Utilities &amp; Viterbi (Dynamic Programming)# --- Path/CE matrices (vectorized) ---def build_path_matrix(energies, targets):    &quot;&quot;&quot;    energies: (B, L, 27)    targets:  (B, T) integer indices in [0..26]    returns:  (B, L, T) where out[b,i,k] = energies[b,i,targets[b,k]]    &quot;&quot;&quot;    L = energies.shape[1]    targets_exp = targets.unsqueeze(1).repeat(1, L, 1)      # (B,L,T)    return torch.gather(energies, 2, targets_exp)           # (B,L,T)def build_ce_matrix(energies, targets):    &quot;&quot;&quot;    ce[b,i,k] = CE(energies[b,i], targets[b,k])    returns: (B, L, T)    &quot;&quot;&quot;    L, T = energies.shape[1], targets.shape[-1]    energies4 = energies.permute(0, 2, 1).unsqueeze(-1).repeat(1,1,1,T)  # (B,27,L,T)    targets4  = targets.unsqueeze(1).repeat(1, L, 1)                      # (B,L,T)    return cross_entropy(energies4, targets4, reduction=&#39;none&#39;)# --- Label transform: interleave blanks: &#39;cat&#39; -&gt; c _ a _ t _ ---def transform_word(s):    encoded = []    for c in s:        encoded.append(ord(c) - ord(&#39;a&#39;))        encoded.append(BETWEEN)    return torch.tensor(encoded)  # len = 2*len(s)# --- Path validity &amp; energy ---def checkValidMapping(path, T):    for i in range(1, len(path)):        if path[i] &lt; path[i-1]:            return False    return Truedef path_energy(pm, path):    &quot;&quot;&quot;    pm: (L,T) energies for (window, target-pos)    path: list of length L with target indices    &quot;&quot;&quot;    T = pm.shape[1]    if not checkValidMapping(path, T):        return torch.tensor(2**30)    energy = 0.0    for i, c in enumerate(path):        energy += pm[i, c]    return energy# --- Viterbi (DP) to find best path ---def find_path(pm):    &quot;&quot;&quot;    pm: (L,T) energy matrix    returns: (free_energy, path_points, dp)      - free_energy: sum on best path      - path_points: list of (i,j) along best path      - dp: DP table (L,T)    &quot;&quot;&quot;    L, T = pm.shape    dp = torch.zeros((L, T), device=pm.device)    parent = [[None]*T for _ in range(L)]    dp[0,0] = pm[0,0]; parent[0][0] = (0,0)    for j in range(1, T):        dp[0,j] = 2**30        parent[0][j] = (0, j)    for i in range(1, L):        dp[i,0] = dp[i-1,0] + pm[i,0]        parent[i][0] = (i-1,0)    for i in range(1, L):        for j in range(1, T):            a, b = dp[i-1,j], dp[i-1,j-1]            if a &lt; b:                dp[i,j] = a + pm[i,j]; parent[i][j] = (i-1, j)            else:                dp[i,j] = b + pm[i,j]; parent[i][j] = (i-1, j-1)    # Backtrack: pick best j in last row    j = torch.argmin(dp[L-1]).item()    path = []    for i in range(L-1, -1, -1):        path.append(j)        _, j = parent[i][j]    path.reverse()    points = list(zip(range(L), path))    return (path_energy(pm, path), points, dp)# --- Example usage (alphabet image) ---# alphabet = SimpleWordsDataset(1).draw_text(string.ascii_lowercase, 340)# energies = model(alphabet.view(1,1,*alphabet.shape))   # (1,L,27)# targets  = transform_word(string.ascii_lowercase).unsqueeze(0)  # (1,T)# pm = build_path_matrix(energies, targets)              # (1,L,T)# free_energy, path, dp = find_path(pm[0])Highlights  build_path_matrix gathers per-window energy for each label position.  find_path implements the minimum-energy monotone alignment.  Diagonal-ish best paths appear as the model improves.Example 3 — Train EBM with Viterbi Alignmentsdef collate_fn(samples):    &quot;&quot;&quot;Collate for multi-char: pad images to same width; interleave blanks in labels and pad with BETWEEN.&quot;&quot;&quot;    images, annotations = zip(*samples)    images, annotations = list(images), list(annotations)    annotations = list(map(transform_word, annotations))    m_width = max(18, max([i.shape[1] for i in images]))    m_len   = max(3, max([s.shape[0] for s in annotations]))    for i in range(len(images)):        images[i] = torch.nn.functional.pad(images[i], (0, m_width - images[i].shape[-1]))        annotations[i] = torch.nn.functional.pad(annotations[i], (0, m_len - annotations[i].shape[0]), value=BETWEEN)    if len(images) == 1:        return images[0].unsqueeze(0), torch.stack(annotations)    else:        return torch.stack(images), torch.stack(annotations)def train_ebm_model(model, num_epochs, train_loader, criterion, optimizer):    &quot;&quot;&quot;Train EBM using best-path (Viterbi) alignments.&quot;&quot;&quot;    pbar = tqdm(range(num_epochs))    model.train()    for _ in pbar:        total = 0.0        for samples, targets in train_loader:            optimizer.zero_grad()            energies = model(samples.unsqueeze(1))           # (B,L,27)            pm = build_path_matrix(energies, targets)        # (B,L,T)            batch_losses = []            for b in range(pm.shape[0]):                free_energy, best_path, _ = find_path(pm[b])  # best_path: list[(i,j)]                j_indices = [ij[1] for ij in best_path]       # target indices along path                # Sum CE along best path:                batch_losses.append(criterion(energies[b], targets[b, j_indices]))            loss = sum(batch_losses)            total += loss.item()            loss.backward(); optimizer.step()        pbar.set_postfix({&#39;train_loss&#39;: total / len(train_loader.dataset)})# Usage:# sds2 = SimpleWordsDataset(2, 2500)# loader2 = torch.utils.data.DataLoader(sds2, batch_size=32, num_workers=0, collate_fn=collate_fn)# ebm_model = copy.deepcopy(model)# optimizer = Adam(ebm_model.parameters(), lr=1e-3)# train_ebm_model(ebm_model, 15, loader2, cross_entropy, optimizer)Highlights  Loss is the sum of cross-entropies along the Viterbi path.  Works but slow due to per-sample DP; suitable for teaching/demo.Example 4 — GTN / CTC: Graph-Based Training &amp; Viterbi# --- GTN-based CTC loss and Viterbi (adapted) ---import torch.nn.functional as Fimport gtnclass CTCLossFunction(torch.autograd.Function):    @staticmethod    def create_ctc_graph(target, blank_idx):        g_criterion = gtn.Graph(False)        L = len(target); S = 2 * L + 1        for l in range(S):            idx = (l - 1) // 2            g_criterion.add_node(l == 0, l == S - 1 or l == S - 2)            label = target[idx] if l % 2 else blank_idx            g_criterion.add_arc(l, l, label)            if l &gt; 0:                g_criterion.add_arc(l - 1, l, label)            if l % 2 and l &gt; 1 and label != target[idx - 1]:                g_criterion.add_arc(l - 2, l, label)        g_criterion.arc_sort(False)        return g_criterion    @staticmethod    def forward(ctx, log_probs, targets, blank_idx=0, reduction=&quot;none&quot;):        B, T, C = log_probs.shape        losses, scales, emissions_graphs = [None]*B, [None]*B, [None]*B        def process(b):            g_emissions = gtn.linear_graph(T, C, log_probs.requires_grad)            cpu_data = log_probs[b].cpu().contiguous()            g_emissions.set_weights(cpu_data.data_ptr())            g_criterion = CTCLossFunction.create_ctc_graph(targets[b], blank_idx)            g_loss = gtn.negate(gtn.forward_score(gtn.intersect(g_emissions, g_criterion)))            scale = 1.0            if reduction == &quot;mean&quot;:                L = len(targets[b]); scale = 1.0 / L if L &gt; 0 else scale            elif reduction != &quot;none&quot;:                raise ValueError(&quot;invalid reduction&quot;)            losses[b], scales[b], emissions_graphs[b] = g_loss, scale, g_emissions        gtn.parallel_for(process, range(B))        ctx.auxiliary_data = (losses, scales, emissions_graphs, log_probs.shape)        loss = torch.tensor([losses[b].item() * scales[b] for b in range(B)])        return torch.mean(loss.cuda() if log_probs.is_cuda else loss)    @staticmethod    def backward(ctx, grad_output):        losses, scales, emissions_graphs, in_shape = ctx.auxiliary_data        B, T, C = in_shape        input_grad = torch.empty((B, T, C))        def process(b):            gtn.backward(losses[b], False)            emissions = emissions_graphs[b]            grad = emissions.grad().weights_to_numpy()            input_grad[b] = torch.from_numpy(grad).view(1, T, C) * scales[b]        gtn.parallel_for(process, range(B))        if grad_output.is_cuda:            input_grad = input_grad.cuda()        input_grad *= grad_output / B        return (input_grad, None, None, None)CTCLoss = CTCLossFunction.applydef viterbi(energies, targets, blank_idx=0):    outputs = -1 * energies    B, T, C = outputs.shape    paths, scores, emissions_graphs = [None]*B, [None]*B, [None]*B    def process(b):        L = len(targets[b])        g_emissions = gtn.linear_graph(T, C, outputs.requires_grad)        cpu_data = outputs[b].cpu().contiguous()        g_emissions.set_weights(cpu_data.data_ptr())        g_criterion = CTCLossFunction.create_ctc_graph(targets[b], blank_idx)        g_inter = gtn.intersect(g_emissions, g_criterion)        g_score = gtn.viterbi_score(g_inter)        g_path = gtn.viterbi_path(g_inter)        l = 0; mapped = []        for p in g_path.labels_to_list():            if 2*p &lt; L:                l = p; mapped.append(2*p)            else:                mapped.append(2*l + 1)        paths[b] = mapped        scores[b] = -1 * g_score.item()        emissions_graphs[b] = g_emissions    gtn.parallel_for(process, range(B))    return (scores, paths)def train_gtn_model(model, num_epochs, train_loader, criterion, optimizer):    pbar = tqdm(range(num_epochs))    model.train()    device = torch.device(&quot;cuda:0&quot;) if torch.cuda.is_available() else torch.device(&quot;cpu&quot;)    model.to(device)    for _ in pbar:        total = 0.0        for samples, targets in train_loader:            samples, targets = samples.to(device), targets.to(device)            optimizer.zero_grad()            outputs = model(samples.unsqueeze(1))          # (B,L,27)            log_probs = F.log_softmax(-1.0 * outputs, dim=-1)            loss = criterion(log_probs, targets)           # CTC            total += loss.item()            loss.backward(); optimizer.step()        pbar.set_postfix({&#39;train_loss&#39;: total / len(train_loader.dataset)})# Usage:# sds3 = SimpleWordsDataset(3, 2500)# loader3 = torch.utils.data.DataLoader(sds3, batch_size=32, num_workers=0, collate_fn=collate_fn)# gtn_model = copy.deepcopy(model)# optimizer = Adam(gtn_model.parameters(), lr=1e-3)# train_gtn_model(gtn_model, 15, loader3, CTCLoss, optimizer)Highlights  CTC = alignment graph A_y ∘ emissions graph E.  Training uses log-softmax and CTCLoss.  viterbi via GTN yields best path and score without manual DP loops.Example 5 — From Scratch (No Pretraining) &amp; Handwritten-Style Font# --- No-pretraining: GTN/CTC directly on multi-character data ---# sds_np = SimpleWordsDataset(3, 2500)# loader_np = torch.utils.data.DataLoader(sds_np, batch_size=32, num_workers=0, collate_fn=collate_fn)# gtn_no_pretrained = SimpleNet()# optimizer = Adam(gtn_no_pretrained.parameters(), lr=1e-3)# train_gtn_model(gtn_no_pretrained, 20, loader_np, CTCLoss, optimizer)# --- Custom &quot;handwritten-style&quot; font dataset ---class CustomWordsDataset(torch.utils.data.IterableDataset):    def __init__(self, max_length, len=100, jitter=False, noise=False, custom_fonts_path=None):        self.max_length = max_length        self.transforms = transforms.ToTensor()        self.len = len        self.jitter = jitter        self.noise = noise        self.custom_fonts_path = custom_fonts_path      def __len__(self):        return self.len    def __iter__(self):        for _ in range(self.len):            text = &#39;&#39;.join([random.choice(string.ascii_lowercase) for _ in range(self.max_length)])            img = self.draw_text(text, jitter=self.jitter, noise=self.noise)            yield img, text      def draw_text(self, text, length=None, jitter=False, noise=False):        if length is None:            length = 18 * len(text)        img = Image.new(&#39;L&#39;, (length, 32))        fnt = ImageFont.truetype(&quot;fonts/Anonymous.ttf&quot; if not self.custom_fonts_path else self.custom_fonts_path, 20)        d = ImageDraw.Draw(img)        pos = (random.randint(0, 7), 5) if jitter else (0, 5)        d.text(pos, text, fill=1, font=fnt)        img = self.transforms(img)        img[img &gt; 0] = 1         if noise:            img += torch.bernoulli(torch.ones_like(img) * 0.1)            img = img.clamp(0, 1)        return img[0]# Usage (after downloading a font to ./fonts/3dumb/2Dumb.ttf):# sds_hw = CustomWordsDataset(3, 2500, custom_fonts_path=&quot;./fonts/3dumb/2Dumb.ttf&quot;)# loader_hw = torch.utils.data.DataLoader(sds_hw, batch_size=32, num_workers=0, collate_fn=collate_fn)# gtn_hw = SimpleNet()# optimizer = Adam(gtn_hw.parameters(), lr=1e-3)# train_gtn_model(gtn_hw, 20, loader_hw, CTCLoss, optimizer)Highlights  Training from scratch with GTN/CTC works, though convergence can be slower.  Domain shift (e.g., handwritten font) lowers scores; still decodes plausible strings.Example 6 — Decoding (Collapse Repeats, Drop Blanks)def indices_to_str(indices):    &quot;&quot;&quot;    Collapse heuristic:      1) Map 0..25 -&gt; letters; 26 -&gt; &#39;_&#39;      2) Split by &#39;_&#39; segments; take the most frequent char per segment      3) Remove &#39;_&#39; between segments -&gt; final string with &#39;_&#39; as segment delimiter (optional)    &quot;&quot;&quot;    out = []    for ind in indices:        out.append(&#39;_&#39; if ind == BETWEEN else chr(ind + ord(&#39;a&#39;)))    segments = &quot;&quot;.join(out).split(&#39;_&#39;)    collapsed = [Counter(seg).most_common(1)[0][0] for seg in segments if seg]    return &quot;_&quot;.join(collapsed)  # or &quot;&quot;.join(collapsed) to remove underscores entirely# Example:# img = SimpleWordsDataset(5, len=1).draw_text(&#39;hello&#39;)# energies = ebm_model(img.unsqueeze(0).unsqueeze(0))# min_indices = energies[0].argmin(dim=-1)# print(indices_to_str(min_indices))">
+    <meta itemprop="datePublished" content="2025-10-26T00:00:00-04:00">
+    
+
+    <div class="page__inner-wrap">
+      
+        <header>
+          <h1 id="page-title" class="page__title" itemprop="headline">Energy-Based Models &amp; Structured Prediction
+</h1>
+          
+
+  <p class="page__meta">
+    
+
+    
+
+    
+      
+      
+
+      <span class="page__meta-readtime">
+        <i class="far fa-clock" aria-hidden="true"></i>
+        
+          10 minute read
+        
+      </span>
+    
+  </p>
+
+
+        </header>
+      
+
+      <section class="page__content" itemprop="text">
+        
+        <p>Energy-Based Models (EBMs) assign a scalar <strong>energy</strong> to configurations of variables and perform inference by <strong>minimizing energy</strong>.  <!--more--></p>
+
+<h3>Intro</h3>
+
+<p>We tackle <strong>structured prediction</strong> for text recognition: transcribing a word image into characters of <strong>variable length</strong>.  We (1) build a synthetic dataset, (2) pretrain a sliding-window CNN on single characters, (3) align windowed predictions to labels with a <strong>Viterbi</strong> dynamic program, (4) train an EBM using <strong>cross-entropy along the best path</strong>, and (5) compare to a Connectionist Temporal Classification CTC (Graph Transducer Networks GTN) approach.</p>
+
+<p>Complete Notebook</p>
+
+<p><a href="/assets/html/ebm_structured_prediction.html">EBMs + Structured Prediction Jupyter Notebook HTML</a></p>
+
+<p><a href="https://www.kaggle.com/code/mizomatic/a-tutorial-on-energy-based-models-ebms/notebook">Kaggle Source from sumanyumuku98</a></p>
+
+<p>This used to be a homework in NYU Deep Learning class taught by Alfredo Canziani and Yann LeCun, and someone reshared it in Kaggle. I had the luck to take their class, and I am grateful someone had kept a better record of this than I did.</p>
+
+<p><strong>Highlights</strong></p>
+<ul>
+  <li>Sliding-window CNN outputs <code class="language-plaintext highlighter-rouge">K×27</code> energies (26 letters + blank).</li>
+  <li><strong>Viterbi</strong> finds the minimum-energy alignment between windows and targets.</li>
+  <li>EBM training: <strong>sum of cross-entropies along the Viterbi path</strong>.</li>
+  <li><strong>GTN/CTC</strong> alternative: graph-based, batched training without manual DP.</li>
+  <li>Works on synthetic and “handwritten-style” fonts; simple collapse decoding recovers text.</li>
+</ul>
+
+<h3>Example 1 — Dataset, Model, Single-Character Pretraining</h3>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1"># --- Imports &amp; setup ---
+</span><span class="kn">from</span> <span class="nn">PIL</span> <span class="kn">import</span> <span class="n">ImageDraw</span><span class="p">,</span> <span class="n">ImageFont</span><span class="p">,</span> <span class="n">Image</span>
+<span class="kn">import</span> <span class="nn">string</span><span class="p">,</span> <span class="n">random</span><span class="p">,</span> <span class="n">time</span><span class="p">,</span> <span class="n">copy</span>
+<span class="kn">import</span> <span class="nn">torch</span>
+<span class="kn">from</span> <span class="nn">torch</span> <span class="kn">import</span> <span class="n">nn</span>
+<span class="kn">from</span> <span class="nn">torch.optim</span> <span class="kn">import</span> <span class="n">Adam</span>
+<span class="kn">import</span> <span class="nn">torch.optim</span> <span class="k">as</span> <span class="n">optim</span>
+<span class="kn">from</span> <span class="nn">collections</span> <span class="kn">import</span> <span class="n">Counter</span>
+<span class="kn">from</span> <span class="nn">tqdm.notebook</span> <span class="kn">import</span> <span class="n">tqdm</span>
+<span class="kn">import</span> <span class="nn">torchvision</span>
+<span class="kn">from</span> <span class="nn">torchvision</span> <span class="kn">import</span> <span class="n">transforms</span>
+<span class="kn">from</span> <span class="nn">matplotlib</span> <span class="kn">import</span> <span class="n">pyplot</span> <span class="k">as</span> <span class="n">plt</span>
+
+<span class="n">torch</span><span class="p">.</span><span class="n">manual_seed</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+
+<span class="c1"># --- Constants ---
+</span><span class="n">ALPHABET_SIZE</span> <span class="o">=</span> <span class="mi">27</span>  <span class="c1"># 26 letters + 1 blank/divider
+</span><span class="n">BETWEEN</span> <span class="o">=</span> <span class="mi">26</span>
+
+<span class="c1"># --- Basic transforms ---
+</span><span class="n">simple_transforms</span> <span class="o">=</span> <span class="n">transforms</span><span class="p">.</span><span class="n">Compose</span><span class="p">([</span><span class="n">transforms</span><span class="p">.</span><span class="n">ToTensor</span><span class="p">()])</span>
+
+<span class="c1"># --- Synthetic dataset of word images ---
+</span><span class="k">class</span> <span class="nc">SimpleWordsDataset</span><span class="p">(</span><span class="n">torch</span><span class="p">.</span><span class="n">utils</span><span class="p">.</span><span class="n">data</span><span class="p">.</span><span class="n">IterableDataset</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">max_length</span><span class="p">,</span> <span class="nb">len</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span> <span class="n">jitter</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span> <span class="n">noise</span><span class="o">=</span><span class="bp">False</span><span class="p">):</span>
+        <span class="bp">self</span><span class="p">.</span><span class="n">max_length</span> <span class="o">=</span> <span class="n">max_length</span>
+        <span class="bp">self</span><span class="p">.</span><span class="n">transforms</span> <span class="o">=</span> <span class="n">transforms</span><span class="p">.</span><span class="n">ToTensor</span><span class="p">()</span>
+        <span class="bp">self</span><span class="p">.</span><span class="nb">len</span> <span class="o">=</span> <span class="nb">len</span>
+        <span class="bp">self</span><span class="p">.</span><span class="n">jitter</span> <span class="o">=</span> <span class="n">jitter</span>
+        <span class="bp">self</span><span class="p">.</span><span class="n">noise</span> <span class="o">=</span> <span class="n">noise</span>
+  
+    <span class="k">def</span> <span class="nf">__len__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="p">.</span><span class="nb">len</span>
+
+    <span class="k">def</span> <span class="nf">__iter__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="p">.</span><span class="nb">len</span><span class="p">):</span>
+            <span class="n">text</span> <span class="o">=</span> <span class="s">''</span><span class="p">.</span><span class="n">join</span><span class="p">([</span><span class="n">random</span><span class="p">.</span><span class="n">choice</span><span class="p">(</span><span class="n">string</span><span class="p">.</span><span class="n">ascii_lowercase</span><span class="p">)</span> <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="p">.</span><span class="n">max_length</span><span class="p">)])</span>
+            <span class="n">img</span> <span class="o">=</span> <span class="bp">self</span><span class="p">.</span><span class="n">draw_text</span><span class="p">(</span><span class="n">text</span><span class="p">,</span> <span class="n">jitter</span><span class="o">=</span><span class="bp">self</span><span class="p">.</span><span class="n">jitter</span><span class="p">,</span> <span class="n">noise</span><span class="o">=</span><span class="bp">self</span><span class="p">.</span><span class="n">noise</span><span class="p">)</span>
+            <span class="k">yield</span> <span class="n">img</span><span class="p">,</span> <span class="n">text</span>
+  
+    <span class="k">def</span> <span class="nf">draw_text</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">text</span><span class="p">,</span> <span class="n">length</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">jitter</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span> <span class="n">noise</span><span class="o">=</span><span class="bp">False</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">length</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="n">length</span> <span class="o">=</span> <span class="mi">18</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="n">text</span><span class="p">)</span>
+        <span class="n">img</span> <span class="o">=</span> <span class="n">Image</span><span class="p">.</span><span class="n">new</span><span class="p">(</span><span class="s">'L'</span><span class="p">,</span> <span class="p">(</span><span class="n">length</span><span class="p">,</span> <span class="mi">32</span><span class="p">))</span>
+        <span class="n">fnt</span> <span class="o">=</span> <span class="n">ImageFont</span><span class="p">.</span><span class="n">truetype</span><span class="p">(</span><span class="s">"fonts/Anonymous.ttf"</span><span class="p">,</span> <span class="mi">20</span><span class="p">)</span>
+
+        <span class="n">d</span> <span class="o">=</span> <span class="n">ImageDraw</span><span class="p">.</span><span class="n">Draw</span><span class="p">(</span><span class="n">img</span><span class="p">)</span>
+        <span class="n">pos</span> <span class="o">=</span> <span class="p">(</span><span class="n">random</span><span class="p">.</span><span class="n">randint</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">7</span><span class="p">),</span> <span class="mi">5</span><span class="p">)</span> <span class="k">if</span> <span class="n">jitter</span> <span class="k">else</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">5</span><span class="p">)</span>
+        <span class="n">d</span><span class="p">.</span><span class="n">text</span><span class="p">(</span><span class="n">pos</span><span class="p">,</span> <span class="n">text</span><span class="p">,</span> <span class="n">fill</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">font</span><span class="o">=</span><span class="n">fnt</span><span class="p">)</span>
+
+        <span class="n">img</span> <span class="o">=</span> <span class="bp">self</span><span class="p">.</span><span class="n">transforms</span><span class="p">(</span><span class="n">img</span><span class="p">)</span>
+        <span class="n">img</span><span class="p">[</span><span class="n">img</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span> 
+        <span class="k">if</span> <span class="n">noise</span><span class="p">:</span>
+            <span class="n">img</span> <span class="o">+=</span> <span class="n">torch</span><span class="p">.</span><span class="n">bernoulli</span><span class="p">(</span><span class="n">torch</span><span class="p">.</span><span class="n">ones_like</span><span class="p">(</span><span class="n">img</span><span class="p">)</span> <span class="o">*</span> <span class="mf">0.1</span><span class="p">)</span>
+            <span class="n">img</span> <span class="o">=</span> <span class="n">img</span><span class="p">.</span><span class="n">clamp</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">img</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+
+<span class="c1"># --- Sliding window CNN (character-sized kernel) ---
+</span><span class="k">class</span> <span class="nc">SimpleNet</span><span class="p">(</span><span class="n">torch</span><span class="p">.</span><span class="n">nn</span><span class="p">.</span><span class="n">Module</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">().</span><span class="n">__init__</span><span class="p">()</span>
+        <span class="bp">self</span><span class="p">.</span><span class="n">conv</span> <span class="o">=</span> <span class="n">nn</span><span class="p">.</span><span class="n">Conv2d</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">512</span><span class="p">,</span> <span class="n">kernel_size</span><span class="o">=</span><span class="p">(</span><span class="mi">32</span><span class="p">,</span> <span class="mi">18</span><span class="p">),</span> <span class="n">stride</span><span class="o">=</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">4</span><span class="p">),</span> <span class="n">padding</span><span class="o">=</span><span class="s">"valid"</span><span class="p">)</span>
+        <span class="bp">self</span><span class="p">.</span><span class="n">linear</span> <span class="o">=</span> <span class="n">nn</span><span class="p">.</span><span class="n">Linear</span><span class="p">(</span><span class="mi">512</span><span class="p">,</span> <span class="n">ALPHABET_SIZE</span><span class="p">)</span>
+    <span class="k">def</span> <span class="nf">forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">):</span>
+        <span class="c1"># Input: (B, 1, 32, W) -&gt; Conv over width -&gt; squeeze height -&gt; (B,K,512) -&gt; Linear -&gt; (B,K,27)
+</span>        <span class="k">return</span> <span class="bp">self</span><span class="p">.</span><span class="n">linear</span><span class="p">(</span><span class="bp">self</span><span class="p">.</span><span class="n">conv</span><span class="p">(</span><span class="n">x</span><span class="p">).</span><span class="n">squeeze</span><span class="p">(</span><span class="n">dim</span><span class="o">=-</span><span class="mi">2</span><span class="p">).</span><span class="n">permute</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">1</span><span class="p">))</span>
+
+<span class="c1"># --- Helpers for plotting (optional) ---
+</span><span class="k">def</span> <span class="nf">plot_energies</span><span class="p">(</span><span class="n">ce</span><span class="p">):</span>
+    <span class="n">fig</span> <span class="o">=</span> <span class="n">plt</span><span class="p">.</span><span class="n">figure</span><span class="p">(</span><span class="n">dpi</span><span class="o">=</span><span class="mi">200</span><span class="p">)</span>
+    <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="p">.</span><span class="n">axes</span><span class="p">()</span>
+    <span class="n">im</span> <span class="o">=</span> <span class="n">ax</span><span class="p">.</span><span class="n">imshow</span><span class="p">(</span><span class="n">ce</span><span class="p">.</span><span class="n">cpu</span><span class="p">().</span><span class="n">T</span><span class="p">)</span>
+    <span class="n">ax</span><span class="p">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="s">'window locations →'</span><span class="p">);</span> <span class="n">ax</span><span class="p">.</span><span class="n">xaxis</span><span class="p">.</span><span class="n">set_label_position</span><span class="p">(</span><span class="s">'top'</span><span class="p">)</span>
+    <span class="n">ax</span><span class="p">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="s">'← classes'</span><span class="p">);</span> <span class="n">ax</span><span class="p">.</span><span class="n">set_xticks</span><span class="p">([]);</span> <span class="n">ax</span><span class="p">.</span><span class="n">set_yticks</span><span class="p">([])</span>
+    <span class="n">cax</span> <span class="o">=</span> <span class="n">fig</span><span class="p">.</span><span class="n">add_axes</span><span class="p">([</span><span class="n">ax</span><span class="p">.</span><span class="n">get_position</span><span class="p">().</span><span class="n">x1</span><span class="o">+</span><span class="mf">0.01</span><span class="p">,</span><span class="n">ax</span><span class="p">.</span><span class="n">get_position</span><span class="p">().</span><span class="n">y0</span><span class="p">,</span><span class="mf">0.02</span><span class="p">,</span><span class="n">ax</span><span class="p">.</span><span class="n">get_position</span><span class="p">().</span><span class="n">height</span><span class="p">])</span>
+    <span class="n">plt</span><span class="p">.</span><span class="n">colorbar</span><span class="p">(</span><span class="n">im</span><span class="p">,</span> <span class="n">cax</span><span class="o">=</span><span class="n">cax</span><span class="p">)</span>
+
+<span class="c1"># --- One-character pretraining ---
+</span><span class="k">def</span> <span class="nf">cross_entropy</span><span class="p">(</span><span class="n">energies</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+    <span class="c1"># Energies -&gt; minimize =&gt; use log-soft-argmin (negate energies)
+</span>    <span class="k">return</span> <span class="n">nn</span><span class="p">.</span><span class="n">functional</span><span class="p">.</span><span class="n">cross_entropy</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span> <span class="o">*</span> <span class="n">energies</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+<span class="k">def</span> <span class="nf">simple_collate_fn</span><span class="p">(</span><span class="n">samples</span><span class="p">):</span>
+    <span class="n">images</span><span class="p">,</span> <span class="n">annotations</span> <span class="o">=</span> <span class="nb">zip</span><span class="p">(</span><span class="o">*</span><span class="n">samples</span><span class="p">)</span>
+    <span class="n">images</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">images</span><span class="p">)</span>
+    <span class="n">annotations</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">annotations</span><span class="p">)</span>
+    <span class="n">annotations</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="nb">map</span><span class="p">(</span><span class="k">lambda</span> <span class="n">c</span><span class="p">:</span> <span class="n">torch</span><span class="p">.</span><span class="n">tensor</span><span class="p">(</span><span class="nb">ord</span><span class="p">(</span><span class="n">c</span><span class="p">)</span> <span class="o">-</span> <span class="nb">ord</span><span class="p">(</span><span class="s">'a'</span><span class="p">)),</span> <span class="n">annotations</span><span class="p">))</span>
+    <span class="n">m_width</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="mi">18</span><span class="p">,</span> <span class="nb">max</span><span class="p">([</span><span class="n">i</span><span class="p">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">images</span><span class="p">]))</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">images</span><span class="p">)):</span>
+        <span class="n">images</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">torch</span><span class="p">.</span><span class="n">nn</span><span class="p">.</span><span class="n">functional</span><span class="p">.</span><span class="n">pad</span><span class="p">(</span><span class="n">images</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">m_width</span> <span class="o">-</span> <span class="n">images</span><span class="p">[</span><span class="n">i</span><span class="p">].</span><span class="n">shape</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]))</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">images</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">images</span><span class="p">[</span><span class="mi">0</span><span class="p">].</span><span class="n">unsqueeze</span><span class="p">(</span><span class="mi">0</span><span class="p">),</span> <span class="n">torch</span><span class="p">.</span><span class="n">stack</span><span class="p">(</span><span class="n">annotations</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">torch</span><span class="p">.</span><span class="n">stack</span><span class="p">(</span><span class="n">images</span><span class="p">),</span> <span class="n">torch</span><span class="p">.</span><span class="n">stack</span><span class="p">(</span><span class="n">annotations</span><span class="p">)</span>
+
+<span class="k">def</span> <span class="nf">train_model</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">epochs</span><span class="p">,</span> <span class="n">dataloader</span><span class="p">,</span> <span class="n">criterion</span><span class="p">,</span> <span class="n">optimizer</span><span class="p">):</span>
+    <span class="n">model</span><span class="p">.</span><span class="n">train</span><span class="p">()</span>
+    <span class="n">pbar</span> <span class="o">=</span> <span class="n">tqdm</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="n">epochs</span><span class="p">))</span>
+    <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="n">pbar</span><span class="p">:</span>
+        <span class="n">train_loss</span> <span class="o">=</span> <span class="mf">0.0</span>
+        <span class="k">for</span> <span class="n">images</span><span class="p">,</span> <span class="n">target</span> <span class="ow">in</span> <span class="n">dataloader</span><span class="p">:</span>
+            <span class="n">images</span> <span class="o">=</span> <span class="n">images</span><span class="p">.</span><span class="n">unsqueeze</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>  <span class="c1"># (B,1,32,W)
+</span>            <span class="n">optimizer</span><span class="p">.</span><span class="n">zero_grad</span><span class="p">()</span>
+            <span class="n">out</span> <span class="o">=</span> <span class="n">model</span><span class="p">(</span><span class="n">images</span><span class="p">)</span>          <span class="c1"># (B,K,27), for 1 char K==1
+</span>            <span class="n">loss</span> <span class="o">=</span> <span class="n">criterion</span><span class="p">(</span><span class="n">out</span><span class="p">.</span><span class="n">squeeze</span><span class="p">(),</span> <span class="n">target</span><span class="o">=</span><span class="n">target</span><span class="p">)</span>
+            <span class="n">loss</span><span class="p">.</span><span class="n">backward</span><span class="p">();</span> <span class="n">optimizer</span><span class="p">.</span><span class="n">step</span><span class="p">()</span>
+            <span class="n">train_loss</span> <span class="o">+=</span> <span class="n">loss</span><span class="p">.</span><span class="n">item</span><span class="p">()</span>
+        <span class="n">train_loss</span> <span class="o">/=</span> <span class="nb">len</span><span class="p">(</span><span class="n">dataloader</span><span class="p">)</span>
+        <span class="n">pbar</span><span class="p">.</span><span class="n">set_postfix</span><span class="p">({</span><span class="s">'Train Loss'</span><span class="p">:</span> <span class="n">train_loss</span><span class="p">})</span>
+
+<span class="c1"># Usage:
+# sds_1 = SimpleWordsDataset(1, len=1000, jitter=True, noise=False)
+# loader_1 = torch.utils.data.DataLoader(sds_1, batch_size=16, num_workers=0, collate_fn=simple_collate_fn)
+# model = SimpleNet()
+# optimizer = Adam(model.parameters(), lr=1e-2)
+# train_model(model, 15, loader_1, cross_entropy, optimizer)
+</span>
+<span class="c1"># Accuracy check on single-char:
+</span><span class="k">def</span> <span class="nf">get_accuracy</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">dataset</span><span class="p">):</span>
+    <span class="n">cnt</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="k">for</span> <span class="n">img</span><span class="p">,</span> <span class="n">label</span> <span class="ow">in</span> <span class="n">dataset</span><span class="p">:</span>
+        <span class="n">energies</span> <span class="o">=</span> <span class="n">model</span><span class="p">(</span><span class="n">img</span><span class="p">.</span><span class="n">unsqueeze</span><span class="p">(</span><span class="mi">0</span><span class="p">).</span><span class="n">unsqueeze</span><span class="p">(</span><span class="mi">0</span><span class="p">))[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">]</span>  <span class="c1"># (27,)
+</span>        <span class="n">pred</span> <span class="o">=</span> <span class="n">energies</span><span class="p">.</span><span class="n">argmin</span><span class="p">(</span><span class="n">dim</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span>
+        <span class="n">cnt</span> <span class="o">+=</span> <span class="nb">int</span><span class="p">(</span><span class="n">pred</span> <span class="o">==</span> <span class="p">(</span><span class="nb">ord</span><span class="p">(</span><span class="n">label</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span> <span class="o">-</span> <span class="nb">ord</span><span class="p">(</span><span class="s">'a'</span><span class="p">)))</span>
+    <span class="k">return</span> <span class="n">cnt</span> <span class="o">/</span> <span class="nb">len</span><span class="p">(</span><span class="n">dataset</span><span class="p">)</span>
+
+<span class="c1"># tds = SimpleWordsDataset(1, len=100)
+# assert get_accuracy(model, tds) == 1.0
+</span></code></pre></div></div>
+
+<p><strong>Highlights</strong></p>
+<ul>
+  <li>One-character dataset &amp; padding collate.</li>
+  <li><code class="language-plaintext highlighter-rouge">SimpleNet</code> ensures <code class="language-plaintext highlighter-rouge">(32×18)</code> receptive field → per-window energies over 27 classes.</li>
+</ul>
+
+<h3>Example 2 — Alignment Utilities &amp; Viterbi (Dynamic Programming)</h3>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1"># --- Path/CE matrices (vectorized) ---
+</span><span class="k">def</span> <span class="nf">build_path_matrix</span><span class="p">(</span><span class="n">energies</span><span class="p">,</span> <span class="n">targets</span><span class="p">):</span>
+    <span class="s">"""
+    energies: (B, L, 27)
+    targets:  (B, T) integer indices in [0..26]
+    returns:  (B, L, T) where out[b,i,k] = energies[b,i,targets[b,k]]
+    """</span>
+    <span class="n">L</span> <span class="o">=</span> <span class="n">energies</span><span class="p">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+    <span class="n">targets_exp</span> <span class="o">=</span> <span class="n">targets</span><span class="p">.</span><span class="n">unsqueeze</span><span class="p">(</span><span class="mi">1</span><span class="p">).</span><span class="n">repeat</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">L</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>      <span class="c1"># (B,L,T)
+</span>    <span class="k">return</span> <span class="n">torch</span><span class="p">.</span><span class="n">gather</span><span class="p">(</span><span class="n">energies</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="n">targets_exp</span><span class="p">)</span>           <span class="c1"># (B,L,T)
+</span>
+<span class="k">def</span> <span class="nf">build_ce_matrix</span><span class="p">(</span><span class="n">energies</span><span class="p">,</span> <span class="n">targets</span><span class="p">):</span>
+    <span class="s">"""
+    ce[b,i,k] = CE(energies[b,i], targets[b,k])
+    returns: (B, L, T)
+    """</span>
+    <span class="n">L</span><span class="p">,</span> <span class="n">T</span> <span class="o">=</span> <span class="n">energies</span><span class="p">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">targets</span><span class="p">.</span><span class="n">shape</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+    <span class="n">energies4</span> <span class="o">=</span> <span class="n">energies</span><span class="p">.</span><span class="n">permute</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">1</span><span class="p">).</span><span class="n">unsqueeze</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">).</span><span class="n">repeat</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="n">T</span><span class="p">)</span>  <span class="c1"># (B,27,L,T)
+</span>    <span class="n">targets4</span>  <span class="o">=</span> <span class="n">targets</span><span class="p">.</span><span class="n">unsqueeze</span><span class="p">(</span><span class="mi">1</span><span class="p">).</span><span class="n">repeat</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">L</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>                      <span class="c1"># (B,L,T)
+</span>    <span class="k">return</span> <span class="n">cross_entropy</span><span class="p">(</span><span class="n">energies4</span><span class="p">,</span> <span class="n">targets4</span><span class="p">,</span> <span class="n">reduction</span><span class="o">=</span><span class="s">'none'</span><span class="p">)</span>
+
+<span class="c1"># --- Label transform: interleave blanks: 'cat' -&gt; c _ a _ t _ ---
+</span><span class="k">def</span> <span class="nf">transform_word</span><span class="p">(</span><span class="n">s</span><span class="p">):</span>
+    <span class="n">encoded</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">s</span><span class="p">:</span>
+        <span class="n">encoded</span><span class="p">.</span><span class="n">append</span><span class="p">(</span><span class="nb">ord</span><span class="p">(</span><span class="n">c</span><span class="p">)</span> <span class="o">-</span> <span class="nb">ord</span><span class="p">(</span><span class="s">'a'</span><span class="p">))</span>
+        <span class="n">encoded</span><span class="p">.</span><span class="n">append</span><span class="p">(</span><span class="n">BETWEEN</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">torch</span><span class="p">.</span><span class="n">tensor</span><span class="p">(</span><span class="n">encoded</span><span class="p">)</span>  <span class="c1"># len = 2*len(s)
+</span>
+<span class="c1"># --- Path validity &amp; energy ---
+</span><span class="k">def</span> <span class="nf">checkValidMapping</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="n">T</span><span class="p">):</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">path</span><span class="p">)):</span>
+        <span class="k">if</span> <span class="n">path</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">&lt;</span> <span class="n">path</span><span class="p">[</span><span class="n">i</span><span class="o">-</span><span class="mi">1</span><span class="p">]:</span>
+            <span class="k">return</span> <span class="bp">False</span>
+    <span class="k">return</span> <span class="bp">True</span>
+
+<span class="k">def</span> <span class="nf">path_energy</span><span class="p">(</span><span class="n">pm</span><span class="p">,</span> <span class="n">path</span><span class="p">):</span>
+    <span class="s">"""
+    pm: (L,T) energies for (window, target-pos)
+    path: list of length L with target indices
+    """</span>
+    <span class="n">T</span> <span class="o">=</span> <span class="n">pm</span><span class="p">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">checkValidMapping</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="n">T</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">torch</span><span class="p">.</span><span class="n">tensor</span><span class="p">(</span><span class="mi">2</span><span class="o">**</span><span class="mi">30</span><span class="p">)</span>
+    <span class="n">energy</span> <span class="o">=</span> <span class="mf">0.0</span>
+    <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">c</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">path</span><span class="p">):</span>
+        <span class="n">energy</span> <span class="o">+=</span> <span class="n">pm</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">c</span><span class="p">]</span>
+    <span class="k">return</span> <span class="n">energy</span>
+
+<span class="c1"># --- Viterbi (DP) to find best path ---
+</span><span class="k">def</span> <span class="nf">find_path</span><span class="p">(</span><span class="n">pm</span><span class="p">):</span>
+    <span class="s">"""
+    pm: (L,T) energy matrix
+    returns: (free_energy, path_points, dp)
+      - free_energy: sum on best path
+      - path_points: list of (i,j) along best path
+      - dp: DP table (L,T)
+    """</span>
+    <span class="n">L</span><span class="p">,</span> <span class="n">T</span> <span class="o">=</span> <span class="n">pm</span><span class="p">.</span><span class="n">shape</span>
+    <span class="n">dp</span> <span class="o">=</span> <span class="n">torch</span><span class="p">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">L</span><span class="p">,</span> <span class="n">T</span><span class="p">),</span> <span class="n">device</span><span class="o">=</span><span class="n">pm</span><span class="p">.</span><span class="n">device</span><span class="p">)</span>
+    <span class="n">parent</span> <span class="o">=</span> <span class="p">[[</span><span class="bp">None</span><span class="p">]</span><span class="o">*</span><span class="n">T</span> <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">L</span><span class="p">)]</span>
+    <span class="n">dp</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">pm</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">];</span> <span class="n">parent</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">T</span><span class="p">):</span>
+        <span class="n">dp</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="n">j</span><span class="p">]</span> <span class="o">=</span> <span class="mi">2</span><span class="o">**</span><span class="mi">30</span>
+        <span class="n">parent</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="n">j</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">j</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">L</span><span class="p">):</span>
+        <span class="n">dp</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">dp</span><span class="p">[</span><span class="n">i</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="mi">0</span><span class="p">]</span> <span class="o">+</span> <span class="n">pm</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="mi">0</span><span class="p">]</span>
+        <span class="n">parent</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="n">i</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="mi">0</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">L</span><span class="p">):</span>
+        <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">T</span><span class="p">):</span>
+            <span class="n">a</span><span class="p">,</span> <span class="n">b</span> <span class="o">=</span> <span class="n">dp</span><span class="p">[</span><span class="n">i</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="n">j</span><span class="p">],</span> <span class="n">dp</span><span class="p">[</span><span class="n">i</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="n">j</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+            <span class="k">if</span> <span class="n">a</span> <span class="o">&lt;</span> <span class="n">b</span><span class="p">:</span>
+                <span class="n">dp</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="n">j</span><span class="p">]</span> <span class="o">=</span> <span class="n">a</span> <span class="o">+</span> <span class="n">pm</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="n">j</span><span class="p">];</span> <span class="n">parent</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="n">j</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="n">i</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="n">j</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">dp</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="n">j</span><span class="p">]</span> <span class="o">=</span> <span class="n">b</span> <span class="o">+</span> <span class="n">pm</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="n">j</span><span class="p">];</span> <span class="n">parent</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="n">j</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="n">i</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="n">j</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+    <span class="c1"># Backtrack: pick best j in last row
+</span>    <span class="n">j</span> <span class="o">=</span> <span class="n">torch</span><span class="p">.</span><span class="n">argmin</span><span class="p">(</span><span class="n">dp</span><span class="p">[</span><span class="n">L</span><span class="o">-</span><span class="mi">1</span><span class="p">]).</span><span class="n">item</span><span class="p">()</span>
+    <span class="n">path</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">L</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">):</span>
+        <span class="n">path</span><span class="p">.</span><span class="n">append</span><span class="p">(</span><span class="n">j</span><span class="p">)</span>
+        <span class="n">_</span><span class="p">,</span> <span class="n">j</span> <span class="o">=</span> <span class="n">parent</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="n">j</span><span class="p">]</span>
+    <span class="n">path</span><span class="p">.</span><span class="n">reverse</span><span class="p">()</span>
+    <span class="n">points</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="nb">zip</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="n">L</span><span class="p">),</span> <span class="n">path</span><span class="p">))</span>
+    <span class="k">return</span> <span class="p">(</span><span class="n">path_energy</span><span class="p">(</span><span class="n">pm</span><span class="p">,</span> <span class="n">path</span><span class="p">),</span> <span class="n">points</span><span class="p">,</span> <span class="n">dp</span><span class="p">)</span>
+
+<span class="c1"># --- Example usage (alphabet image) ---
+# alphabet = SimpleWordsDataset(1).draw_text(string.ascii_lowercase, 340)
+# energies = model(alphabet.view(1,1,*alphabet.shape))   # (1,L,27)
+# targets  = transform_word(string.ascii_lowercase).unsqueeze(0)  # (1,T)
+# pm = build_path_matrix(energies, targets)              # (1,L,T)
+# free_energy, path, dp = find_path(pm[0])
+</span></code></pre></div></div>
+
+<p><strong>Highlights</strong></p>
+<ul>
+  <li><code class="language-plaintext highlighter-rouge">build_path_matrix</code> gathers per-window energy for each label position.</li>
+  <li><code class="language-plaintext highlighter-rouge">find_path</code> implements the <strong>minimum-energy monotone alignment</strong>.</li>
+  <li>Diagonal-ish best paths appear as the model improves.</li>
+</ul>
+
+<h3>Example 3 — Train EBM with Viterbi Alignments</h3>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">def</span> <span class="nf">collate_fn</span><span class="p">(</span><span class="n">samples</span><span class="p">):</span>
+    <span class="s">"""Collate for multi-char: pad images to same width; interleave blanks in labels and pad with BETWEEN."""</span>
+    <span class="n">images</span><span class="p">,</span> <span class="n">annotations</span> <span class="o">=</span> <span class="nb">zip</span><span class="p">(</span><span class="o">*</span><span class="n">samples</span><span class="p">)</span>
+    <span class="n">images</span><span class="p">,</span> <span class="n">annotations</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">images</span><span class="p">),</span> <span class="nb">list</span><span class="p">(</span><span class="n">annotations</span><span class="p">)</span>
+    <span class="n">annotations</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="nb">map</span><span class="p">(</span><span class="n">transform_word</span><span class="p">,</span> <span class="n">annotations</span><span class="p">))</span>
+    <span class="n">m_width</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="mi">18</span><span class="p">,</span> <span class="nb">max</span><span class="p">([</span><span class="n">i</span><span class="p">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">images</span><span class="p">]))</span>
+    <span class="n">m_len</span>   <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="nb">max</span><span class="p">([</span><span class="n">s</span><span class="p">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">annotations</span><span class="p">]))</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">images</span><span class="p">)):</span>
+        <span class="n">images</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">torch</span><span class="p">.</span><span class="n">nn</span><span class="p">.</span><span class="n">functional</span><span class="p">.</span><span class="n">pad</span><span class="p">(</span><span class="n">images</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">m_width</span> <span class="o">-</span> <span class="n">images</span><span class="p">[</span><span class="n">i</span><span class="p">].</span><span class="n">shape</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]))</span>
+        <span class="n">annotations</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">torch</span><span class="p">.</span><span class="n">nn</span><span class="p">.</span><span class="n">functional</span><span class="p">.</span><span class="n">pad</span><span class="p">(</span><span class="n">annotations</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">m_len</span> <span class="o">-</span> <span class="n">annotations</span><span class="p">[</span><span class="n">i</span><span class="p">].</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]),</span> <span class="n">value</span><span class="o">=</span><span class="n">BETWEEN</span><span class="p">)</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">images</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">images</span><span class="p">[</span><span class="mi">0</span><span class="p">].</span><span class="n">unsqueeze</span><span class="p">(</span><span class="mi">0</span><span class="p">),</span> <span class="n">torch</span><span class="p">.</span><span class="n">stack</span><span class="p">(</span><span class="n">annotations</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">torch</span><span class="p">.</span><span class="n">stack</span><span class="p">(</span><span class="n">images</span><span class="p">),</span> <span class="n">torch</span><span class="p">.</span><span class="n">stack</span><span class="p">(</span><span class="n">annotations</span><span class="p">)</span>
+
+<span class="k">def</span> <span class="nf">train_ebm_model</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">num_epochs</span><span class="p">,</span> <span class="n">train_loader</span><span class="p">,</span> <span class="n">criterion</span><span class="p">,</span> <span class="n">optimizer</span><span class="p">):</span>
+    <span class="s">"""Train EBM using best-path (Viterbi) alignments."""</span>
+    <span class="n">pbar</span> <span class="o">=</span> <span class="n">tqdm</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="n">num_epochs</span><span class="p">))</span>
+    <span class="n">model</span><span class="p">.</span><span class="n">train</span><span class="p">()</span>
+    <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="n">pbar</span><span class="p">:</span>
+        <span class="n">total</span> <span class="o">=</span> <span class="mf">0.0</span>
+        <span class="k">for</span> <span class="n">samples</span><span class="p">,</span> <span class="n">targets</span> <span class="ow">in</span> <span class="n">train_loader</span><span class="p">:</span>
+            <span class="n">optimizer</span><span class="p">.</span><span class="n">zero_grad</span><span class="p">()</span>
+            <span class="n">energies</span> <span class="o">=</span> <span class="n">model</span><span class="p">(</span><span class="n">samples</span><span class="p">.</span><span class="n">unsqueeze</span><span class="p">(</span><span class="mi">1</span><span class="p">))</span>           <span class="c1"># (B,L,27)
+</span>            <span class="n">pm</span> <span class="o">=</span> <span class="n">build_path_matrix</span><span class="p">(</span><span class="n">energies</span><span class="p">,</span> <span class="n">targets</span><span class="p">)</span>        <span class="c1"># (B,L,T)
+</span>            <span class="n">batch_losses</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="k">for</span> <span class="n">b</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">pm</span><span class="p">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]):</span>
+                <span class="n">free_energy</span><span class="p">,</span> <span class="n">best_path</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">find_path</span><span class="p">(</span><span class="n">pm</span><span class="p">[</span><span class="n">b</span><span class="p">])</span>  <span class="c1"># best_path: list[(i,j)]
+</span>                <span class="n">j_indices</span> <span class="o">=</span> <span class="p">[</span><span class="n">ij</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="k">for</span> <span class="n">ij</span> <span class="ow">in</span> <span class="n">best_path</span><span class="p">]</span>       <span class="c1"># target indices along path
+</span>                <span class="c1"># Sum CE along best path:
+</span>                <span class="n">batch_losses</span><span class="p">.</span><span class="n">append</span><span class="p">(</span><span class="n">criterion</span><span class="p">(</span><span class="n">energies</span><span class="p">[</span><span class="n">b</span><span class="p">],</span> <span class="n">targets</span><span class="p">[</span><span class="n">b</span><span class="p">,</span> <span class="n">j_indices</span><span class="p">]))</span>
+            <span class="n">loss</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="n">batch_losses</span><span class="p">)</span>
+            <span class="n">total</span> <span class="o">+=</span> <span class="n">loss</span><span class="p">.</span><span class="n">item</span><span class="p">()</span>
+            <span class="n">loss</span><span class="p">.</span><span class="n">backward</span><span class="p">();</span> <span class="n">optimizer</span><span class="p">.</span><span class="n">step</span><span class="p">()</span>
+        <span class="n">pbar</span><span class="p">.</span><span class="n">set_postfix</span><span class="p">({</span><span class="s">'train_loss'</span><span class="p">:</span> <span class="n">total</span> <span class="o">/</span> <span class="nb">len</span><span class="p">(</span><span class="n">train_loader</span><span class="p">.</span><span class="n">dataset</span><span class="p">)})</span>
+
+<span class="c1"># Usage:
+# sds2 = SimpleWordsDataset(2, 2500)
+# loader2 = torch.utils.data.DataLoader(sds2, batch_size=32, num_workers=0, collate_fn=collate_fn)
+# ebm_model = copy.deepcopy(model)
+# optimizer = Adam(ebm_model.parameters(), lr=1e-3)
+# train_ebm_model(ebm_model, 15, loader2, cross_entropy, optimizer)
+</span></code></pre></div></div>
+
+<p><strong>Highlights</strong></p>
+<ul>
+  <li>Loss is the <strong>sum of cross-entropies along the Viterbi path</strong>.</li>
+  <li>Works but <strong>slow</strong> due to per-sample DP; suitable for teaching/demo.</li>
+</ul>
+
+<h3>Example 4 — GTN / CTC: Graph-Based Training &amp; Viterbi</h3>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1"># --- GTN-based CTC loss and Viterbi (adapted) ---
+</span><span class="kn">import</span> <span class="nn">torch.nn.functional</span> <span class="k">as</span> <span class="n">F</span>
+<span class="kn">import</span> <span class="nn">gtn</span>
+
+<span class="k">class</span> <span class="nc">CTCLossFunction</span><span class="p">(</span><span class="n">torch</span><span class="p">.</span><span class="n">autograd</span><span class="p">.</span><span class="n">Function</span><span class="p">):</span>
+    <span class="o">@</span><span class="nb">staticmethod</span>
+    <span class="k">def</span> <span class="nf">create_ctc_graph</span><span class="p">(</span><span class="n">target</span><span class="p">,</span> <span class="n">blank_idx</span><span class="p">):</span>
+        <span class="n">g_criterion</span> <span class="o">=</span> <span class="n">gtn</span><span class="p">.</span><span class="n">Graph</span><span class="p">(</span><span class="bp">False</span><span class="p">)</span>
+        <span class="n">L</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">target</span><span class="p">);</span> <span class="n">S</span> <span class="o">=</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">L</span> <span class="o">+</span> <span class="mi">1</span>
+        <span class="k">for</span> <span class="n">l</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">S</span><span class="p">):</span>
+            <span class="n">idx</span> <span class="o">=</span> <span class="p">(</span><span class="n">l</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span> <span class="o">//</span> <span class="mi">2</span>
+            <span class="n">g_criterion</span><span class="p">.</span><span class="n">add_node</span><span class="p">(</span><span class="n">l</span> <span class="o">==</span> <span class="mi">0</span><span class="p">,</span> <span class="n">l</span> <span class="o">==</span> <span class="n">S</span> <span class="o">-</span> <span class="mi">1</span> <span class="ow">or</span> <span class="n">l</span> <span class="o">==</span> <span class="n">S</span> <span class="o">-</span> <span class="mi">2</span><span class="p">)</span>
+            <span class="n">label</span> <span class="o">=</span> <span class="n">target</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span> <span class="k">if</span> <span class="n">l</span> <span class="o">%</span> <span class="mi">2</span> <span class="k">else</span> <span class="n">blank_idx</span>
+            <span class="n">g_criterion</span><span class="p">.</span><span class="n">add_arc</span><span class="p">(</span><span class="n">l</span><span class="p">,</span> <span class="n">l</span><span class="p">,</span> <span class="n">label</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">l</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="n">g_criterion</span><span class="p">.</span><span class="n">add_arc</span><span class="p">(</span><span class="n">l</span> <span class="o">-</span> <span class="mi">1</span><span class="p">,</span> <span class="n">l</span><span class="p">,</span> <span class="n">label</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">l</span> <span class="o">%</span> <span class="mi">2</span> <span class="ow">and</span> <span class="n">l</span> <span class="o">&gt;</span> <span class="mi">1</span> <span class="ow">and</span> <span class="n">label</span> <span class="o">!=</span> <span class="n">target</span><span class="p">[</span><span class="n">idx</span> <span class="o">-</span> <span class="mi">1</span><span class="p">]:</span>
+                <span class="n">g_criterion</span><span class="p">.</span><span class="n">add_arc</span><span class="p">(</span><span class="n">l</span> <span class="o">-</span> <span class="mi">2</span><span class="p">,</span> <span class="n">l</span><span class="p">,</span> <span class="n">label</span><span class="p">)</span>
+        <span class="n">g_criterion</span><span class="p">.</span><span class="n">arc_sort</span><span class="p">(</span><span class="bp">False</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">g_criterion</span>
+
+    <span class="o">@</span><span class="nb">staticmethod</span>
+    <span class="k">def</span> <span class="nf">forward</span><span class="p">(</span><span class="n">ctx</span><span class="p">,</span> <span class="n">log_probs</span><span class="p">,</span> <span class="n">targets</span><span class="p">,</span> <span class="n">blank_idx</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">reduction</span><span class="o">=</span><span class="s">"none"</span><span class="p">):</span>
+        <span class="n">B</span><span class="p">,</span> <span class="n">T</span><span class="p">,</span> <span class="n">C</span> <span class="o">=</span> <span class="n">log_probs</span><span class="p">.</span><span class="n">shape</span>
+        <span class="n">losses</span><span class="p">,</span> <span class="n">scales</span><span class="p">,</span> <span class="n">emissions_graphs</span> <span class="o">=</span> <span class="p">[</span><span class="bp">None</span><span class="p">]</span><span class="o">*</span><span class="n">B</span><span class="p">,</span> <span class="p">[</span><span class="bp">None</span><span class="p">]</span><span class="o">*</span><span class="n">B</span><span class="p">,</span> <span class="p">[</span><span class="bp">None</span><span class="p">]</span><span class="o">*</span><span class="n">B</span>
+
+        <span class="k">def</span> <span class="nf">process</span><span class="p">(</span><span class="n">b</span><span class="p">):</span>
+            <span class="n">g_emissions</span> <span class="o">=</span> <span class="n">gtn</span><span class="p">.</span><span class="n">linear_graph</span><span class="p">(</span><span class="n">T</span><span class="p">,</span> <span class="n">C</span><span class="p">,</span> <span class="n">log_probs</span><span class="p">.</span><span class="n">requires_grad</span><span class="p">)</span>
+            <span class="n">cpu_data</span> <span class="o">=</span> <span class="n">log_probs</span><span class="p">[</span><span class="n">b</span><span class="p">].</span><span class="n">cpu</span><span class="p">().</span><span class="n">contiguous</span><span class="p">()</span>
+            <span class="n">g_emissions</span><span class="p">.</span><span class="n">set_weights</span><span class="p">(</span><span class="n">cpu_data</span><span class="p">.</span><span class="n">data_ptr</span><span class="p">())</span>
+            <span class="n">g_criterion</span> <span class="o">=</span> <span class="n">CTCLossFunction</span><span class="p">.</span><span class="n">create_ctc_graph</span><span class="p">(</span><span class="n">targets</span><span class="p">[</span><span class="n">b</span><span class="p">],</span> <span class="n">blank_idx</span><span class="p">)</span>
+            <span class="n">g_loss</span> <span class="o">=</span> <span class="n">gtn</span><span class="p">.</span><span class="n">negate</span><span class="p">(</span><span class="n">gtn</span><span class="p">.</span><span class="n">forward_score</span><span class="p">(</span><span class="n">gtn</span><span class="p">.</span><span class="n">intersect</span><span class="p">(</span><span class="n">g_emissions</span><span class="p">,</span> <span class="n">g_criterion</span><span class="p">)))</span>
+            <span class="n">scale</span> <span class="o">=</span> <span class="mf">1.0</span>
+            <span class="k">if</span> <span class="n">reduction</span> <span class="o">==</span> <span class="s">"mean"</span><span class="p">:</span>
+                <span class="n">L</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">targets</span><span class="p">[</span><span class="n">b</span><span class="p">]);</span> <span class="n">scale</span> <span class="o">=</span> <span class="mf">1.0</span> <span class="o">/</span> <span class="n">L</span> <span class="k">if</span> <span class="n">L</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="k">else</span> <span class="n">scale</span>
+            <span class="k">elif</span> <span class="n">reduction</span> <span class="o">!=</span> <span class="s">"none"</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="nb">ValueError</span><span class="p">(</span><span class="s">"invalid reduction"</span><span class="p">)</span>
+            <span class="n">losses</span><span class="p">[</span><span class="n">b</span><span class="p">],</span> <span class="n">scales</span><span class="p">[</span><span class="n">b</span><span class="p">],</span> <span class="n">emissions_graphs</span><span class="p">[</span><span class="n">b</span><span class="p">]</span> <span class="o">=</span> <span class="n">g_loss</span><span class="p">,</span> <span class="n">scale</span><span class="p">,</span> <span class="n">g_emissions</span>
+
+        <span class="n">gtn</span><span class="p">.</span><span class="n">parallel_for</span><span class="p">(</span><span class="n">process</span><span class="p">,</span> <span class="nb">range</span><span class="p">(</span><span class="n">B</span><span class="p">))</span>
+        <span class="n">ctx</span><span class="p">.</span><span class="n">auxiliary_data</span> <span class="o">=</span> <span class="p">(</span><span class="n">losses</span><span class="p">,</span> <span class="n">scales</span><span class="p">,</span> <span class="n">emissions_graphs</span><span class="p">,</span> <span class="n">log_probs</span><span class="p">.</span><span class="n">shape</span><span class="p">)</span>
+        <span class="n">loss</span> <span class="o">=</span> <span class="n">torch</span><span class="p">.</span><span class="n">tensor</span><span class="p">([</span><span class="n">losses</span><span class="p">[</span><span class="n">b</span><span class="p">].</span><span class="n">item</span><span class="p">()</span> <span class="o">*</span> <span class="n">scales</span><span class="p">[</span><span class="n">b</span><span class="p">]</span> <span class="k">for</span> <span class="n">b</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">B</span><span class="p">)])</span>
+        <span class="k">return</span> <span class="n">torch</span><span class="p">.</span><span class="n">mean</span><span class="p">(</span><span class="n">loss</span><span class="p">.</span><span class="n">cuda</span><span class="p">()</span> <span class="k">if</span> <span class="n">log_probs</span><span class="p">.</span><span class="n">is_cuda</span> <span class="k">else</span> <span class="n">loss</span><span class="p">)</span>
+
+    <span class="o">@</span><span class="nb">staticmethod</span>
+    <span class="k">def</span> <span class="nf">backward</span><span class="p">(</span><span class="n">ctx</span><span class="p">,</span> <span class="n">grad_output</span><span class="p">):</span>
+        <span class="n">losses</span><span class="p">,</span> <span class="n">scales</span><span class="p">,</span> <span class="n">emissions_graphs</span><span class="p">,</span> <span class="n">in_shape</span> <span class="o">=</span> <span class="n">ctx</span><span class="p">.</span><span class="n">auxiliary_data</span>
+        <span class="n">B</span><span class="p">,</span> <span class="n">T</span><span class="p">,</span> <span class="n">C</span> <span class="o">=</span> <span class="n">in_shape</span>
+        <span class="n">input_grad</span> <span class="o">=</span> <span class="n">torch</span><span class="p">.</span><span class="n">empty</span><span class="p">((</span><span class="n">B</span><span class="p">,</span> <span class="n">T</span><span class="p">,</span> <span class="n">C</span><span class="p">))</span>
+        <span class="k">def</span> <span class="nf">process</span><span class="p">(</span><span class="n">b</span><span class="p">):</span>
+            <span class="n">gtn</span><span class="p">.</span><span class="n">backward</span><span class="p">(</span><span class="n">losses</span><span class="p">[</span><span class="n">b</span><span class="p">],</span> <span class="bp">False</span><span class="p">)</span>
+            <span class="n">emissions</span> <span class="o">=</span> <span class="n">emissions_graphs</span><span class="p">[</span><span class="n">b</span><span class="p">]</span>
+            <span class="n">grad</span> <span class="o">=</span> <span class="n">emissions</span><span class="p">.</span><span class="n">grad</span><span class="p">().</span><span class="n">weights_to_numpy</span><span class="p">()</span>
+            <span class="n">input_grad</span><span class="p">[</span><span class="n">b</span><span class="p">]</span> <span class="o">=</span> <span class="n">torch</span><span class="p">.</span><span class="n">from_numpy</span><span class="p">(</span><span class="n">grad</span><span class="p">).</span><span class="n">view</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">T</span><span class="p">,</span> <span class="n">C</span><span class="p">)</span> <span class="o">*</span> <span class="n">scales</span><span class="p">[</span><span class="n">b</span><span class="p">]</span>
+        <span class="n">gtn</span><span class="p">.</span><span class="n">parallel_for</span><span class="p">(</span><span class="n">process</span><span class="p">,</span> <span class="nb">range</span><span class="p">(</span><span class="n">B</span><span class="p">))</span>
+        <span class="k">if</span> <span class="n">grad_output</span><span class="p">.</span><span class="n">is_cuda</span><span class="p">:</span>
+            <span class="n">input_grad</span> <span class="o">=</span> <span class="n">input_grad</span><span class="p">.</span><span class="n">cuda</span><span class="p">()</span>
+        <span class="n">input_grad</span> <span class="o">*=</span> <span class="n">grad_output</span> <span class="o">/</span> <span class="n">B</span>
+        <span class="k">return</span> <span class="p">(</span><span class="n">input_grad</span><span class="p">,</span> <span class="bp">None</span><span class="p">,</span> <span class="bp">None</span><span class="p">,</span> <span class="bp">None</span><span class="p">)</span>
+
+<span class="n">CTCLoss</span> <span class="o">=</span> <span class="n">CTCLossFunction</span><span class="p">.</span><span class="nb">apply</span>
+
+<span class="k">def</span> <span class="nf">viterbi</span><span class="p">(</span><span class="n">energies</span><span class="p">,</span> <span class="n">targets</span><span class="p">,</span> <span class="n">blank_idx</span><span class="o">=</span><span class="mi">0</span><span class="p">):</span>
+    <span class="n">outputs</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span> <span class="o">*</span> <span class="n">energies</span>
+    <span class="n">B</span><span class="p">,</span> <span class="n">T</span><span class="p">,</span> <span class="n">C</span> <span class="o">=</span> <span class="n">outputs</span><span class="p">.</span><span class="n">shape</span>
+    <span class="n">paths</span><span class="p">,</span> <span class="n">scores</span><span class="p">,</span> <span class="n">emissions_graphs</span> <span class="o">=</span> <span class="p">[</span><span class="bp">None</span><span class="p">]</span><span class="o">*</span><span class="n">B</span><span class="p">,</span> <span class="p">[</span><span class="bp">None</span><span class="p">]</span><span class="o">*</span><span class="n">B</span><span class="p">,</span> <span class="p">[</span><span class="bp">None</span><span class="p">]</span><span class="o">*</span><span class="n">B</span>
+    <span class="k">def</span> <span class="nf">process</span><span class="p">(</span><span class="n">b</span><span class="p">):</span>
+        <span class="n">L</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">targets</span><span class="p">[</span><span class="n">b</span><span class="p">])</span>
+        <span class="n">g_emissions</span> <span class="o">=</span> <span class="n">gtn</span><span class="p">.</span><span class="n">linear_graph</span><span class="p">(</span><span class="n">T</span><span class="p">,</span> <span class="n">C</span><span class="p">,</span> <span class="n">outputs</span><span class="p">.</span><span class="n">requires_grad</span><span class="p">)</span>
+        <span class="n">cpu_data</span> <span class="o">=</span> <span class="n">outputs</span><span class="p">[</span><span class="n">b</span><span class="p">].</span><span class="n">cpu</span><span class="p">().</span><span class="n">contiguous</span><span class="p">()</span>
+        <span class="n">g_emissions</span><span class="p">.</span><span class="n">set_weights</span><span class="p">(</span><span class="n">cpu_data</span><span class="p">.</span><span class="n">data_ptr</span><span class="p">())</span>
+        <span class="n">g_criterion</span> <span class="o">=</span> <span class="n">CTCLossFunction</span><span class="p">.</span><span class="n">create_ctc_graph</span><span class="p">(</span><span class="n">targets</span><span class="p">[</span><span class="n">b</span><span class="p">],</span> <span class="n">blank_idx</span><span class="p">)</span>
+        <span class="n">g_inter</span> <span class="o">=</span> <span class="n">gtn</span><span class="p">.</span><span class="n">intersect</span><span class="p">(</span><span class="n">g_emissions</span><span class="p">,</span> <span class="n">g_criterion</span><span class="p">)</span>
+        <span class="n">g_score</span> <span class="o">=</span> <span class="n">gtn</span><span class="p">.</span><span class="n">viterbi_score</span><span class="p">(</span><span class="n">g_inter</span><span class="p">)</span>
+        <span class="n">g_path</span> <span class="o">=</span> <span class="n">gtn</span><span class="p">.</span><span class="n">viterbi_path</span><span class="p">(</span><span class="n">g_inter</span><span class="p">)</span>
+        <span class="n">l</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="n">mapped</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">g_path</span><span class="p">.</span><span class="n">labels_to_list</span><span class="p">():</span>
+            <span class="k">if</span> <span class="mi">2</span><span class="o">*</span><span class="n">p</span> <span class="o">&lt;</span> <span class="n">L</span><span class="p">:</span>
+                <span class="n">l</span> <span class="o">=</span> <span class="n">p</span><span class="p">;</span> <span class="n">mapped</span><span class="p">.</span><span class="n">append</span><span class="p">(</span><span class="mi">2</span><span class="o">*</span><span class="n">p</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">mapped</span><span class="p">.</span><span class="n">append</span><span class="p">(</span><span class="mi">2</span><span class="o">*</span><span class="n">l</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span>
+        <span class="n">paths</span><span class="p">[</span><span class="n">b</span><span class="p">]</span> <span class="o">=</span> <span class="n">mapped</span>
+        <span class="n">scores</span><span class="p">[</span><span class="n">b</span><span class="p">]</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span> <span class="o">*</span> <span class="n">g_score</span><span class="p">.</span><span class="n">item</span><span class="p">()</span>
+        <span class="n">emissions_graphs</span><span class="p">[</span><span class="n">b</span><span class="p">]</span> <span class="o">=</span> <span class="n">g_emissions</span>
+    <span class="n">gtn</span><span class="p">.</span><span class="n">parallel_for</span><span class="p">(</span><span class="n">process</span><span class="p">,</span> <span class="nb">range</span><span class="p">(</span><span class="n">B</span><span class="p">))</span>
+    <span class="k">return</span> <span class="p">(</span><span class="n">scores</span><span class="p">,</span> <span class="n">paths</span><span class="p">)</span>
+
+<span class="k">def</span> <span class="nf">train_gtn_model</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">num_epochs</span><span class="p">,</span> <span class="n">train_loader</span><span class="p">,</span> <span class="n">criterion</span><span class="p">,</span> <span class="n">optimizer</span><span class="p">):</span>
+    <span class="n">pbar</span> <span class="o">=</span> <span class="n">tqdm</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="n">num_epochs</span><span class="p">))</span>
+    <span class="n">model</span><span class="p">.</span><span class="n">train</span><span class="p">()</span>
+    <span class="n">device</span> <span class="o">=</span> <span class="n">torch</span><span class="p">.</span><span class="n">device</span><span class="p">(</span><span class="s">"cuda:0"</span><span class="p">)</span> <span class="k">if</span> <span class="n">torch</span><span class="p">.</span><span class="n">cuda</span><span class="p">.</span><span class="n">is_available</span><span class="p">()</span> <span class="k">else</span> <span class="n">torch</span><span class="p">.</span><span class="n">device</span><span class="p">(</span><span class="s">"cpu"</span><span class="p">)</span>
+    <span class="n">model</span><span class="p">.</span><span class="n">to</span><span class="p">(</span><span class="n">device</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="n">pbar</span><span class="p">:</span>
+        <span class="n">total</span> <span class="o">=</span> <span class="mf">0.0</span>
+        <span class="k">for</span> <span class="n">samples</span><span class="p">,</span> <span class="n">targets</span> <span class="ow">in</span> <span class="n">train_loader</span><span class="p">:</span>
+            <span class="n">samples</span><span class="p">,</span> <span class="n">targets</span> <span class="o">=</span> <span class="n">samples</span><span class="p">.</span><span class="n">to</span><span class="p">(</span><span class="n">device</span><span class="p">),</span> <span class="n">targets</span><span class="p">.</span><span class="n">to</span><span class="p">(</span><span class="n">device</span><span class="p">)</span>
+            <span class="n">optimizer</span><span class="p">.</span><span class="n">zero_grad</span><span class="p">()</span>
+            <span class="n">outputs</span> <span class="o">=</span> <span class="n">model</span><span class="p">(</span><span class="n">samples</span><span class="p">.</span><span class="n">unsqueeze</span><span class="p">(</span><span class="mi">1</span><span class="p">))</span>          <span class="c1"># (B,L,27)
+</span>            <span class="n">log_probs</span> <span class="o">=</span> <span class="n">F</span><span class="p">.</span><span class="n">log_softmax</span><span class="p">(</span><span class="o">-</span><span class="mf">1.0</span> <span class="o">*</span> <span class="n">outputs</span><span class="p">,</span> <span class="n">dim</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span>
+            <span class="n">loss</span> <span class="o">=</span> <span class="n">criterion</span><span class="p">(</span><span class="n">log_probs</span><span class="p">,</span> <span class="n">targets</span><span class="p">)</span>           <span class="c1"># CTC
+</span>            <span class="n">total</span> <span class="o">+=</span> <span class="n">loss</span><span class="p">.</span><span class="n">item</span><span class="p">()</span>
+            <span class="n">loss</span><span class="p">.</span><span class="n">backward</span><span class="p">();</span> <span class="n">optimizer</span><span class="p">.</span><span class="n">step</span><span class="p">()</span>
+        <span class="n">pbar</span><span class="p">.</span><span class="n">set_postfix</span><span class="p">({</span><span class="s">'train_loss'</span><span class="p">:</span> <span class="n">total</span> <span class="o">/</span> <span class="nb">len</span><span class="p">(</span><span class="n">train_loader</span><span class="p">.</span><span class="n">dataset</span><span class="p">)})</span>
+
+<span class="c1"># Usage:
+# sds3 = SimpleWordsDataset(3, 2500)
+# loader3 = torch.utils.data.DataLoader(sds3, batch_size=32, num_workers=0, collate_fn=collate_fn)
+# gtn_model = copy.deepcopy(model)
+# optimizer = Adam(gtn_model.parameters(), lr=1e-3)
+# train_gtn_model(gtn_model, 15, loader3, CTCLoss, optimizer)
+</span></code></pre></div></div>
+
+<p><strong>Highlights</strong></p>
+<ul>
+  <li>CTC = alignment graph <code class="language-plaintext highlighter-rouge">A_y</code> ∘ emissions graph <code class="language-plaintext highlighter-rouge">E</code>.</li>
+  <li>Training uses <strong>log-softmax</strong> and <strong>CTCLoss</strong>.</li>
+  <li><code class="language-plaintext highlighter-rouge">viterbi</code> via GTN yields best path and score without manual DP loops.</li>
+</ul>
+
+<h3>Example 5 — From Scratch (No Pretraining) &amp; Handwritten-Style Font</h3>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1"># --- No-pretraining: GTN/CTC directly on multi-character data ---
+# sds_np = SimpleWordsDataset(3, 2500)
+# loader_np = torch.utils.data.DataLoader(sds_np, batch_size=32, num_workers=0, collate_fn=collate_fn)
+# gtn_no_pretrained = SimpleNet()
+# optimizer = Adam(gtn_no_pretrained.parameters(), lr=1e-3)
+# train_gtn_model(gtn_no_pretrained, 20, loader_np, CTCLoss, optimizer)
+</span>
+<span class="c1"># --- Custom "handwritten-style" font dataset ---
+</span><span class="k">class</span> <span class="nc">CustomWordsDataset</span><span class="p">(</span><span class="n">torch</span><span class="p">.</span><span class="n">utils</span><span class="p">.</span><span class="n">data</span><span class="p">.</span><span class="n">IterableDataset</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">max_length</span><span class="p">,</span> <span class="nb">len</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span> <span class="n">jitter</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span> <span class="n">noise</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span> <span class="n">custom_fonts_path</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+        <span class="bp">self</span><span class="p">.</span><span class="n">max_length</span> <span class="o">=</span> <span class="n">max_length</span>
+        <span class="bp">self</span><span class="p">.</span><span class="n">transforms</span> <span class="o">=</span> <span class="n">transforms</span><span class="p">.</span><span class="n">ToTensor</span><span class="p">()</span>
+        <span class="bp">self</span><span class="p">.</span><span class="nb">len</span> <span class="o">=</span> <span class="nb">len</span>
+        <span class="bp">self</span><span class="p">.</span><span class="n">jitter</span> <span class="o">=</span> <span class="n">jitter</span>
+        <span class="bp">self</span><span class="p">.</span><span class="n">noise</span> <span class="o">=</span> <span class="n">noise</span>
+        <span class="bp">self</span><span class="p">.</span><span class="n">custom_fonts_path</span> <span class="o">=</span> <span class="n">custom_fonts_path</span>
+  
+    <span class="k">def</span> <span class="nf">__len__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="p">.</span><span class="nb">len</span>
+
+    <span class="k">def</span> <span class="nf">__iter__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="p">.</span><span class="nb">len</span><span class="p">):</span>
+            <span class="n">text</span> <span class="o">=</span> <span class="s">''</span><span class="p">.</span><span class="n">join</span><span class="p">([</span><span class="n">random</span><span class="p">.</span><span class="n">choice</span><span class="p">(</span><span class="n">string</span><span class="p">.</span><span class="n">ascii_lowercase</span><span class="p">)</span> <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="p">.</span><span class="n">max_length</span><span class="p">)])</span>
+            <span class="n">img</span> <span class="o">=</span> <span class="bp">self</span><span class="p">.</span><span class="n">draw_text</span><span class="p">(</span><span class="n">text</span><span class="p">,</span> <span class="n">jitter</span><span class="o">=</span><span class="bp">self</span><span class="p">.</span><span class="n">jitter</span><span class="p">,</span> <span class="n">noise</span><span class="o">=</span><span class="bp">self</span><span class="p">.</span><span class="n">noise</span><span class="p">)</span>
+            <span class="k">yield</span> <span class="n">img</span><span class="p">,</span> <span class="n">text</span>
+  
+    <span class="k">def</span> <span class="nf">draw_text</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">text</span><span class="p">,</span> <span class="n">length</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">jitter</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span> <span class="n">noise</span><span class="o">=</span><span class="bp">False</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">length</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="n">length</span> <span class="o">=</span> <span class="mi">18</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="n">text</span><span class="p">)</span>
+        <span class="n">img</span> <span class="o">=</span> <span class="n">Image</span><span class="p">.</span><span class="n">new</span><span class="p">(</span><span class="s">'L'</span><span class="p">,</span> <span class="p">(</span><span class="n">length</span><span class="p">,</span> <span class="mi">32</span><span class="p">))</span>
+        <span class="n">fnt</span> <span class="o">=</span> <span class="n">ImageFont</span><span class="p">.</span><span class="n">truetype</span><span class="p">(</span><span class="s">"fonts/Anonymous.ttf"</span> <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="p">.</span><span class="n">custom_fonts_path</span> <span class="k">else</span> <span class="bp">self</span><span class="p">.</span><span class="n">custom_fonts_path</span><span class="p">,</span> <span class="mi">20</span><span class="p">)</span>
+        <span class="n">d</span> <span class="o">=</span> <span class="n">ImageDraw</span><span class="p">.</span><span class="n">Draw</span><span class="p">(</span><span class="n">img</span><span class="p">)</span>
+        <span class="n">pos</span> <span class="o">=</span> <span class="p">(</span><span class="n">random</span><span class="p">.</span><span class="n">randint</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">7</span><span class="p">),</span> <span class="mi">5</span><span class="p">)</span> <span class="k">if</span> <span class="n">jitter</span> <span class="k">else</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">5</span><span class="p">)</span>
+        <span class="n">d</span><span class="p">.</span><span class="n">text</span><span class="p">(</span><span class="n">pos</span><span class="p">,</span> <span class="n">text</span><span class="p">,</span> <span class="n">fill</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">font</span><span class="o">=</span><span class="n">fnt</span><span class="p">)</span>
+        <span class="n">img</span> <span class="o">=</span> <span class="bp">self</span><span class="p">.</span><span class="n">transforms</span><span class="p">(</span><span class="n">img</span><span class="p">)</span>
+        <span class="n">img</span><span class="p">[</span><span class="n">img</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span> 
+        <span class="k">if</span> <span class="n">noise</span><span class="p">:</span>
+            <span class="n">img</span> <span class="o">+=</span> <span class="n">torch</span><span class="p">.</span><span class="n">bernoulli</span><span class="p">(</span><span class="n">torch</span><span class="p">.</span><span class="n">ones_like</span><span class="p">(</span><span class="n">img</span><span class="p">)</span> <span class="o">*</span> <span class="mf">0.1</span><span class="p">)</span>
+            <span class="n">img</span> <span class="o">=</span> <span class="n">img</span><span class="p">.</span><span class="n">clamp</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">img</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+
+<span class="c1"># Usage (after downloading a font to ./fonts/3dumb/2Dumb.ttf):
+# sds_hw = CustomWordsDataset(3, 2500, custom_fonts_path="./fonts/3dumb/2Dumb.ttf")
+# loader_hw = torch.utils.data.DataLoader(sds_hw, batch_size=32, num_workers=0, collate_fn=collate_fn)
+# gtn_hw = SimpleNet()
+# optimizer = Adam(gtn_hw.parameters(), lr=1e-3)
+# train_gtn_model(gtn_hw, 20, loader_hw, CTCLoss, optimizer)
+</span></code></pre></div></div>
+
+<p><strong>Highlights</strong></p>
+<ul>
+  <li>Training <strong>from scratch</strong> with GTN/CTC works, though convergence can be slower.</li>
+  <li>Domain shift (e.g., handwritten font) lowers scores; still decodes plausible strings.</li>
+</ul>
+
+<h3>Example 6 — Decoding (Collapse Repeats, Drop Blanks)</h3>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">def</span> <span class="nf">indices_to_str</span><span class="p">(</span><span class="n">indices</span><span class="p">):</span>
+    <span class="s">"""
+    Collapse heuristic:
+      1) Map 0..25 -&gt; letters; 26 -&gt; '_'
+      2) Split by '_' segments; take the most frequent char per segment
+      3) Remove '_' between segments -&gt; final string with '_' as segment delimiter (optional)
+    """</span>
+    <span class="n">out</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">ind</span> <span class="ow">in</span> <span class="n">indices</span><span class="p">:</span>
+        <span class="n">out</span><span class="p">.</span><span class="n">append</span><span class="p">(</span><span class="s">'_'</span> <span class="k">if</span> <span class="n">ind</span> <span class="o">==</span> <span class="n">BETWEEN</span> <span class="k">else</span> <span class="nb">chr</span><span class="p">(</span><span class="n">ind</span> <span class="o">+</span> <span class="nb">ord</span><span class="p">(</span><span class="s">'a'</span><span class="p">)))</span>
+    <span class="n">segments</span> <span class="o">=</span> <span class="s">""</span><span class="p">.</span><span class="n">join</span><span class="p">(</span><span class="n">out</span><span class="p">).</span><span class="n">split</span><span class="p">(</span><span class="s">'_'</span><span class="p">)</span>
+    <span class="n">collapsed</span> <span class="o">=</span> <span class="p">[</span><span class="n">Counter</span><span class="p">(</span><span class="n">seg</span><span class="p">).</span><span class="n">most_common</span><span class="p">(</span><span class="mi">1</span><span class="p">)[</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span> <span class="k">for</span> <span class="n">seg</span> <span class="ow">in</span> <span class="n">segments</span> <span class="k">if</span> <span class="n">seg</span><span class="p">]</span>
+    <span class="k">return</span> <span class="s">"_"</span><span class="p">.</span><span class="n">join</span><span class="p">(</span><span class="n">collapsed</span><span class="p">)</span>  <span class="c1"># or "".join(collapsed) to remove underscores entirely
+</span>
+<span class="c1"># Example:
+# img = SimpleWordsDataset(5, len=1).draw_text('hello')
+# energies = ebm_model(img.unsqueeze(0).unsqueeze(0))
+# min_indices = energies[0].argmin(dim=-1)
+# print(indices_to_str(min_indices))
+</span></code></pre></div></div>
+
+        
+      </section>
+
+      <footer class="page__meta">
+        
+        
+  
+
+
+  
+  
+  
+
+  <p class="page__taxonomy">
+    <strong><i class="fas fa-fw fa-tags" aria-hidden="true"></i> Tags: </strong>
+    <span itemprop="keywords">
+    
+      
+      
+      <a href="/tags/#dynamic-programming" class="page__taxonomy-item" rel="tag">Dynamic Programming</a><span class="sep">, </span>
+    
+      
+      
+      <a href="/tags/#energy-based-models" class="page__taxonomy-item" rel="tag">Energy-Based Models</a><span class="sep">, </span>
+    
+      
+      
+      <a href="/tags/#pytorch" class="page__taxonomy-item" rel="tag">PyTorch</a><span class="sep">, </span>
+    
+      
+      
+      <a href="/tags/#viterbi" class="page__taxonomy-item" rel="tag">Viterbi</a>
+    
+    </span>
+  </p>
+
+
+
+
+  
+
+
+  
+  
+  
+
+  <p class="page__taxonomy">
+    <strong><i class="fas fa-fw fa-folder-open" aria-hidden="true"></i> Categories: </strong>
+    <span itemprop="keywords">
+    
+      
+      
+      <a href="/categories/#computer-science" class="page__taxonomy-item" rel="tag">Computer Science</a>
+    
+    </span>
+  </p>
+
+
+        
+  <p class="page__date"><strong><i class="fas fa-fw fa-calendar-alt" aria-hidden="true"></i> Updated:</strong> <time datetime="2025-10-26T00:00:00-04:00">October 26, 2025</time></p>
+
+
+      </footer>
+
+      <section class="page__share">
+  
+
+  <a href="https://twitter.com/intent/tweet?text=Energy-Based+Models+%26+Structured+Prediction%20%2Fcomputer%2520science%2Fenergy_based_model_character_recognition%2F" class="btn btn--twitter" onclick="window.open(this.href, 'window', 'left=20,top=20,width=500,height=500,toolbar=1,resizable=0'); return false;" title="Share on Twitter"><i class="fa-brands fa-x-twitter" aria-hidden="true"></i><span> Twitter</span></a>
+
+  <a href="https://www.facebook.com/sharer/sharer.php?u=%2Fcomputer%2520science%2Fenergy_based_model_character_recognition%2F" class="btn btn--facebook" onclick="window.open(this.href, 'window', 'left=20,top=20,width=500,height=500,toolbar=1,resizable=0'); return false;" title="Share on Facebook"><i class="fab fa-fw fa-facebook" aria-hidden="true"></i><span> Facebook</span></a>
+
+  <a href="https://www.linkedin.com/shareArticle?mini=true&url=%2Fcomputer%2520science%2Fenergy_based_model_character_recognition%2F" class="btn btn--linkedin" onclick="window.open(this.href, 'window', 'left=20,top=20,width=500,height=500,toolbar=1,resizable=0'); return false;" title="Share on LinkedIn"><i class="fab fa-fw fa-linkedin" aria-hidden="true"></i><span> LinkedIn</span></a>
+</section>
+
+
+      
+  <nav class="pagination">
+    
+      <a href="/computer%20science/data%20science/transformer_tutorial/" class="pagination--pager" title="Transformer Architecture Tutorial
+">Previous</a>
+    
+    
+      <a href="#" class="pagination--pager disabled">Next</a>
+    
+  </nav>
+
+    </div>
+
+    
+  </article>
+
+  
+  
+    <div class="page__related">
+      <h4 class="page__related-title">You May Also Enjoy</h4>
+      <div class="grid__wrapper">
+        
+          
+
+
+
+<div class="grid__item">
+  <article class="archive__item" itemscope itemtype="https://schema.org/CreativeWork">
+    
+    <h2 class="archive__item-title no_toc" itemprop="headline">
+      
+        <a href="/computer%20science/data%20science/transformer_tutorial/" rel="permalink">Transformer Architecture Tutorial
+</a>
+      
+    </h2>
+    
+
+  <p class="page__meta">
+    
+
+    
+
+    
+      
+      
+
+      <span class="page__meta-readtime">
+        <i class="far fa-clock" aria-hidden="true"></i>
+        
+          less than 1 minute read
+        
+      </span>
+    
+  </p>
+
+
+    <p class="archive__item-excerpt" itemprop="description">Here is the list of good resources to understand transformer architecture.
+
+
+  
+    Distilled AI on Transformer
+  
+  
+    Harvard Annotated Transformer
+  
+  ...</p>
+  </article>
+</div>
+
+        
+          
+
+
+
+<div class="grid__item">
+  <article class="archive__item" itemscope itemtype="https://schema.org/CreativeWork">
+    
+    <h2 class="archive__item-title no_toc" itemprop="headline">
+      
+        <a href="/philosohpy/perserverance/" rel="permalink">Curiosity &amp; Perserverance
+</a>
+      
+    </h2>
+    
+
+  <p class="page__meta">
+    
+
+    
+
+    
+      
+      
+
+      <span class="page__meta-readtime">
+        <i class="far fa-clock" aria-hidden="true"></i>
+        
+          less than 1 minute read
+        
+      </span>
+    
+  </p>
+
+
+    <p class="archive__item-excerpt" itemprop="description">This is a good tweet.
+
+Riding my first #ebike today and it feels like the future has arrived.&mdash; Ben Cichy (@bencichy) November 22, 2019
+
+
+</p>
+  </article>
+</div>
+
+        
+          
+
+
+
+<div class="grid__item">
+  <article class="archive__item" itemscope itemtype="https://schema.org/CreativeWork">
+    
+    <h2 class="archive__item-title no_toc" itemprop="headline">
+      
+        <a href="/philosophy/Santa_truth/" rel="permalink">Santa Truth
+</a>
+      
+    </h2>
+    
+
+  <p class="page__meta">
+    
+
+    
+
+    
+      
+      
+
+      <span class="page__meta-readtime">
+        <i class="far fa-clock" aria-hidden="true"></i>
+        
+          1 minute read
+        
+      </span>
+    
+  </p>
+
+
+    <p class="archive__item-excerpt" itemprop="description">Growing up in the East, I have never understood the fascination that westerners have about Santa Claus. But I do know that it is culturally inappropriate to ...</p>
+  </article>
+</div>
+
+        
+          
+
+
+
+<div class="grid__item">
+  <article class="archive__item" itemscope itemtype="https://schema.org/CreativeWork">
+    
+    <h2 class="archive__item-title no_toc" itemprop="headline">
+      
+        <a href="/computer%20science/star_wars_api/" rel="permalink">Star Wars API
+</a>
+      
+    </h2>
+    
+
+  <p class="page__meta">
+    
+
+    
+
+    
+      
+      
+
+      <span class="page__meta-readtime">
+        <i class="far fa-clock" aria-hidden="true"></i>
+        
+          4 minute read
+        
+      </span>
+    
+  </p>
+
+
+    <p class="archive__item-excerpt" itemprop="description">Star Wars API Jupyter Notebook HTML
+
+The following is the same content as above but reformatted:
+
+Intro
+
+Exploring the Star Wars API. This is an open and fre...</p>
+  </article>
+</div>
+
+        
+      </div>
+    </div>
+  
+  
+</div>
+
+    </div>
+
+    
+      <div class="search-content">
+        <div class="search-content__inner-wrap"><form class="search-content__form" onkeydown="return event.key != 'Enter';">
+    <label class="sr-only" for="search">
+      Enter your search term...
+    </label>
+    <input type="search" id="search" class="search-input" tabindex="-1" placeholder="Enter your search term..." />
+  </form>
+  <div id="results" class="results"></div></div>
+
+      </div>
+    
+
+    <div id="footer" class="page__footer">
+      <footer>
+        <!-- start custom footer snippets -->
+
+<!-- end custom footer snippets -->
+        <!-- <div class="page__footer-follow">
+  <ul class="social-icons">
+    
+
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+
+    <li><a href="/feed.xml"><i class="fas fa-fw fa-rss-square" aria-hidden="true"></i> Feed</a></li>
+  </ul>
+</div>
+ -->
+<div class="page__footer-copyright">&copy; <!-- 2025  -->Zhehan Shi<!-- . Powered by <a href="https://jekyllrb.com" rel="nofollow">Jekyll</a> &amp; --></div>
+
+      </footer>
+    </div>
+
+    
+  <script src="/assets/js/main.min.js"></script>
+
+
+
+
+<script src="/assets/js/lunr/lunr.min.js"></script>
+<script src="/assets/js/lunr/lunr-store.js"></script>
+<script src="/assets/js/lunr/lunr-en.js"></script>
+
+
+
+
+
+
+<script type="text/javascript" async
+  src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-MML-AM_CHTML">
+</script>
+
+<script type="text/x-mathjax-config">
+   MathJax.Hub.Config({
+     extensions: ["tex2jax.js"],
+     jax: ["input/TeX", "output/HTML-CSS"],
+     tex2jax: {
+       inlineMath: [ ['$','$'], ["\\(","\\)"] ],
+       displayMath: [ ['$$','$$'], ["\\[","\\]"] ],
+       processEscapes: true
+     },
+     "HTML-CSS": { availableFonts: ["TeX"] }
+   });
+</script>
+
+  </body>
+</html>
