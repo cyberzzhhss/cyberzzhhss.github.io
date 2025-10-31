@@ -1,6 +1,0 @@
-I"»<h3>Intro</h3>
-
-<p>Energy-Based Models (EBMs) assign a scalar <strong>energy</strong> to configurations of variables and perform inference by <strong>minimizing energy</strong>. We tackle <strong>structured prediction</strong> for text recognition: transcribing a word image into characters of <strong>variable length</strong>.<br />
-We (1) build a synthetic dataset, (2) pretrain a sliding-window CNN on single characters, (3) align windowed predictions to labels with a <strong>Viterbi</strong> dynamic program, (4) train an EBM using <strong>cross-entropy along the best path</strong>, and (5) compare to a Connectionist Temporal Classification CTC (Graph Transducer Networks GTN) approach.</p>
-
-:ET
