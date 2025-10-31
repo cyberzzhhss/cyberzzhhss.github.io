@@ -5,6 +5,8 @@ categories:
   - Finance
 tags:
   - Quant
+classes: wide
+
 ---
 Quantitative trading strategies
 

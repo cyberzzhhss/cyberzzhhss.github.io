@@ -6,6 +6,8 @@ categories:
   - Statistics
 tags:
   - Time Series Analysis
+classes: wide
+
 ---
 
 [Repost from Kasim Te](https://www.kasimte.com/what-are-the-differences-among-autoregression-moving-average-arma-and-arima-for-time-series-forecasting)

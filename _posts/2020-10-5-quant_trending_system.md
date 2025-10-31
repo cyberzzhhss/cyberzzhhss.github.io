@@ -5,6 +5,8 @@ tags:
   - Quant
 categories:
   - Finance
+classes: wide
+
 ---
 
 Quantconnect is World's Leading Algorithmic Trading Platform

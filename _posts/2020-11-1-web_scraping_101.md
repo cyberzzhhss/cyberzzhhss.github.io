@@ -5,6 +5,8 @@ tags:
   - Web Scraping
 categories:
   - Computer Science
+classes: wide
+
 ---
 This is a simple example of web scraping from wikipedia using python
 It requires two libraries: beautifulsoup4, requests 

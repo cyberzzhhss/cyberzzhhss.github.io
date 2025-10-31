@@ -5,6 +5,8 @@ categories:
   - Computer Science
 tags:
   - Jekyll
+classes: wide
+
 ---
 
 ## Step 1. Set markdown engine to kramdown

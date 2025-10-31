@@ -6,6 +6,8 @@ tags:
   - Essay
 categories:
   - Philosophy
+classes: wide
+
 ---
 Growing up in the East, I have never understood the fascination that westerners have about Santa Claus. But I do know that it is culturally inappropriate to tell kids that Santa Claus doesn’t exist. Let us therefore indulge a thought experiment. Let us say a 5 year old kid, Kevin, who believes Santa Claus is real. No one has ever told him that it is not real because no one wants to break the cultural norm. Therefore, if you ask Kevin, if Santa Claus is real, he will tell you in a heartbeat that it is real. Even if you use a polygraph to test him, it is still very much real, and polygraph won't detect any anormaly; however, both you and me know very well that it is not the case.
 

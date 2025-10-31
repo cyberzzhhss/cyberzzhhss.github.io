@@ -8,6 +8,8 @@ tags:
   - PyTorch
 categories:
   - Computer Science
+classes: wide
+layout: single
 ---
 
 Energy-Based Models (EBMs) assign a scalar **energy** to configurations of variables and perform inference by **minimizing energy**.  <!--more-->

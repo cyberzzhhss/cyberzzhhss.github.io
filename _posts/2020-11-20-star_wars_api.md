@@ -5,6 +5,8 @@ tags:
   - API
 categories:
   - Computer Science
+classes: wide
+
 ---
 [Star Wars API Jupyter Notebook HTML](/assets/html/star_wars_api.html)
 

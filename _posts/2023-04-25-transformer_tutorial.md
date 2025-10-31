@@ -8,6 +8,8 @@ tags:
 categories:
   - Computer Science
   - Data Science
+classes: wide
+
 ---
 
 

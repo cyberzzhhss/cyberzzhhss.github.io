@@ -6,6 +6,8 @@ tags:
  - Quotes
 categories:
   - Philosohpy
+classes: wide
+
 ---
 
 
