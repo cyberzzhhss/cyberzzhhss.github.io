@@ -1,0 +1,323 @@
+I" C<p>
+AIMO3-style math problems reward more than a single model call: the strongest solvers combine 
+<strong>reasoning</strong>, <strong>verification</strong>, <strong>self-consistency</strong>, and careful 
+<strong>answer extraction</strong>.
+</p>
+
+<!--more-->
+
+<h3>Background</h3>
+
+<p>
+This work is based on the 
+<a href="https://www.kaggle.com/competitions/ai-mathematical-olympiad-progress-prize-3">
+AI Mathematical Olympiad — Progress Prize 3 (AIMO3)
+</a>, a Kaggle competition focused on solving challenging IMO-style math problems using large language models.
+</p>
+
+<p>
+Unlike standard benchmarks, AIMO3 emphasizes <strong>multi-step reasoning</strong>, <strong>robust answer extraction</strong>, and <strong>system-level design</strong> rather than single-pass model performance.
+</p>
+
+<hr />
+
+<h3>My Work</h3>
+
+<p>
+This post documents my hosted implementation and results.
+</p>
+
+<p>
+<a href="/assets/html/aimo3-gpt-oss-120b.html">
+AIMO3 + GPT-OSS 120B Jupyter Notebook HTML
+</a>
+</p>
+
+<p>
+<strong>Result:</strong> On the IMO-style test set, my solver achieved a <strong>10/10</strong> solve rate.
+</p>
+
+<h3>Reference</h3>
+
+<p>
+This writeup was informed by a public Kaggle baseline:
+</p>
+
+<p>
+<a href="https://www.kaggle.com/code/nihilisticneuralnet/44-50-let-me-over-cook">
+Kaggle baseline
+</a>
+</p>
+
+<hr />
+
+<h3>Intro</h3>
+
+<p>AIMO3 is a reasoning-heavy benchmark where performance depends less on raw model size and more on <strong>how you drive the model</strong>.</p>
+
+<p>Key idea:</p>
+
+<blockquote>
+  <p>Don’t trust a single generation — <strong>sample, verify, and aggregate</strong>.</p>
+</blockquote>
+
+<p>We build a solver that:</p>
+<ol>
+  <li>Generates multiple reasoning paths</li>
+  <li>Extracts candidate answers</li>
+  <li>Applies filtering and normalization</li>
+  <li>Uses <strong>majority voting or scoring</strong></li>
+  <li>Optionally re-prompts for refinement</li>
+</ol>
+
+<hr />
+
+<h3>Core Strategy</h3>
+
+<p><strong>Pipeline overview:</strong></p>
+
+<div class="language-text highlighter-rouge"><div class="highlight"><pre class="highlight"><code>Prompt → Multi-sample generation → Parse answers → Filter → Vote → Final answer
+</code></pre></div></div>
+
+<p>The core philosophy is simple: treat the model as a probabilistic reasoner, not a deterministic oracle.</p>
+
+<p>One sample can be brilliant or brittle. Multiple independently sampled solutions, combined with strong answer extraction, are much more reliable.</p>
+
+<hr />
+
+<h3>Example 1 — Basic Sampling Loop</h3>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">def</span> <span class="nf">generate_solutions</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">tokenizer</span><span class="p">,</span> <span class="n">prompt</span><span class="p">,</span> <span class="n">n_samples</span><span class="o">=</span><span class="mi">8</span><span class="p">,</span> <span class="n">max_tokens</span><span class="o">=</span><span class="mi">512</span><span class="p">):</span>
+    <span class="n">inputs</span> <span class="o">=</span> <span class="n">tokenizer</span><span class="p">(</span><span class="n">prompt</span><span class="p">,</span> <span class="n">return_tensors</span><span class="o">=</span><span class="s">"pt"</span><span class="p">).</span><span class="n">to</span><span class="p">(</span><span class="s">"cuda"</span><span class="p">)</span>
+
+    <span class="n">outputs</span> <span class="o">=</span> <span class="n">model</span><span class="p">.</span><span class="n">generate</span><span class="p">(</span>
+        <span class="o">**</span><span class="n">inputs</span><span class="p">,</span>
+        <span class="n">do_sample</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span>
+        <span class="n">temperature</span><span class="o">=</span><span class="mf">0.7</span><span class="p">,</span>
+        <span class="n">top_p</span><span class="o">=</span><span class="mf">0.95</span><span class="p">,</span>
+        <span class="n">max_new_tokens</span><span class="o">=</span><span class="n">max_tokens</span><span class="p">,</span>
+        <span class="n">num_return_sequences</span><span class="o">=</span><span class="n">n_samples</span>
+    <span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">tokenizer</span><span class="p">.</span><span class="n">batch_decode</span><span class="p">(</span><span class="n">outputs</span><span class="p">,</span> <span class="n">skip_special_tokens</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+</code></pre></div></div>
+
+<p><strong>Why this matters</strong></p>
+<ul>
+  <li>Diversity improves the chance of finding a correct chain of reasoning</li>
+  <li>It reduces dependence on a single brittle sample</li>
+  <li>It makes downstream voting and filtering possible</li>
+</ul>
+
+<hr />
+
+<h3>Example 2 — Answer Extraction</h3>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kn">import</span> <span class="nn">re</span>
+
+<span class="k">def</span> <span class="nf">extract_answer</span><span class="p">(</span><span class="n">text</span><span class="p">):</span>
+    <span class="n">matches</span> <span class="o">=</span> <span class="n">re</span><span class="p">.</span><span class="n">findall</span><span class="p">(</span><span class="sa">r</span><span class="s">'\\boxed{([^}]*)}'</span><span class="p">,</span> <span class="n">text</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">matches</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">matches</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+
+    <span class="n">numbers</span> <span class="o">=</span> <span class="n">re</span><span class="p">.</span><span class="n">findall</span><span class="p">(</span><span class="sa">r</span><span class="s">'-?\\d+'</span><span class="p">,</span> <span class="n">text</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">numbers</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="k">if</span> <span class="n">numbers</span> <span class="k">else</span> <span class="bp">None</span>
+</code></pre></div></div>
+
+<p><strong>Highlights</strong></p>
+<ul>
+  <li>Prefer <code class="language-plaintext highlighter-rouge">\boxed{}</code> answers whenever available</li>
+  <li>Fall back to the last numeric value when needed</li>
+  <li>Robust parsing matters as much as raw reasoning quality</li>
+</ul>
+
+<p>A surprising amount of benchmark performance can disappear due to weak extraction logic. Even strong reasoning traces are useless if the final answer parser misses the intended output.</p>
+
+<hr />
+
+<h3>Example 3 — Majority Voting</h3>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kn">from</span> <span class="nn">collections</span> <span class="kn">import</span> <span class="n">Counter</span>
+
+<span class="k">def</span> <span class="nf">majority_vote</span><span class="p">(</span><span class="n">answers</span><span class="p">):</span>
+    <span class="n">filtered</span> <span class="o">=</span> <span class="p">[</span><span class="n">a</span> <span class="k">for</span> <span class="n">a</span> <span class="ow">in</span> <span class="n">answers</span> <span class="k">if</span> <span class="n">a</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">]</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">filtered</span><span class="p">:</span>
+        <span class="k">return</span> <span class="bp">None</span>
+
+    <span class="k">return</span> <span class="n">Counter</span><span class="p">(</span><span class="n">filtered</span><span class="p">).</span><span class="n">most_common</span><span class="p">(</span><span class="mi">1</span><span class="p">)[</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+</code></pre></div></div>
+
+<p><strong>Why it works</strong></p>
+<ul>
+  <li>Correct answers often cluster across samples</li>
+  <li>Spurious outputs get averaged out</li>
+  <li>Self-consistency is one of the highest-leverage upgrades to a simple solver</li>
+</ul>
+
+<hr />
+
+<h3>Example 4 — Full Solver Pipeline</h3>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">def</span> <span class="nf">solve_problem</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">tokenizer</span><span class="p">,</span> <span class="n">prompt</span><span class="p">):</span>
+    <span class="n">outputs</span> <span class="o">=</span> <span class="n">generate_solutions</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">tokenizer</span><span class="p">,</span> <span class="n">prompt</span><span class="p">,</span> <span class="n">n_samples</span><span class="o">=</span><span class="mi">12</span><span class="p">)</span>
+    <span class="n">answers</span> <span class="o">=</span> <span class="p">[</span><span class="n">extract_answer</span><span class="p">(</span><span class="n">o</span><span class="p">)</span> <span class="k">for</span> <span class="n">o</span> <span class="ow">in</span> <span class="n">outputs</span><span class="p">]</span>
+    <span class="n">final</span> <span class="o">=</span> <span class="n">majority_vote</span><span class="p">(</span><span class="n">answers</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">final</span><span class="p">,</span> <span class="n">outputs</span><span class="p">,</span> <span class="n">answers</span>
+</code></pre></div></div>
+
+<p>This baseline already performs much better than a naive one-shot call, especially on competition-style problems where models may find the right logic only some fraction of the time.</p>
+
+<hr />
+
+<h3>Example 5 — What Actually Boosts Score</h3>
+
+<p>Three changes made the biggest difference.</p>
+
+<h3 id="1-self-consistency">1. Self-consistency</h3>
+<ul>
+  <li>Sample multiple outputs</li>
+  <li>Vote instead of trusting one generation</li>
+  <li>Use disagreement as a signal that more work may be needed</li>
+</ul>
+
+<h3 id="2-better-prompting">2. Better prompting</h3>
+<ul>
+  <li>Force a cleaner reasoning structure</li>
+  <li>Ask for explicit final formatting</li>
+  <li>Make answer extraction easier and more reliable</li>
+</ul>
+
+<div class="language-text highlighter-rouge"><div class="highlight"><pre class="highlight"><code>Solve step by step. Final answer in \boxed{}.
+</code></pre></div></div>
+
+<h3 id="3-filtering">3. Filtering</h3>
+<ul>
+  <li>Remove invalid answers</li>
+  <li>Normalize integer, fraction, and modular forms</li>
+  <li>Reject malformed outputs early</li>
+</ul>
+
+<hr />
+
+<h3>Example 6 — Weighted Voting</h3>
+
+<p>Instead of pure majority vote, we can use a simple heuristic score:</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">def</span> <span class="nf">weighted_vote</span><span class="p">(</span><span class="n">outputs</span><span class="p">,</span> <span class="n">answers</span><span class="p">):</span>
+    <span class="n">scores</span> <span class="o">=</span> <span class="p">{}</span>
+
+    <span class="k">for</span> <span class="n">out</span><span class="p">,</span> <span class="n">ans</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">outputs</span><span class="p">,</span> <span class="n">answers</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">ans</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="k">continue</span>
+
+        <span class="n">score</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">out</span><span class="p">)</span>  <span class="c1"># simple proxy: longer reasoning
+</span>        <span class="n">scores</span><span class="p">[</span><span class="n">ans</span><span class="p">]</span> <span class="o">=</span> <span class="n">scores</span><span class="p">.</span><span class="n">get</span><span class="p">(</span><span class="n">ans</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span> <span class="o">+</span> <span class="n">score</span>
+
+    <span class="k">return</span> <span class="nb">max</span><span class="p">(</span><span class="n">scores</span><span class="p">,</span> <span class="n">key</span><span class="o">=</span><span class="n">scores</span><span class="p">.</span><span class="n">get</span><span class="p">)</span>
+</code></pre></div></div>
+
+<p>This is only a toy example, but the general idea is useful: not all candidate solutions should count equally. Some can be ranked by reasoning length, structure, confidence cues, or external verification signals.</p>
+
+<hr />
+
+<h3>Example 7 — Re-Prompting When Consensus Is Weak</h3>
+
+<p>One of the most useful upgrades beyond basic voting is <strong>re-prompting</strong>. Instead of trusting low-consensus outputs, the solver asks the model again—this time with context.</p>
+
+<p><strong>Idea:</strong> If answers disagree, don’t guess. Ask the model to resolve the disagreement.</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">def</span> <span class="nf">reprompt_with_candidates</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">tokenizer</span><span class="p">,</span> <span class="n">problem</span><span class="p">,</span> <span class="n">candidates</span><span class="p">):</span>
+    <span class="n">prompt</span> <span class="o">=</span> <span class="n">f</span>\<span class="s">"</span><span class="se">\"\"</span><span class="s">
+Solve the following problem carefully.
+
+Problem:
+{problem}
+
+Candidate answers:
+{candidates}
+
+Analyze each candidate, identify errors, and determine the correct answer.
+Give the final answer in </span><span class="se">\\</span><span class="s">boxed.
+</span><span class="se">\"\"\"</span><span class="s">
+
+    outputs = generate_solutions(model, tokenizer, prompt, n_samples=4)
+    answers = [extract_answer(o) for o in outputs]
+
+    return majority_vote(answers)
+</span></code></pre></div></div>
+
+<p><strong>Why this helps</strong></p>
+<ul>
+  <li>Forces the model into a verification mindset instead of pure generation</li>
+  <li>Uses disagreement as a signal rather than a failure</li>
+  <li>Often resolves edge cases where majority vote is uncertain</li>
+</ul>
+
+<p>In practice, re-prompting is most effective when used selectively—only when the system detects low confidence or high disagreement.</p>
+
+<hr />
+
+<h3>Observations</h3>
+
+<ul>
+  <li>Majority voting alone provides large gains</li>
+  <li>Prompt format matters more than expected</li>
+  <li>Extraction bugs can silently destroy performance</li>
+  <li>More samples do not always help indefinitely</li>
+  <li>Verification is useful, but only if it is cheap and targeted</li>
+</ul>
+
+<p>In practice, the best solver is often not the most complicated one. It is the one with the cleanest end-to-end loop: generate, parse, normalize, aggregate, and only then escalate to verification if needed.</p>
+
+<hr />
+
+<h3>What Didn’t Help Much</h3>
+
+<ul>
+  <li>Overly complex verification chains</li>
+  <li>Too many re-prompts relative to the accuracy gain</li>
+  <li>Greedy decoding, which reduces useful diversity</li>
+  <li>Fancy logic that added latency but not better consensus</li>
+</ul>
+
+<p>The main lesson is that many apparent improvements are not worth the compute unless they increase either answer diversity or confidence calibration.</p>
+
+<hr />
+
+<h3>Takeaways</h3>
+
+<ul>
+  <li>Treat LLMs like <strong>probabilistic solvers</strong>, not deterministic systems</li>
+  <li>Always sample, parse, normalize, and aggregate</li>
+  <li>The orchestration layer often matters more than the base model</li>
+  <li>Good solver design turns raw reasoning ability into usable benchmark performance</li>
+</ul>
+
+<hr />
+
+<h3>Next Steps</h3>
+
+<p>Potential improvements:</p>
+<ul>
+  <li>Tree-of-thought style branching</li>
+  <li>Program-of-thought execution</li>
+  <li>External symbolic verification with Python or SymPy</li>
+  <li>Adaptive sampling that stops once consensus is strong</li>
+  <li>Confidence-aware reranking of candidate answers</li>
+</ul>
+
+<p>These are the natural next extensions once the base pipeline is stable.</p>
+
+<hr />
+
+<h3>Final Thoughts</h3>
+
+<p>AIMO3 is not just a test of raw intelligence. It is a test of how well you can <strong>orchestrate reasoning</strong>.</p>
+
+<p>The winning mindset is:</p>
+
+<blockquote>
+  <p>Don’t ask once. Ask smart, ask many times, and aggregate.</p>
+</blockquote>
+:ET

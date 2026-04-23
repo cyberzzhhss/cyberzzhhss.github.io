@@ -1,0 +1,332 @@
+I"�<p>AIMO3-style math problems reward more than a single model call: the strongest solvers combine <strong>reasoning</strong>, <strong>verification</strong>, <strong>self-consistency</strong>, and careful <strong>answer extraction</strong>. <!--more--></p>
+
+<h3>Intro</h3>
+
+<p>In this post I build a practical solver for AIMO3-style competition math. The goal is not to blindly ask a model for an answer, but to create a repeatable pipeline that can:</p>
+
+<ol>
+  <li>generate several independent solution attempts,</li>
+  <li>run lightweight checks with Python when possible,</li>
+  <li>extract the final numeric answer robustly,</li>
+  <li>vote across candidates, and</li>
+  <li>keep enough logs to debug failed problems.</li>
+</ol>
+
+<p>The result is a solver that behaves more like a small search system than a one-shot chatbot.</p>
+
+<p><strong>Highlights</strong></p>
+<ul>
+  <li>Use multiple prompts to encourage diverse solution paths.</li>
+  <li>Ask the model for both a derivation and a final boxed answer.</li>
+  <li>Verify arithmetic, modular constraints, brute-force cases, and symbolic identities with Python.</li>
+  <li>Use majority voting across independently generated answers.</li>
+  <li>Log every candidate answer and its reasoning trace for later inspection.</li>
+</ul>
+
+<h3>Example 1 — Problem Format and Answer Extraction</h3>
+
+<p>A solver usually starts with a dataset row containing a problem statement and expects one final answer. The most fragile part is often extracting that answer from free-form model text, so I make it explicit.</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kn">import</span> <span class="nn">re</span>
+<span class="kn">from</span> <span class="nn">dataclasses</span> <span class="kn">import</span> <span class="n">dataclass</span>
+<span class="kn">from</span> <span class="nn">collections</span> <span class="kn">import</span> <span class="n">Counter</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">List</span><span class="p">,</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">Any</span>
+
+<span class="o">@</span><span class="n">dataclass</span>
+<span class="k">class</span> <span class="nc">Problem</span><span class="p">:</span>
+    <span class="nb">id</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">statement</span><span class="p">:</span> <span class="nb">str</span>
+
+<span class="o">@</span><span class="n">dataclass</span>
+<span class="k">class</span> <span class="nc">Candidate</span><span class="p">:</span>
+    <span class="n">answer</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span>
+    <span class="n">text</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">score</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.0</span>
+    <span class="n">metadata</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">|</span> <span class="bp">None</span> <span class="o">=</span> <span class="bp">None</span>
+
+
+<span class="k">def</span> <span class="nf">extract_boxed_answer</span><span class="p">(</span><span class="n">text</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]:</span>
+    <span class="s">"""Extract an integer from common final-answer formats."""</span>
+    <span class="n">patterns</span> <span class="o">=</span> <span class="p">[</span>
+        <span class="sa">r</span><span class="s">"\\boxed\{(-?\d+)\}"</span><span class="p">,</span>
+        <span class="sa">r</span><span class="s">"boxed\{(-?\d+)\}"</span><span class="p">,</span>
+        <span class="sa">r</span><span class="s">"final answer is\s*(-?\d+)"</span><span class="p">,</span>
+        <span class="sa">r</span><span class="s">"answer is\s*(-?\d+)"</span><span class="p">,</span>
+        <span class="sa">r</span><span class="s">"therefore[,]?\s*(-?\d+)\s*$"</span><span class="p">,</span>
+    <span class="p">]</span>
+    <span class="n">lowered</span> <span class="o">=</span> <span class="n">text</span><span class="p">.</span><span class="n">lower</span><span class="p">().</span><span class="n">strip</span><span class="p">()</span>
+    <span class="k">for</span> <span class="n">pattern</span> <span class="ow">in</span> <span class="n">patterns</span><span class="p">:</span>
+        <span class="n">match</span> <span class="o">=</span> <span class="n">re</span><span class="p">.</span><span class="n">search</span><span class="p">(</span><span class="n">pattern</span><span class="p">,</span> <span class="n">lowered</span><span class="p">,</span> <span class="n">flags</span><span class="o">=</span><span class="n">re</span><span class="p">.</span><span class="n">IGNORECASE</span> <span class="o">|</span> <span class="n">re</span><span class="p">.</span><span class="n">MULTILINE</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">match</span><span class="p">:</span>
+            <span class="k">return</span> <span class="nb">int</span><span class="p">(</span><span class="n">match</span><span class="p">.</span><span class="n">group</span><span class="p">(</span><span class="mi">1</span><span class="p">))</span>
+
+    <span class="c1"># Fallback: use the last integer in the response.
+</span>    <span class="n">numbers</span> <span class="o">=</span> <span class="n">re</span><span class="p">.</span><span class="n">findall</span><span class="p">(</span><span class="sa">r</span><span class="s">"-?\d+"</span><span class="p">,</span> <span class="n">text</span><span class="p">)</span>
+    <span class="k">return</span> <span class="nb">int</span><span class="p">(</span><span class="n">numbers</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span> <span class="k">if</span> <span class="n">numbers</span> <span class="k">else</span> <span class="bp">None</span>
+</code></pre></div></div>
+
+<p><strong>Notes</strong></p>
+<ul>
+  <li>Prefer boxed-answer extraction over taking the last number.</li>
+  <li>Keep the raw response even when extraction fails.</li>
+  <li>Treat extraction as a separate module so it can be tested independently.</li>
+</ul>
+
+<h3>Example 2 — Prompt Templates for Diverse Reasoning</h3>
+
+<p>Instead of repeating the same prompt, I use a small set of templates. Each template nudges the model toward a different strategy.</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">PROMPTS</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="s">"""
+Solve the following math problem carefully.
+Show the key reasoning steps, check your arithmetic, and end with exactly one line:
+Final answer: </span><span class="se">\\</span><span class="s">boxed
+
+Problem:
+{problem}
+"""</span><span class="p">,</span>
+    <span class="s">"""
+Find a rigorous solution to this problem.
+Before giving the answer, identify the main trick or invariant.
+End with exactly one line: Final answer: </span><span class="se">\\</span><span class="s">boxed
+
+Problem:
+{problem}
+"""</span><span class="p">,</span>
+    <span class="s">"""
+Solve this using computation or casework where helpful.
+If you use a pattern, verify it on small examples.
+End with exactly one line: Final answer: </span><span class="se">\\</span><span class="s">boxed
+
+Problem:
+{problem}
+"""</span><span class="p">,</span>
+<span class="p">]</span>
+
+
+<span class="k">def</span> <span class="nf">build_prompt</span><span class="p">(</span><span class="n">problem</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">template_id</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+    <span class="k">return</span> <span class="n">PROMPTS</span><span class="p">[</span><span class="n">template_id</span> <span class="o">%</span> <span class="nb">len</span><span class="p">(</span><span class="n">PROMPTS</span><span class="p">)].</span><span class="nb">format</span><span class="p">(</span><span class="n">problem</span><span class="o">=</span><span class="n">problem</span><span class="p">)</span>
+</code></pre></div></div>
+
+<p><strong>Highlights</strong></p>
+<ul>
+  <li>Template diversity helps reduce correlated mistakes.</li>
+  <li>The final-answer format makes parsing easier.</li>
+  <li>Asking for checks often catches small arithmetic errors.</li>
+</ul>
+
+<h3>Example 3 — Model Call Wrapper</h3>
+
+<p>The wrapper keeps generation settings in one place. In a real submission, this function would call your local model, hosted model, or competition inference endpoint.</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">def</span> <span class="nf">call_model</span><span class="p">(</span><span class="n">prompt</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">temperature</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.7</span><span class="p">,</span> <span class="n">max_tokens</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">2048</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+    <span class="s">"""
+    Replace this stub with your model call.
+
+    Examples:
+    - local vLLM endpoint
+    - transformers pipeline
+    - hosted API
+    - competition-provided inference server
+    """</span>
+    <span class="k">raise</span> <span class="nb">NotImplementedError</span><span class="p">(</span><span class="s">"Connect this to your inference backend."</span><span class="p">)</span>
+
+
+<span class="k">def</span> <span class="nf">generate_candidates</span><span class="p">(</span><span class="n">problem</span><span class="p">:</span> <span class="n">Problem</span><span class="p">,</span> <span class="n">n</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">8</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Candidate</span><span class="p">]:</span>
+    <span class="n">candidates</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n</span><span class="p">):</span>
+        <span class="n">prompt</span> <span class="o">=</span> <span class="n">build_prompt</span><span class="p">(</span><span class="n">problem</span><span class="p">.</span><span class="n">statement</span><span class="p">,</span> <span class="n">i</span><span class="p">)</span>
+        <span class="n">text</span> <span class="o">=</span> <span class="n">call_model</span><span class="p">(</span>
+            <span class="n">prompt</span><span class="p">,</span>
+            <span class="n">temperature</span><span class="o">=</span><span class="mf">0.8</span> <span class="k">if</span> <span class="n">i</span> <span class="k">else</span> <span class="mf">0.2</span><span class="p">,</span>
+            <span class="n">max_tokens</span><span class="o">=</span><span class="mi">2048</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="n">candidates</span><span class="p">.</span><span class="n">append</span><span class="p">(</span>
+            <span class="n">Candidate</span><span class="p">(</span>
+                <span class="n">answer</span><span class="o">=</span><span class="n">extract_boxed_answer</span><span class="p">(</span><span class="n">text</span><span class="p">),</span>
+                <span class="n">text</span><span class="o">=</span><span class="n">text</span><span class="p">,</span>
+                <span class="n">metadata</span><span class="o">=</span><span class="p">{</span><span class="s">"template_id"</span><span class="p">:</span> <span class="n">i</span> <span class="o">%</span> <span class="nb">len</span><span class="p">(</span><span class="n">PROMPTS</span><span class="p">)},</span>
+            <span class="p">)</span>
+        <span class="p">)</span>
+    <span class="k">return</span> <span class="n">candidates</span>
+</code></pre></div></div>
+
+<p><strong>Notes</strong></p>
+<ul>
+  <li>Use at least one low-temperature run for stability.</li>
+  <li>Use higher-temperature runs for exploration.</li>
+  <li>Keep <code class="language-plaintext highlighter-rouge">metadata</code> so mistakes can be traced to prompts/settings.</li>
+</ul>
+
+<h3>Example 4 — Lightweight Verification</h3>
+
+<p>Not every olympiad-style problem can be fully verified by code, but many answers can be checked partially. Good checks are cheap, deterministic, and problem-specific.</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">def</span> <span class="nf">verify_candidate</span><span class="p">(</span><span class="n">problem</span><span class="p">:</span> <span class="n">Problem</span><span class="p">,</span> <span class="n">candidate</span><span class="p">:</span> <span class="n">Candidate</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+    <span class="s">"""
+    Return a soft verification score.
+    This is intentionally conservative: a candidate can be correct even if no check applies.
+    """</span>
+    <span class="k">if</span> <span class="n">candidate</span><span class="p">.</span><span class="n">answer</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+        <span class="k">return</span> <span class="o">-</span><span class="mf">1.0</span>
+
+    <span class="n">score</span> <span class="o">=</span> <span class="mf">0.0</span>
+    <span class="n">text</span> <span class="o">=</span> <span class="n">candidate</span><span class="p">.</span><span class="n">text</span><span class="p">.</span><span class="n">lower</span><span class="p">()</span>
+
+    <span class="c1"># Reward well-formed final answer.
+</span>    <span class="k">if</span> <span class="s">"boxed"</span> <span class="ow">in</span> <span class="n">text</span> <span class="ow">or</span> <span class="s">"final answer"</span> <span class="ow">in</span> <span class="n">text</span><span class="p">:</span>
+        <span class="n">score</span> <span class="o">+=</span> <span class="mf">0.5</span>
+
+    <span class="c1"># Reward signs of self-checking.
+</span>    <span class="k">if</span> <span class="nb">any</span><span class="p">(</span><span class="n">word</span> <span class="ow">in</span> <span class="n">text</span> <span class="k">for</span> <span class="n">word</span> <span class="ow">in</span> <span class="p">[</span><span class="s">"check"</span><span class="p">,</span> <span class="s">"verify"</span><span class="p">,</span> <span class="s">"substitute"</span><span class="p">,</span> <span class="s">"therefore"</span><span class="p">]):</span>
+        <span class="n">score</span> <span class="o">+=</span> <span class="mf">0.25</span>
+
+    <span class="c1"># Penalize extraction ambiguity.
+</span>    <span class="n">numbers</span> <span class="o">=</span> <span class="n">re</span><span class="p">.</span><span class="n">findall</span><span class="p">(</span><span class="sa">r</span><span class="s">"-?\d+"</span><span class="p">,</span> <span class="n">candidate</span><span class="p">.</span><span class="n">text</span><span class="p">)</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">numbers</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">25</span><span class="p">:</span>
+        <span class="n">score</span> <span class="o">-=</span> <span class="mf">0.1</span>
+
+    <span class="k">return</span> <span class="n">score</span>
+
+
+<span class="k">def</span> <span class="nf">score_candidates</span><span class="p">(</span><span class="n">problem</span><span class="p">:</span> <span class="n">Problem</span><span class="p">,</span> <span class="n">candidates</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">Candidate</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Candidate</span><span class="p">]:</span>
+    <span class="k">for</span> <span class="n">cand</span> <span class="ow">in</span> <span class="n">candidates</span><span class="p">:</span>
+        <span class="n">cand</span><span class="p">.</span><span class="n">score</span> <span class="o">=</span> <span class="n">verify_candidate</span><span class="p">(</span><span class="n">problem</span><span class="p">,</span> <span class="n">cand</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">candidates</span>
+</code></pre></div></div>
+
+<p>For stronger solvers, I add specialized checkers:</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">def</span> <span class="nf">brute_force_check_for_small_integer_problem</span><span class="p">(</span><span class="n">statement</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">proposed_answer</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span> <span class="o">|</span> <span class="bp">None</span><span class="p">:</span>
+    <span class="s">"""
+    Placeholder for problem-specific brute force.
+    Return True/False when applicable, otherwise None.
+    """</span>
+    <span class="k">return</span> <span class="bp">None</span>
+
+
+<span class="k">def</span> <span class="nf">modular_check</span><span class="p">(</span><span class="n">value</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">modulus</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1000</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+    <span class="s">"""Useful when the requested answer is modulo m."""</span>
+    <span class="k">return</span> <span class="n">value</span> <span class="o">%</span> <span class="n">modulus</span>
+</code></pre></div></div>
+
+<p><strong>Highlights</strong></p>
+<ul>
+  <li>Verification does not need to solve the whole problem.</li>
+  <li>Partial checks are still useful for ranking candidates.</li>
+  <li>Keep checkers conservative to avoid rejecting correct solutions.</li>
+</ul>
+
+<h3>Example 5 — Voting and Tie-Breaking</h3>
+
+<p>The simplest ensemble is majority voting over extracted answers. When there is a tie, prefer the answer with higher verification score.</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">def</span> <span class="nf">select_answer</span><span class="p">(</span><span class="n">candidates</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">Candidate</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]:</span>
+    <span class="n">valid</span> <span class="o">=</span> <span class="p">[</span><span class="n">c</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">candidates</span> <span class="k">if</span> <span class="n">c</span><span class="p">.</span><span class="n">answer</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">]</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">valid</span><span class="p">:</span>
+        <span class="k">return</span> <span class="bp">None</span>
+
+    <span class="n">counts</span> <span class="o">=</span> <span class="n">Counter</span><span class="p">(</span><span class="n">c</span><span class="p">.</span><span class="n">answer</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">valid</span><span class="p">)</span>
+    <span class="n">best_count</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">counts</span><span class="p">.</span><span class="n">values</span><span class="p">())</span>
+    <span class="n">tied_answers</span> <span class="o">=</span> <span class="p">{</span><span class="n">answer</span> <span class="k">for</span> <span class="n">answer</span><span class="p">,</span> <span class="n">count</span> <span class="ow">in</span> <span class="n">counts</span><span class="p">.</span><span class="n">items</span><span class="p">()</span> <span class="k">if</span> <span class="n">count</span> <span class="o">==</span> <span class="n">best_count</span><span class="p">}</span>
+
+    <span class="k">def</span> <span class="nf">tie_break_score</span><span class="p">(</span><span class="n">answer</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+        <span class="k">return</span> <span class="nb">sum</span><span class="p">(</span><span class="n">c</span><span class="p">.</span><span class="n">score</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">valid</span> <span class="k">if</span> <span class="n">c</span><span class="p">.</span><span class="n">answer</span> <span class="o">==</span> <span class="n">answer</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="nb">max</span><span class="p">(</span><span class="n">tied_answers</span><span class="p">,</span> <span class="n">key</span><span class="o">=</span><span class="n">tie_break_score</span><span class="p">)</span>
+
+
+<span class="k">def</span> <span class="nf">solve_problem</span><span class="p">(</span><span class="n">problem</span><span class="p">:</span> <span class="n">Problem</span><span class="p">,</span> <span class="n">n_candidates</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">8</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
+    <span class="n">candidates</span> <span class="o">=</span> <span class="n">generate_candidates</span><span class="p">(</span><span class="n">problem</span><span class="p">,</span> <span class="n">n</span><span class="o">=</span><span class="n">n_candidates</span><span class="p">)</span>
+    <span class="n">candidates</span> <span class="o">=</span> <span class="n">score_candidates</span><span class="p">(</span><span class="n">problem</span><span class="p">,</span> <span class="n">candidates</span><span class="p">)</span>
+    <span class="n">final_answer</span> <span class="o">=</span> <span class="n">select_answer</span><span class="p">(</span><span class="n">candidates</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="p">{</span>
+        <span class="s">"id"</span><span class="p">:</span> <span class="n">problem</span><span class="p">.</span><span class="nb">id</span><span class="p">,</span>
+        <span class="s">"answer"</span><span class="p">:</span> <span class="n">final_answer</span><span class="p">,</span>
+        <span class="s">"candidates"</span><span class="p">:</span> <span class="n">candidates</span><span class="p">,</span>
+        <span class="s">"vote_counts"</span><span class="p">:</span> <span class="n">Counter</span><span class="p">(</span><span class="n">c</span><span class="p">.</span><span class="n">answer</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">candidates</span> <span class="k">if</span> <span class="n">c</span><span class="p">.</span><span class="n">answer</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">),</span>
+    <span class="p">}</span>
+</code></pre></div></div>
+
+<p><strong>Notes</strong></p>
+<ul>
+  <li>Majority vote works surprisingly well when generations are diverse.</li>
+  <li>Tie-breaking should be simple and inspectable.</li>
+  <li>If no answer is extracted, rerun with a stricter prompt instead of guessing.</li>
+</ul>
+
+<h3>Example 6 — Batch Inference</h3>
+
+<p>For a competition-style workflow, the solver runs over a list of problems and writes a submission file.</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="n">pd</span>
+<span class="kn">from</span> <span class="nn">tqdm.auto</span> <span class="kn">import</span> <span class="n">tqdm</span>
+
+
+<span class="k">def</span> <span class="nf">solve_dataframe</span><span class="p">(</span><span class="n">df</span><span class="p">:</span> <span class="n">pd</span><span class="p">.</span><span class="n">DataFrame</span><span class="p">,</span> <span class="n">n_candidates</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">8</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">pd</span><span class="p">.</span><span class="n">DataFrame</span><span class="p">:</span>
+    <span class="n">rows</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">_</span><span class="p">,</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">tqdm</span><span class="p">(</span><span class="n">df</span><span class="p">.</span><span class="n">iterrows</span><span class="p">(),</span> <span class="n">total</span><span class="o">=</span><span class="nb">len</span><span class="p">(</span><span class="n">df</span><span class="p">)):</span>
+        <span class="n">problem</span> <span class="o">=</span> <span class="n">Problem</span><span class="p">(</span><span class="nb">id</span><span class="o">=</span><span class="nb">str</span><span class="p">(</span><span class="n">row</span><span class="p">[</span><span class="s">"id"</span><span class="p">]),</span> <span class="n">statement</span><span class="o">=</span><span class="n">row</span><span class="p">[</span><span class="s">"problem"</span><span class="p">])</span>
+        <span class="n">result</span> <span class="o">=</span> <span class="n">solve_problem</span><span class="p">(</span><span class="n">problem</span><span class="p">,</span> <span class="n">n_candidates</span><span class="o">=</span><span class="n">n_candidates</span><span class="p">)</span>
+        <span class="n">rows</span><span class="p">.</span><span class="n">append</span><span class="p">({</span><span class="s">"id"</span><span class="p">:</span> <span class="n">result</span><span class="p">[</span><span class="s">"id"</span><span class="p">],</span> <span class="s">"answer"</span><span class="p">:</span> <span class="n">result</span><span class="p">[</span><span class="s">"answer"</span><span class="p">]})</span>
+    <span class="k">return</span> <span class="n">pd</span><span class="p">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">rows</span><span class="p">)</span>
+
+
+<span class="c1"># Example usage:
+# test_df = pd.read_csv("test.csv")
+# submission = solve_dataframe(test_df, n_candidates=8)
+# submission.to_csv("submission.csv", index=False)
+</span></code></pre></div></div>
+
+<p><strong>Highlights</strong></p>
+<ul>
+  <li>Keep inference deterministic enough to reproduce.</li>
+  <li>Save intermediate logs, not just final answers.</li>
+  <li>Make the solver robust to failed generations.</li>
+</ul>
+
+<h3>Example 7 — Debugging Failed Problems</h3>
+
+<p>The most useful debugging artifact is a compact report showing every candidate answer, its score, and a short excerpt of the reasoning.</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">def</span> <span class="nf">debug_report</span><span class="p">(</span><span class="n">result</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">],</span> <span class="n">max_chars</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">600</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+    <span class="n">lines</span> <span class="o">=</span> <span class="p">[</span>
+        <span class="sa">f</span><span class="s">"Problem ID: </span><span class="si">{</span><span class="n">result</span><span class="p">[</span><span class="s">'id'</span><span class="p">]</span><span class="si">}</span><span class="s">"</span><span class="p">,</span>
+        <span class="sa">f</span><span class="s">"Selected answer: </span><span class="si">{</span><span class="n">result</span><span class="p">[</span><span class="s">'answer'</span><span class="p">]</span><span class="si">}</span><span class="s">"</span><span class="p">,</span>
+        <span class="sa">f</span><span class="s">"Vote counts: </span><span class="si">{</span><span class="nb">dict</span><span class="p">(</span><span class="n">result</span><span class="p">[</span><span class="s">'vote_counts'</span><span class="p">])</span><span class="si">}</span><span class="s">"</span><span class="p">,</span>
+        <span class="s">""</span><span class="p">,</span>
+    <span class="p">]</span>
+
+    <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">cand</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">result</span><span class="p">[</span><span class="s">"candidates"</span><span class="p">]):</span>
+        <span class="n">excerpt</span> <span class="o">=</span> <span class="n">cand</span><span class="p">.</span><span class="n">text</span><span class="p">.</span><span class="n">replace</span><span class="p">(</span><span class="s">"</span><span class="se">\n</span><span class="s">"</span><span class="p">,</span> <span class="s">" "</span><span class="p">)[:</span><span class="n">max_chars</span><span class="p">]</span>
+        <span class="n">lines</span><span class="p">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s">"Candidate </span><span class="si">{</span><span class="n">i</span><span class="si">}</span><span class="s">"</span><span class="p">)</span>
+        <span class="n">lines</span><span class="p">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s">"  answer=</span><span class="si">{</span><span class="n">cand</span><span class="p">.</span><span class="n">answer</span><span class="si">}</span><span class="s">, score=</span><span class="si">{</span><span class="n">cand</span><span class="p">.</span><span class="n">score</span><span class="p">:.</span><span class="mi">2</span><span class="n">f</span><span class="si">}</span><span class="s">, metadata=</span><span class="si">{</span><span class="n">cand</span><span class="p">.</span><span class="n">metadata</span><span class="si">}</span><span class="s">"</span><span class="p">)</span>
+        <span class="n">lines</span><span class="p">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s">"  excerpt=</span><span class="si">{</span><span class="n">excerpt</span><span class="si">}</span><span class="s">"</span><span class="p">)</span>
+        <span class="n">lines</span><span class="p">.</span><span class="n">append</span><span class="p">(</span><span class="s">""</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="s">"</span><span class="se">\n</span><span class="s">"</span><span class="p">.</span><span class="n">join</span><span class="p">(</span><span class="n">lines</span><span class="p">)</span>
+</code></pre></div></div>
+
+<p><strong>What I look for in failures</strong></p>
+<ul>
+  <li>Several different answers with similar reasoning: likely arithmetic instability.</li>
+  <li>One dominant wrong answer: likely a misleading prompt or common false pattern.</li>
+  <li>No extracted answer: formatting failure.</li>
+  <li>Correct reasoning but wrong final number: answer extraction or modulo handling bug.</li>
+</ul>
+
+<h3>Takeaways</h3>
+
+<p>A strong AIMO3 solver is a system, not just a model. The model generates ideas, but the pipeline controls reliability:</p>
+
+<ul>
+  <li>Use diverse prompts.</li>
+  <li>Generate multiple candidates.</li>
+  <li>Extract answers with strict formatting.</li>
+  <li>Verify what can be verified.</li>
+  <li>Vote, log, and inspect failures.</li>
+</ul>
+
+<p>This structure also makes it easy to improve the solver later: swap in a stronger model, add problem-specific checkers, or tune candidate counts without rewriting the entire codebase.</p>
+:ET

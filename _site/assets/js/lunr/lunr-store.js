@@ -65,6 +65,12 @@ var store = [{
         "url": "/computer%20science/energy_based_model_character_recognition/",
         "teaser": null
       },{
+        "title": "Solving International Mathematical Olympiad with GPT-OSS-120B (AIMO3) ",
+        "excerpt":"My Work This post documents my hosted implementation and results. AIMO3 + GPT-OSS 120B Jupyter Notebook HTML Result: On the IMO-style test set, my solver achieved a 10/10 solve rate. AIMO3-style math problems reward more than a single model call: the strongest solvers combine reasoning, verification, self-consistency, and careful answer...","categories": ["Machine Learning","Computer Science","Mathematics"],
+        "tags": ["Agent","GPT-OSS-120B"],
+        "url": "/machine%20learning/computer%20science/mathematics/aimo3_solver_blog/",
+        "teaser": null
+      },{
         "title": "Question Answering (SQuAD)",
         "excerpt":"This task is about extractive question answering, where questions are posed about a document and answers are identified as spans of text within the document itself. Conducted data pre-processing pipeline such as that included tokenization of questions and context, handling long contexts using stride, and mapping correct answer positions into...","categories": [],
         "tags": [],
