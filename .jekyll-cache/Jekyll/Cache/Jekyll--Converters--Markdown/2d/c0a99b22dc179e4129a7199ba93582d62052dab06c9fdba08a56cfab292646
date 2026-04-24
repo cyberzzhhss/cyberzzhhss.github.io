@@ -1,0 +1,24 @@
+I"a<div style="position: relative; padding-bottom: 56.25%; height: 0; overflow: hidden;">
+  <iframe src="https://www.youtube.com/embed/PAZTIAfaNr8" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen="" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%;">
+  </iframe>
+</div>
+
+<p class="notice--info"><strong>From Wikipedia — Universal Approximation Theorem</strong></p>
+
+<p>The <strong>Universal Approximation Theorem</strong> is a foundational result in machine learning stating that a neural network can approximate any continuous function to arbitrary precision, given enough capacity.</p>
+
+<p>In its most common form, the theorem applies to feedforward networks with a single hidden layer. With a suitable non-linear activation function, these networks can represent highly complex relationships by increasing their width.</p>
+
+<p>Importantly, this is an existence result—it guarantees such a network <em>can</em> represent a function, but does not explain how to efficiently learn or train it in practice.</p>
+
+<p><a href="https://en.wikipedia.org/wiki/Universal_approximation_theorem">→ Read full article on Wikipedia</a></p>
+
+<p class="notice--primary">📘 <strong>Wikipedia Summary</strong></p>
+
+<blockquote>
+  <p><strong>Universal Approximation Theorem</strong><br />
+Neural networks can approximate any continuous function to arbitrary accuracy, given sufficient size and a non-linear activation function.</p>
+</blockquote>
+
+<p><a href="https://en.wikipedia.org/wiki/Universal_approximation_theorem">Read more →</a></p>
+:ET

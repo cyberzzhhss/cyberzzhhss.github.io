@@ -71,6 +71,12 @@ var store = [{
         "url": "/machine%20learning/computer%20science/mathematics/aimo3_solver_blog/",
         "teaser": null
       },{
+        "title": "Universal Function Approximator",
+        "excerpt":"Universal Approximation Theorem The universal approximation theorems (UATs) state that neural networks with a certain structure can, in principle, approximate any continuous function to any desired degree of accuracy. Wikipedia Universal Approximation Theorem Neural network illustration. Source inspiration: 3Blue1Brown. 🎥 Video Credit “But what is a Neural Network?” by 3Blue1Brown...","categories": ["Machine Learning","Computer Science","Mathematics"],
+        "tags": ["Artificial Intelligence"],
+        "url": "/machine%20learning/computer%20science/mathematics/universal_function_approximator/",
+        "teaser": null
+      },{
         "title": "Question Answering (SQuAD)",
         "excerpt":"This task is about extractive question answering, where questions are posed about a document and answers are identified as spans of text within the document itself. Conducted data pre-processing pipeline such as that included tokenization of questions and context, handling long contexts using stride, and mapping correct answer positions into...","categories": [],
         "tags": [],
