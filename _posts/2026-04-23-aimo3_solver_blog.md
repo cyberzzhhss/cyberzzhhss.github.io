@@ -4,10 +4,12 @@ excerpt_separator: "Building a high-scoring AIMO3 solver with reasoning loops, m
 tags:
   - Agent
   - GPT-OSS-120B
+  -
 categories:
   - Machine Learning
   - Computer Science
   - Mathematics
+  - Artificial Intelligence
 classes: wide
 layout: single
 ---

@@ -100,7 +100,7 @@ author:
   github           : "cyberzzhhss"
   uri              : "https://cyberzzhhss.github.io/posts/"
   linkedin         : "zhehan-shi-175b09135"
-  resume           : "/assets/files/resume.pdf"
+  # resume           : "/assets/files/resume.pdf"
   links:
     - label: "Email"
       icon: "fas fa-fw fa-envelope-square"

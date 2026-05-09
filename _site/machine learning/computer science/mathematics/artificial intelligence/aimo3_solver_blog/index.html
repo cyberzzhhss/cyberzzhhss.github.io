@@ -1,0 +1,969 @@
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    <meta charset="utf-8">
+
+<!-- begin _includes/seo.html --><title>Solving International Mathematical Olympiad with GPT-OSS-120B (AIMO3)  - Zhehan Shi</title>
+<meta name="description" content="My Work   This post documents my hosted implementation and results.     AIMO3 + GPT-OSS 120B Jupyter Notebook HTML     Result: On the IMO-style test set, my solver achieved a 10/10 solve rate.    AIMO3-style math problems reward more than a single model call: the strongest solvers combine  reasoning, verification, self-consistency, and careful  answer extraction.     Background   This work is based on the   AI Mathematical Olympiad — Progress Prize 3 (AIMO3) , a Kaggle competition focused on solving challenging IMO-style math problems using large language models.    Unlike standard benchmarks, AIMO3 emphasizes multi-step reasoning, robust answer extraction, and system-level design rather than single-pass model performance.   Reference   This writeup was informed by a public Kaggle baseline:     Kaggle baseline     Intro  When I first approached AIMO3, the obvious solution was to ask the model for a step-by-step answer and hope the final number was correct.  That is not enough.  These problems are long, fragile, and often require several failed paths before the right one appears. So the solver I built treats the model less like a deterministic oracle and more like a group of mathematical problem-solvers working in parallel.  The main idea is:     Don’t trust one answer. Generate several lines of reasoning, verify where possible, and only stop when the evidence is strong enough.     System Overview  My actual implementation uses a local GPT-OSS-120B model served through vLLM’s OpenAI-compatible API. I use Harmony formatting for tool-aware conversations and keep a pool of persistent Jupyter kernels so the model can execute Python during reasoning.  At a high level, the pipeline looks like this:  Problem   → Build Harmony conversation   → Run 9 parallel attempts per batch   → Use different prompt modes and temperatures   → Allow Python tool calls inside each attempt   → Extract boxed integer answers   → Check convergence   → Run more batches if needed   → Select final answer with vote + entropy score   The important part is that this is not just “sample 10 answers and vote.” Each attempt can reason differently, call Python, fail, recover, and produce metadata that later helps with selection.    High-Value Improvement 1 — Diverse Prompt Modes  The first major upgrade was making the attempts think differently.  Instead of sending the same prompt every time, each batch contains three styles:     standard: careful olympiad-style reasoning   verify: analytical solving plus mandatory computational verification   alt: deliberately tries a less obvious approach   In code, the batch is assigned by position:  attempt_temperatures = [     0.2,  # standard     0.2,  # standard     0.2,  # standard     0.2,  # verify     0.6,  # verify     0.6,  # verify     0.6,  # alt     0.6,  # alt     0.6,  # alt ]  verify_prompt_attempts = {3, 4, 5} alt_prompt_attempts    = {6, 7, 8}   And the solver chooses the prompt like this:  def _pick_prompt(self, position: int) -&gt; str:     if position in self.cfg.verify_prompt_attempts:         return self.cfg.system_prompt_verify     elif position in self.cfg.alt_prompt_attempts:         return self.cfg.system_prompt_alt     else:         return self.cfg.system_prompt   This matters because repeated reasoning is not the same as diverse reasoning. If every attempt follows the same mental path, the system can confidently converge on the same wrong idea. Different prompt modes create useful disagreement.    High-Value Improvement 2 — Conservative Convergence  The second major upgrade was changing when the solver is allowed to stop.  The original version stopped when the most common answer reached a simple vote threshold. That was risky because early agreement can be misleading.  The updated version requires three conditions before stopping:  1. Enough valid answers exist 2. The top answer has enough votes 3. The top answer leads the runner-up by a large enough margin   In code, the convergence settings are:  early_stop             = 5 min_lead_first_batch   = 3 min_lead_later_batches = 2 min_valid_answers      = 6 attempts               = 9   The actual convergence check is:  def _has_converged(self, valid_answers: list, is_first_batch: bool) -&gt; bool:     top_count, second_count, lead = self._compute_lead(valid_answers)     total_valid = len(valid_answers)      if total_valid &lt; self.cfg.min_valid_answers:         return False      if top_count &lt; self.cfg.early_stop:         return False      min_lead = (         self.cfg.min_lead_first_batch         if is_first_batch         else self.cfg.min_lead_later_batches     )      if lead &lt; min_lead:         return False      return True   This is one of the most important design choices in the system. It lets easy problems finish quickly, but forces hard problems to keep generating evidence.  For example, one problem converged immediately with six matching answers. Another problem needed four full batches and 36 attempts before the final answer had enough support.  That behavior is exactly what I wanted: fast when confident, patient when uncertain.    High-Value Improvement 3 — Entropy-Aware Answer Selection  The third major upgrade was using more than raw votes.  Each generation returns top-logprob information. I use that to estimate mean token entropy, then give lower-entropy outputs more weight during final answer selection.  The scoring logic is:  def _select_answer(self, detailed_results: list) -&gt; int:     answer_weights = defaultdict(float)     answer_votes   = defaultdict(int)      for result in detailed_results:         answer  = result[&quot;Answer&quot;]         entropy = result[&quot;Entropy&quot;]          if answer is not None:             weight = 1.0 / max(entropy, 1e-9)             answer_weights[answer] += weight             answer_votes[answer]   += 1      scored_answers = sorted(         [             {&quot;answer&quot;: ans, &quot;votes&quot;: answer_votes[ans], &quot;score&quot;: score}             for ans, score in answer_weights.items()         ],         key=lambda x: (x[&quot;votes&quot;], x[&quot;score&quot;]),         reverse=True     )      return scored_answers[0][&quot;answer&quot;] if scored_answers else 0   This still respects majority vote first, but it also distinguishes between answers that were produced confidently and answers that appeared through noisy reasoning.  In practice, this made the output table much more useful. I could inspect not just the winning answer, but also the vote count, confidence score, response length, Python calls, and Python errors for every attempt.    Tool Use: Persistent Python Sandboxes  A key part of the solver is that each reasoning attempt can call Python.  Instead of starting a fresh Python process every time, the notebook initializes a pool of persistent Jupyter kernels:  print(f&quot;Initializing {self.cfg.workers} persistent Jupyter kernels...&quot;)  self.sandbox_pool = queue.Queue()  with ThreadPoolExecutor(max_workers=self.cfg.workers) as executor:     futures = [         executor.submit(_create_sandbox)         for _ in range(self.cfg.workers)     ]      for future in as_completed(futures):         self.sandbox_pool.put(future.result())   Each sandbox preloads tools like:  import math import numpy import sympy import itertools import collections import mpmath   This made verification practical. The model could run symbolic checks, brute-force small cases, or test numerical patterns without paying the full startup cost each time.  The tool wrapper also adds a small quality-of-life fix: if the model’s last line is an expression, it wraps it in print(...) so the output is visible.  def _ensure_last_print(self, code: str) -&gt; str:     lines = code.strip().split(&quot;\n&quot;)     last_line = lines[-1].strip()      if &quot;print&quot; in last_line or &quot;import&quot; in last_line:         return code      if not last_line or last_line.startswith(&quot;#&quot;):         return code      lines[-1] = &quot;print(&quot; + last_line + &quot;)&quot;     return &quot;\n&quot;.join(lines)   This is a small detail, but small details matter in tool-using systems.    Answer Extraction  The solver expects a final non-negative integer between 0 and 99999. The primary extraction target is a boxed answer, with a fallback for phrases like “final answer is …”.  def _scan_for_answer(self, text: str) -&gt; int | None:     pattern = r&quot;\\boxed\s*\{\s*([0-9,]+)\s*\}&quot;     matches = re.findall(pattern, text)      if matches:         value = int(matches[-1].replace(&quot;,&quot;, &quot;&quot;))         if 0 &lt;= value &lt;= 99999:             return value      pattern = r&quot;final\s+answer\s+is\s*([0-9,]+)&quot;     matches = re.findall(pattern, text, re.IGNORECASE)      if matches:         value = int(matches[-1].replace(&quot;,&quot;, &quot;&quot;))         if 0 &lt;= value &lt;= 99999:             return value      return None   This is less flashy than prompting, but just as important. A correct solution is useless if the parser misses the final answer.    What Changed From the Original Version  The original version was already useful: it ran multiple attempts, extracted answers, and selected a result.  But it had three weaknesses:     Every attempt used the same prompt.   Early stopping depended mostly on raw vote count.   The final selection did not fully use confidence information.   The updated solver fixes those issues by adding:     prompt diversity across standard, verify, and alternative modes   batch-level convergence with vote count, lead margin, and minimum valid answers   entropy-weighted answer scoring   variable temperature by attempt position   extended time budgets for harder problems   richer result logging for debugging   The biggest conceptual shift was this:     I stopped treating agreement as enough. I started asking whether the agreement was strong, diverse, and confident.     Observed Behavior  The solver handled easy and hard problems very differently.  For easier problems, it often stopped after one batch once six or more attempts agreed. For harder problems, it kept running additional batches because the lead was not strong enough.  One example produced a messy distribution after the first batch, continued through multiple batches, and eventually selected the correct answer after 36 attempts. That was a good sign: the solver did not panic when early generations disagreed.  This is the behavior I wanted from the system:     move fast when consensus is obvious   slow down when answers are unstable   keep track of uncertainty instead of hiding it     Takeaways  The biggest lesson from this project is that benchmark performance depends heavily on orchestration.  The model matters, but the surrounding system matters just as much:     Prompt diversity creates better search.   Verification reduces hallucinated confidence.   Conservative convergence prevents premature stopping.   Entropy scoring gives a useful confidence signal.   Good answer extraction prevents silent failures.   AIMO3 is not just a test of math ability. It is a test of whether you can build a system that turns probabilistic reasoning into reliable final answers.    Final Thoughts  I started this project thinking the goal was to make the model solve harder problems.  By the end, the real goal felt different:     Build a solver that knows when not to trust itself yet.   That means generating multiple attempts, forcing different reasoning styles, verifying with tools, and only committing once the evidence is strong enough.  For AIMO3-style problems, that made the difference.">
+
+
+  <meta name="author" content="Zhehan Shi">
+  
+  <meta property="article:author" content="Zhehan Shi">
+  
+
+
+<meta property="og:type" content="article">
+<meta property="og:locale" content="en_US">
+<meta property="og:site_name" content="Zhehan Shi">
+<meta property="og:title" content="Solving International Mathematical Olympiad with GPT-OSS-120B (AIMO3)">
+<meta property="og:url" content="/machine%20learning/computer%20science/mathematics/artificial%20intelligence/aimo3_solver_blog/">
+
+
+  <meta property="og:description" content="My Work   This post documents my hosted implementation and results.     AIMO3 + GPT-OSS 120B Jupyter Notebook HTML     Result: On the IMO-style test set, my solver achieved a 10/10 solve rate.    AIMO3-style math problems reward more than a single model call: the strongest solvers combine  reasoning, verification, self-consistency, and careful  answer extraction.     Background   This work is based on the   AI Mathematical Olympiad — Progress Prize 3 (AIMO3) , a Kaggle competition focused on solving challenging IMO-style math problems using large language models.    Unlike standard benchmarks, AIMO3 emphasizes multi-step reasoning, robust answer extraction, and system-level design rather than single-pass model performance.   Reference   This writeup was informed by a public Kaggle baseline:     Kaggle baseline     Intro  When I first approached AIMO3, the obvious solution was to ask the model for a step-by-step answer and hope the final number was correct.  That is not enough.  These problems are long, fragile, and often require several failed paths before the right one appears. So the solver I built treats the model less like a deterministic oracle and more like a group of mathematical problem-solvers working in parallel.  The main idea is:     Don’t trust one answer. Generate several lines of reasoning, verify where possible, and only stop when the evidence is strong enough.     System Overview  My actual implementation uses a local GPT-OSS-120B model served through vLLM’s OpenAI-compatible API. I use Harmony formatting for tool-aware conversations and keep a pool of persistent Jupyter kernels so the model can execute Python during reasoning.  At a high level, the pipeline looks like this:  Problem   → Build Harmony conversation   → Run 9 parallel attempts per batch   → Use different prompt modes and temperatures   → Allow Python tool calls inside each attempt   → Extract boxed integer answers   → Check convergence   → Run more batches if needed   → Select final answer with vote + entropy score   The important part is that this is not just “sample 10 answers and vote.” Each attempt can reason differently, call Python, fail, recover, and produce metadata that later helps with selection.    High-Value Improvement 1 — Diverse Prompt Modes  The first major upgrade was making the attempts think differently.  Instead of sending the same prompt every time, each batch contains three styles:     standard: careful olympiad-style reasoning   verify: analytical solving plus mandatory computational verification   alt: deliberately tries a less obvious approach   In code, the batch is assigned by position:  attempt_temperatures = [     0.2,  # standard     0.2,  # standard     0.2,  # standard     0.2,  # verify     0.6,  # verify     0.6,  # verify     0.6,  # alt     0.6,  # alt     0.6,  # alt ]  verify_prompt_attempts = {3, 4, 5} alt_prompt_attempts    = {6, 7, 8}   And the solver chooses the prompt like this:  def _pick_prompt(self, position: int) -&gt; str:     if position in self.cfg.verify_prompt_attempts:         return self.cfg.system_prompt_verify     elif position in self.cfg.alt_prompt_attempts:         return self.cfg.system_prompt_alt     else:         return self.cfg.system_prompt   This matters because repeated reasoning is not the same as diverse reasoning. If every attempt follows the same mental path, the system can confidently converge on the same wrong idea. Different prompt modes create useful disagreement.    High-Value Improvement 2 — Conservative Convergence  The second major upgrade was changing when the solver is allowed to stop.  The original version stopped when the most common answer reached a simple vote threshold. That was risky because early agreement can be misleading.  The updated version requires three conditions before stopping:  1. Enough valid answers exist 2. The top answer has enough votes 3. The top answer leads the runner-up by a large enough margin   In code, the convergence settings are:  early_stop             = 5 min_lead_first_batch   = 3 min_lead_later_batches = 2 min_valid_answers      = 6 attempts               = 9   The actual convergence check is:  def _has_converged(self, valid_answers: list, is_first_batch: bool) -&gt; bool:     top_count, second_count, lead = self._compute_lead(valid_answers)     total_valid = len(valid_answers)      if total_valid &lt; self.cfg.min_valid_answers:         return False      if top_count &lt; self.cfg.early_stop:         return False      min_lead = (         self.cfg.min_lead_first_batch         if is_first_batch         else self.cfg.min_lead_later_batches     )      if lead &lt; min_lead:         return False      return True   This is one of the most important design choices in the system. It lets easy problems finish quickly, but forces hard problems to keep generating evidence.  For example, one problem converged immediately with six matching answers. Another problem needed four full batches and 36 attempts before the final answer had enough support.  That behavior is exactly what I wanted: fast when confident, patient when uncertain.    High-Value Improvement 3 — Entropy-Aware Answer Selection  The third major upgrade was using more than raw votes.  Each generation returns top-logprob information. I use that to estimate mean token entropy, then give lower-entropy outputs more weight during final answer selection.  The scoring logic is:  def _select_answer(self, detailed_results: list) -&gt; int:     answer_weights = defaultdict(float)     answer_votes   = defaultdict(int)      for result in detailed_results:         answer  = result[&quot;Answer&quot;]         entropy = result[&quot;Entropy&quot;]          if answer is not None:             weight = 1.0 / max(entropy, 1e-9)             answer_weights[answer] += weight             answer_votes[answer]   += 1      scored_answers = sorted(         [             {&quot;answer&quot;: ans, &quot;votes&quot;: answer_votes[ans], &quot;score&quot;: score}             for ans, score in answer_weights.items()         ],         key=lambda x: (x[&quot;votes&quot;], x[&quot;score&quot;]),         reverse=True     )      return scored_answers[0][&quot;answer&quot;] if scored_answers else 0   This still respects majority vote first, but it also distinguishes between answers that were produced confidently and answers that appeared through noisy reasoning.  In practice, this made the output table much more useful. I could inspect not just the winning answer, but also the vote count, confidence score, response length, Python calls, and Python errors for every attempt.    Tool Use: Persistent Python Sandboxes  A key part of the solver is that each reasoning attempt can call Python.  Instead of starting a fresh Python process every time, the notebook initializes a pool of persistent Jupyter kernels:  print(f&quot;Initializing {self.cfg.workers} persistent Jupyter kernels...&quot;)  self.sandbox_pool = queue.Queue()  with ThreadPoolExecutor(max_workers=self.cfg.workers) as executor:     futures = [         executor.submit(_create_sandbox)         for _ in range(self.cfg.workers)     ]      for future in as_completed(futures):         self.sandbox_pool.put(future.result())   Each sandbox preloads tools like:  import math import numpy import sympy import itertools import collections import mpmath   This made verification practical. The model could run symbolic checks, brute-force small cases, or test numerical patterns without paying the full startup cost each time.  The tool wrapper also adds a small quality-of-life fix: if the model’s last line is an expression, it wraps it in print(...) so the output is visible.  def _ensure_last_print(self, code: str) -&gt; str:     lines = code.strip().split(&quot;\n&quot;)     last_line = lines[-1].strip()      if &quot;print&quot; in last_line or &quot;import&quot; in last_line:         return code      if not last_line or last_line.startswith(&quot;#&quot;):         return code      lines[-1] = &quot;print(&quot; + last_line + &quot;)&quot;     return &quot;\n&quot;.join(lines)   This is a small detail, but small details matter in tool-using systems.    Answer Extraction  The solver expects a final non-negative integer between 0 and 99999. The primary extraction target is a boxed answer, with a fallback for phrases like “final answer is …”.  def _scan_for_answer(self, text: str) -&gt; int | None:     pattern = r&quot;\\boxed\s*\{\s*([0-9,]+)\s*\}&quot;     matches = re.findall(pattern, text)      if matches:         value = int(matches[-1].replace(&quot;,&quot;, &quot;&quot;))         if 0 &lt;= value &lt;= 99999:             return value      pattern = r&quot;final\s+answer\s+is\s*([0-9,]+)&quot;     matches = re.findall(pattern, text, re.IGNORECASE)      if matches:         value = int(matches[-1].replace(&quot;,&quot;, &quot;&quot;))         if 0 &lt;= value &lt;= 99999:             return value      return None   This is less flashy than prompting, but just as important. A correct solution is useless if the parser misses the final answer.    What Changed From the Original Version  The original version was already useful: it ran multiple attempts, extracted answers, and selected a result.  But it had three weaknesses:     Every attempt used the same prompt.   Early stopping depended mostly on raw vote count.   The final selection did not fully use confidence information.   The updated solver fixes those issues by adding:     prompt diversity across standard, verify, and alternative modes   batch-level convergence with vote count, lead margin, and minimum valid answers   entropy-weighted answer scoring   variable temperature by attempt position   extended time budgets for harder problems   richer result logging for debugging   The biggest conceptual shift was this:     I stopped treating agreement as enough. I started asking whether the agreement was strong, diverse, and confident.     Observed Behavior  The solver handled easy and hard problems very differently.  For easier problems, it often stopped after one batch once six or more attempts agreed. For harder problems, it kept running additional batches because the lead was not strong enough.  One example produced a messy distribution after the first batch, continued through multiple batches, and eventually selected the correct answer after 36 attempts. That was a good sign: the solver did not panic when early generations disagreed.  This is the behavior I wanted from the system:     move fast when consensus is obvious   slow down when answers are unstable   keep track of uncertainty instead of hiding it     Takeaways  The biggest lesson from this project is that benchmark performance depends heavily on orchestration.  The model matters, but the surrounding system matters just as much:     Prompt diversity creates better search.   Verification reduces hallucinated confidence.   Conservative convergence prevents premature stopping.   Entropy scoring gives a useful confidence signal.   Good answer extraction prevents silent failures.   AIMO3 is not just a test of math ability. It is a test of whether you can build a system that turns probabilistic reasoning into reliable final answers.    Final Thoughts  I started this project thinking the goal was to make the model solve harder problems.  By the end, the real goal felt different:     Build a solver that knows when not to trust itself yet.   That means generating multiple attempts, forcing different reasoning styles, verifying with tools, and only committing once the evidence is strong enough.  For AIMO3-style problems, that made the difference.">
+
+
+
+
+
+
+
+  <meta property="article:published_time" content="2026-04-23T00:00:00-04:00">
+
+
+
+
+
+  
+
+  
+
+
+<link rel="canonical" href="/machine%20learning/computer%20science/mathematics/artificial%20intelligence/aimo3_solver_blog/">
+
+
+
+
+<script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    
+      "@type": "Person",
+      "name": "Zhehan Shi",
+      "url": "/"
+    
+  }
+</script>
+
+
+
+
+
+
+<!-- end _includes/seo.html -->
+
+
+<link href="/feed.xml" type="application/atom+xml" rel="alternate" title="Zhehan Shi Feed">
+
+<!-- https://t.co/dKP3o1e -->
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<script>
+  document.documentElement.className = document.documentElement.className.replace(/\bno-js\b/g, '') + ' js ';
+</script>
+
+<!-- For all browsers -->
+<link rel="stylesheet" href="/assets/css/main.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6/css/all.min.css">
+
+<!--[if IE]>
+  <style>
+    /* old IE unsupported flexbox fixes */
+    .greedy-nav .site-title {
+      padding-right: 3em;
+    }
+    .greedy-nav button {
+      position: absolute;
+      top: 0;
+      right: 0;
+      height: 100%;
+    }
+  </style>
+<![endif]-->
+
+
+
+    <!-- start custom head snippets -->
+
+<!-- insert favicons. use https://realfavicongenerator.net/ -->
+<link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+<link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
+<link rel="manifest" href="/site.webmanifest">
+<!-- end custom head snippets -->
+
+  </head>
+
+  <body class="layout--single wide">
+    <nav class="skip-links">
+  <h2 class="screen-reader-text">Skip links</h2>
+  <ul>
+    <li><a href="#site-nav" class="screen-reader-shortcut">Skip to primary navigation</a></li>
+    <li><a href="#main" class="screen-reader-shortcut">Skip to content</a></li>
+    <li><a href="#footer" class="screen-reader-shortcut">Skip to footer</a></li>
+  </ul>
+</nav>
+
+    <!--[if lt IE 9]>
+<div class="notice--danger align-center" style="margin: 0;">You are using an <strong>outdated</strong> browser. Please <a href="https://browsehappy.com/">upgrade your browser</a> to improve your experience.</div>
+<![endif]-->
+
+    
+
+<div class="masthead">
+  <div class="masthead__inner-wrap">
+    <div class="masthead__menu">
+      <nav id="site-nav" class="greedy-nav">
+        
+        <a class="site-title" href="/">
+          Zhehan Shi
+          
+        </a>
+        <ul class="visible-links"><li class="masthead__menu-item">
+              <a href="/">Home</a>
+            </li><li class="masthead__menu-item">
+              <a href="/projects/">Projects</a>
+            </li><li class="masthead__menu-item">
+              <a href="/posts/">Posts</a>
+            </li><li class="masthead__menu-item">
+              <a href="/about/">About</a>
+            </li></ul>
+        
+        <button class="search__toggle" type="button">
+          <span class="visually-hidden">Toggle search</span>
+          <svg class="icon" width="16" height="16" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 15.99 16">
+            <path d="M15.5,13.12L13.19,10.8a1.69,1.69,0,0,0-1.28-.55l-0.06-.06A6.5,6.5,0,0,0,5.77,0,6.5,6.5,0,0,0,2.46,11.59a6.47,6.47,0,0,0,7.74.26l0.05,0.05a1.65,1.65,0,0,0,.5,1.24l2.38,2.38A1.68,1.68,0,0,0,15.5,13.12ZM6.4,2A4.41,4.41,0,1,1,2,6.4,4.43,4.43,0,0,1,6.4,2Z" transform="translate(-.01)"></path>
+          </svg>
+        </button>
+        
+        <button class="greedy-nav__toggle hidden" type="button">
+          <span class="visually-hidden">Toggle menu</span>
+          <div class="navicon"></div>
+        </button>
+        <ul class="hidden-links hidden"></ul>
+      </nav>
+    </div>
+  </div>
+</div>
+
+
+    <div class="initial-content">
+      
+
+
+
+<div id="main" role="main">
+  
+
+
+  <article class="page" itemscope itemtype="https://schema.org/CreativeWork">
+    <meta itemprop="headline" content="Solving International Mathematical Olympiad with GPT-OSS-120B (AIMO3)">
+    <meta itemprop="description" content="My WorkThis post documents my hosted implementation and results.AIMO3 + GPT-OSS 120B Jupyter Notebook HTMLResult: On the IMO-style test set, my solver achieved a 10/10 solve rate.AIMO3-style math problems reward more than a single model call: the strongest solvers combine reasoning, verification, self-consistency, and careful answer extraction.BackgroundThis work is based on the AI Mathematical Olympiad — Progress Prize 3 (AIMO3), a Kaggle competition focused on solving challenging IMO-style math problems using large language models.Unlike standard benchmarks, AIMO3 emphasizes multi-step reasoning, robust answer extraction, and system-level design rather than single-pass model performance.ReferenceThis writeup was informed by a public Kaggle baseline:Kaggle baselineIntroWhen I first approached AIMO3, the obvious solution was to ask the model for a step-by-step answer and hope the final number was correct.That is not enough.These problems are long, fragile, and often require several failed paths before the right one appears. So the solver I built treats the model less like a deterministic oracle and more like a group of mathematical problem-solvers working in parallel.The main idea is:  Don’t trust one answer. Generate several lines of reasoning, verify where possible, and only stop when the evidence is strong enough.System OverviewMy actual implementation uses a local GPT-OSS-120B model served through vLLM’s OpenAI-compatible API. I use Harmony formatting for tool-aware conversations and keep a pool of persistent Jupyter kernels so the model can execute Python during reasoning.At a high level, the pipeline looks like this:Problem  → Build Harmony conversation  → Run 9 parallel attempts per batch  → Use different prompt modes and temperatures  → Allow Python tool calls inside each attempt  → Extract boxed integer answers  → Check convergence  → Run more batches if needed  → Select final answer with vote + entropy scoreThe important part is that this is not just “sample 10 answers and vote.” Each attempt can reason differently, call Python, fail, recover, and produce metadata that later helps with selection.High-Value Improvement 1 — Diverse Prompt ModesThe first major upgrade was making the attempts think differently.Instead of sending the same prompt every time, each batch contains three styles:  standard: careful olympiad-style reasoning  verify: analytical solving plus mandatory computational verification  alt: deliberately tries a less obvious approachIn code, the batch is assigned by position:attempt_temperatures = [    0.2,  # standard    0.2,  # standard    0.2,  # standard    0.2,  # verify    0.6,  # verify    0.6,  # verify    0.6,  # alt    0.6,  # alt    0.6,  # alt]verify_prompt_attempts = {3, 4, 5}alt_prompt_attempts    = {6, 7, 8}And the solver chooses the prompt like this:def _pick_prompt(self, position: int) -&gt; str:    if position in self.cfg.verify_prompt_attempts:        return self.cfg.system_prompt_verify    elif position in self.cfg.alt_prompt_attempts:        return self.cfg.system_prompt_alt    else:        return self.cfg.system_promptThis matters because repeated reasoning is not the same as diverse reasoning. If every attempt follows the same mental path, the system can confidently converge on the same wrong idea. Different prompt modes create useful disagreement.High-Value Improvement 2 — Conservative ConvergenceThe second major upgrade was changing when the solver is allowed to stop.The original version stopped when the most common answer reached a simple vote threshold. That was risky because early agreement can be misleading.The updated version requires three conditions before stopping:1. Enough valid answers exist2. The top answer has enough votes3. The top answer leads the runner-up by a large enough marginIn code, the convergence settings are:early_stop             = 5min_lead_first_batch   = 3min_lead_later_batches = 2min_valid_answers      = 6attempts               = 9The actual convergence check is:def _has_converged(self, valid_answers: list, is_first_batch: bool) -&gt; bool:    top_count, second_count, lead = self._compute_lead(valid_answers)    total_valid = len(valid_answers)    if total_valid &lt; self.cfg.min_valid_answers:        return False    if top_count &lt; self.cfg.early_stop:        return False    min_lead = (        self.cfg.min_lead_first_batch        if is_first_batch        else self.cfg.min_lead_later_batches    )    if lead &lt; min_lead:        return False    return TrueThis is one of the most important design choices in the system. It lets easy problems finish quickly, but forces hard problems to keep generating evidence.For example, one problem converged immediately with six matching answers. Another problem needed four full batches and 36 attempts before the final answer had enough support.That behavior is exactly what I wanted: fast when confident, patient when uncertain.High-Value Improvement 3 — Entropy-Aware Answer SelectionThe third major upgrade was using more than raw votes.Each generation returns top-logprob information. I use that to estimate mean token entropy, then give lower-entropy outputs more weight during final answer selection.The scoring logic is:def _select_answer(self, detailed_results: list) -&gt; int:    answer_weights = defaultdict(float)    answer_votes   = defaultdict(int)    for result in detailed_results:        answer  = result[&quot;Answer&quot;]        entropy = result[&quot;Entropy&quot;]        if answer is not None:            weight = 1.0 / max(entropy, 1e-9)            answer_weights[answer] += weight            answer_votes[answer]   += 1    scored_answers = sorted(        [            {&quot;answer&quot;: ans, &quot;votes&quot;: answer_votes[ans], &quot;score&quot;: score}            for ans, score in answer_weights.items()        ],        key=lambda x: (x[&quot;votes&quot;], x[&quot;score&quot;]),        reverse=True    )    return scored_answers[0][&quot;answer&quot;] if scored_answers else 0This still respects majority vote first, but it also distinguishes between answers that were produced confidently and answers that appeared through noisy reasoning.In practice, this made the output table much more useful. I could inspect not just the winning answer, but also the vote count, confidence score, response length, Python calls, and Python errors for every attempt.Tool Use: Persistent Python SandboxesA key part of the solver is that each reasoning attempt can call Python.Instead of starting a fresh Python process every time, the notebook initializes a pool of persistent Jupyter kernels:print(f&quot;Initializing {self.cfg.workers} persistent Jupyter kernels...&quot;)self.sandbox_pool = queue.Queue()with ThreadPoolExecutor(max_workers=self.cfg.workers) as executor:    futures = [        executor.submit(_create_sandbox)        for _ in range(self.cfg.workers)    ]    for future in as_completed(futures):        self.sandbox_pool.put(future.result())Each sandbox preloads tools like:import mathimport numpyimport sympyimport itertoolsimport collectionsimport mpmathThis made verification practical. The model could run symbolic checks, brute-force small cases, or test numerical patterns without paying the full startup cost each time.The tool wrapper also adds a small quality-of-life fix: if the model’s last line is an expression, it wraps it in print(...) so the output is visible.def _ensure_last_print(self, code: str) -&gt; str:    lines = code.strip().split(&quot;\n&quot;)    last_line = lines[-1].strip()    if &quot;print&quot; in last_line or &quot;import&quot; in last_line:        return code    if not last_line or last_line.startswith(&quot;#&quot;):        return code    lines[-1] = &quot;print(&quot; + last_line + &quot;)&quot;    return &quot;\n&quot;.join(lines)This is a small detail, but small details matter in tool-using systems.Answer ExtractionThe solver expects a final non-negative integer between 0 and 99999. The primary extraction target is a boxed answer, with a fallback for phrases like “final answer is …”.def _scan_for_answer(self, text: str) -&gt; int | None:    pattern = r&quot;\\boxed\s*\{\s*([0-9,]+)\s*\}&quot;    matches = re.findall(pattern, text)    if matches:        value = int(matches[-1].replace(&quot;,&quot;, &quot;&quot;))        if 0 &lt;= value &lt;= 99999:            return value    pattern = r&quot;final\s+answer\s+is\s*([0-9,]+)&quot;    matches = re.findall(pattern, text, re.IGNORECASE)    if matches:        value = int(matches[-1].replace(&quot;,&quot;, &quot;&quot;))        if 0 &lt;= value &lt;= 99999:            return value    return NoneThis is less flashy than prompting, but just as important. A correct solution is useless if the parser misses the final answer.What Changed From the Original VersionThe original version was already useful: it ran multiple attempts, extracted answers, and selected a result.But it had three weaknesses:  Every attempt used the same prompt.  Early stopping depended mostly on raw vote count.  The final selection did not fully use confidence information.The updated solver fixes those issues by adding:  prompt diversity across standard, verify, and alternative modes  batch-level convergence with vote count, lead margin, and minimum valid answers  entropy-weighted answer scoring  variable temperature by attempt position  extended time budgets for harder problems  richer result logging for debuggingThe biggest conceptual shift was this:  I stopped treating agreement as enough. I started asking whether the agreement was strong, diverse, and confident.Observed BehaviorThe solver handled easy and hard problems very differently.For easier problems, it often stopped after one batch once six or more attempts agreed. For harder problems, it kept running additional batches because the lead was not strong enough.One example produced a messy distribution after the first batch, continued through multiple batches, and eventually selected the correct answer after 36 attempts. That was a good sign: the solver did not panic when early generations disagreed.This is the behavior I wanted from the system:  move fast when consensus is obvious  slow down when answers are unstable  keep track of uncertainty instead of hiding itTakeawaysThe biggest lesson from this project is that benchmark performance depends heavily on orchestration.The model matters, but the surrounding system matters just as much:  Prompt diversity creates better search.  Verification reduces hallucinated confidence.  Conservative convergence prevents premature stopping.  Entropy scoring gives a useful confidence signal.  Good answer extraction prevents silent failures.AIMO3 is not just a test of math ability. It is a test of whether you can build a system that turns probabilistic reasoning into reliable final answers.Final ThoughtsI started this project thinking the goal was to make the model solve harder problems.By the end, the real goal felt different:  Build a solver that knows when not to trust itself yet.That means generating multiple attempts, forcing different reasoning styles, verifying with tools, and only committing once the evidence is strong enough.For AIMO3-style problems, that made the difference.">
+    <meta itemprop="datePublished" content="2026-04-23T00:00:00-04:00">
+    
+
+    <div class="page__inner-wrap">
+      
+        <header>
+          <h1 id="page-title" class="page__title" itemprop="headline">Solving International Mathematical Olympiad with GPT-OSS-120B (AIMO3)
+</h1>
+          
+
+  <p class="page__meta">
+    
+
+    
+
+    
+      
+      
+
+      <span class="page__meta-readtime">
+        <i class="far fa-clock" aria-hidden="true"></i>
+        
+          7 minute read
+        
+      </span>
+    
+  </p>
+
+
+        </header>
+      
+
+      <section class="page__content" itemprop="text">
+        
+        <h3>My Work</h3>
+
+<p>
+This post documents my hosted implementation and results.
+</p>
+
+<p>
+<a href="/assets/html/aimo3-gpt-oss-120b.html">
+AIMO3 + GPT-OSS 120B Jupyter Notebook HTML
+</a>
+</p>
+
+<p>
+<strong>Result:</strong> On the IMO-style test set, my solver achieved a <strong>10/10</strong> solve rate.
+</p>
+
+<p>
+AIMO3-style math problems reward more than a single model call: the strongest solvers combine 
+<strong>reasoning</strong>, <strong>verification</strong>, <strong>self-consistency</strong>, and careful 
+<strong>answer extraction</strong>.
+</p>
+
+<!--more-->
+
+<h3>Background</h3>
+
+<p>
+This work is based on the 
+<a href="https://www.kaggle.com/competitions/ai-mathematical-olympiad-progress-prize-3">
+AI Mathematical Olympiad — Progress Prize 3 (AIMO3)
+</a>, a Kaggle competition focused on solving challenging IMO-style math problems using large language models.
+</p>
+
+<p>
+Unlike standard benchmarks, AIMO3 emphasizes <strong>multi-step reasoning</strong>, <strong>robust answer extraction</strong>, and <strong>system-level design</strong> rather than single-pass model performance.
+</p>
+
+<h3>Reference</h3>
+
+<p>
+This writeup was informed by a public Kaggle baseline:
+</p>
+
+<p>
+<a href="https://www.kaggle.com/code/nihilisticneuralnet/44-50-let-me-over-cook">
+Kaggle baseline
+</a>
+</p>
+<hr />
+
+<h3>Intro</h3>
+
+<p>When I first approached AIMO3, the obvious solution was to ask the model for a step-by-step answer and hope the final number was correct.</p>
+
+<p>That is not enough.</p>
+
+<p>These problems are long, fragile, and often require several failed paths before the right one appears. So the solver I built treats the model less like a deterministic oracle and more like a group of mathematical problem-solvers working in parallel.</p>
+
+<p>The main idea is:</p>
+
+<blockquote>
+  <p>Don’t trust one answer. Generate several lines of reasoning, verify where possible, and only stop when the evidence is strong enough.</p>
+</blockquote>
+
+<hr />
+
+<h3>System Overview</h3>
+
+<p>My actual implementation uses a local GPT-OSS-120B model served through vLLM’s OpenAI-compatible API. I use Harmony formatting for tool-aware conversations and keep a pool of persistent Jupyter kernels so the model can execute Python during reasoning.</p>
+
+<p>At a high level, the pipeline looks like this:</p>
+
+<div class="language-text highlighter-rouge"><div class="highlight"><pre class="highlight"><code>Problem
+  → Build Harmony conversation
+  → Run 9 parallel attempts per batch
+  → Use different prompt modes and temperatures
+  → Allow Python tool calls inside each attempt
+  → Extract boxed integer answers
+  → Check convergence
+  → Run more batches if needed
+  → Select final answer with vote + entropy score
+</code></pre></div></div>
+
+<p>The important part is that this is not just “sample 10 answers and vote.” Each attempt can reason differently, call Python, fail, recover, and produce metadata that later helps with selection.</p>
+
+<hr />
+
+<h3>High-Value Improvement 1 — Diverse Prompt Modes</h3>
+
+<p>The first major upgrade was making the attempts think differently.</p>
+
+<p>Instead of sending the same prompt every time, each batch contains three styles:</p>
+
+<ul>
+  <li><strong>standard</strong>: careful olympiad-style reasoning</li>
+  <li><strong>verify</strong>: analytical solving plus mandatory computational verification</li>
+  <li><strong>alt</strong>: deliberately tries a less obvious approach</li>
+</ul>
+
+<p>In code, the batch is assigned by position:</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">attempt_temperatures</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="mf">0.2</span><span class="p">,</span>  <span class="c1"># standard
+</span>    <span class="mf">0.2</span><span class="p">,</span>  <span class="c1"># standard
+</span>    <span class="mf">0.2</span><span class="p">,</span>  <span class="c1"># standard
+</span>    <span class="mf">0.2</span><span class="p">,</span>  <span class="c1"># verify
+</span>    <span class="mf">0.6</span><span class="p">,</span>  <span class="c1"># verify
+</span>    <span class="mf">0.6</span><span class="p">,</span>  <span class="c1"># verify
+</span>    <span class="mf">0.6</span><span class="p">,</span>  <span class="c1"># alt
+</span>    <span class="mf">0.6</span><span class="p">,</span>  <span class="c1"># alt
+</span>    <span class="mf">0.6</span><span class="p">,</span>  <span class="c1"># alt
+</span><span class="p">]</span>
+
+<span class="n">verify_prompt_attempts</span> <span class="o">=</span> <span class="p">{</span><span class="mi">3</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">5</span><span class="p">}</span>
+<span class="n">alt_prompt_attempts</span>    <span class="o">=</span> <span class="p">{</span><span class="mi">6</span><span class="p">,</span> <span class="mi">7</span><span class="p">,</span> <span class="mi">8</span><span class="p">}</span>
+</code></pre></div></div>
+
+<p>And the solver chooses the prompt like this:</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">def</span> <span class="nf">_pick_prompt</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">position</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+    <span class="k">if</span> <span class="n">position</span> <span class="ow">in</span> <span class="bp">self</span><span class="p">.</span><span class="n">cfg</span><span class="p">.</span><span class="n">verify_prompt_attempts</span><span class="p">:</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="p">.</span><span class="n">cfg</span><span class="p">.</span><span class="n">system_prompt_verify</span>
+    <span class="k">elif</span> <span class="n">position</span> <span class="ow">in</span> <span class="bp">self</span><span class="p">.</span><span class="n">cfg</span><span class="p">.</span><span class="n">alt_prompt_attempts</span><span class="p">:</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="p">.</span><span class="n">cfg</span><span class="p">.</span><span class="n">system_prompt_alt</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="p">.</span><span class="n">cfg</span><span class="p">.</span><span class="n">system_prompt</span>
+</code></pre></div></div>
+
+<p>This matters because repeated reasoning is not the same as diverse reasoning. If every attempt follows the same mental path, the system can confidently converge on the same wrong idea. Different prompt modes create useful disagreement.</p>
+
+<hr />
+
+<h3>High-Value Improvement 2 — Conservative Convergence</h3>
+
+<p>The second major upgrade was changing when the solver is allowed to stop.</p>
+
+<p>The original version stopped when the most common answer reached a simple vote threshold. That was risky because early agreement can be misleading.</p>
+
+<p>The updated version requires three conditions before stopping:</p>
+
+<div class="language-text highlighter-rouge"><div class="highlight"><pre class="highlight"><code>1. Enough valid answers exist
+2. The top answer has enough votes
+3. The top answer leads the runner-up by a large enough margin
+</code></pre></div></div>
+
+<p>In code, the convergence settings are:</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">early_stop</span>             <span class="o">=</span> <span class="mi">5</span>
+<span class="n">min_lead_first_batch</span>   <span class="o">=</span> <span class="mi">3</span>
+<span class="n">min_lead_later_batches</span> <span class="o">=</span> <span class="mi">2</span>
+<span class="n">min_valid_answers</span>      <span class="o">=</span> <span class="mi">6</span>
+<span class="n">attempts</span>               <span class="o">=</span> <span class="mi">9</span>
+</code></pre></div></div>
+
+<p>The actual convergence check is:</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">def</span> <span class="nf">_has_converged</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">valid_answers</span><span class="p">:</span> <span class="nb">list</span><span class="p">,</span> <span class="n">is_first_batch</span><span class="p">:</span> <span class="nb">bool</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+    <span class="n">top_count</span><span class="p">,</span> <span class="n">second_count</span><span class="p">,</span> <span class="n">lead</span> <span class="o">=</span> <span class="bp">self</span><span class="p">.</span><span class="n">_compute_lead</span><span class="p">(</span><span class="n">valid_answers</span><span class="p">)</span>
+    <span class="n">total_valid</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">valid_answers</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">total_valid</span> <span class="o">&lt;</span> <span class="bp">self</span><span class="p">.</span><span class="n">cfg</span><span class="p">.</span><span class="n">min_valid_answers</span><span class="p">:</span>
+        <span class="k">return</span> <span class="bp">False</span>
+
+    <span class="k">if</span> <span class="n">top_count</span> <span class="o">&lt;</span> <span class="bp">self</span><span class="p">.</span><span class="n">cfg</span><span class="p">.</span><span class="n">early_stop</span><span class="p">:</span>
+        <span class="k">return</span> <span class="bp">False</span>
+
+    <span class="n">min_lead</span> <span class="o">=</span> <span class="p">(</span>
+        <span class="bp">self</span><span class="p">.</span><span class="n">cfg</span><span class="p">.</span><span class="n">min_lead_first_batch</span>
+        <span class="k">if</span> <span class="n">is_first_batch</span>
+        <span class="k">else</span> <span class="bp">self</span><span class="p">.</span><span class="n">cfg</span><span class="p">.</span><span class="n">min_lead_later_batches</span>
+    <span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">lead</span> <span class="o">&lt;</span> <span class="n">min_lead</span><span class="p">:</span>
+        <span class="k">return</span> <span class="bp">False</span>
+
+    <span class="k">return</span> <span class="bp">True</span>
+</code></pre></div></div>
+
+<p>This is one of the most important design choices in the system. It lets easy problems finish quickly, but forces hard problems to keep generating evidence.</p>
+
+<p>For example, one problem converged immediately with six matching answers. Another problem needed four full batches and 36 attempts before the final answer had enough support.</p>
+
+<p>That behavior is exactly what I wanted: fast when confident, patient when uncertain.</p>
+
+<hr />
+
+<h3>High-Value Improvement 3 — Entropy-Aware Answer Selection</h3>
+
+<p>The third major upgrade was using more than raw votes.</p>
+
+<p>Each generation returns top-logprob information. I use that to estimate mean token entropy, then give lower-entropy outputs more weight during final answer selection.</p>
+
+<p>The scoring logic is:</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">def</span> <span class="nf">_select_answer</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">detailed_results</span><span class="p">:</span> <span class="nb">list</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+    <span class="n">answer_weights</span> <span class="o">=</span> <span class="n">defaultdict</span><span class="p">(</span><span class="nb">float</span><span class="p">)</span>
+    <span class="n">answer_votes</span>   <span class="o">=</span> <span class="n">defaultdict</span><span class="p">(</span><span class="nb">int</span><span class="p">)</span>
+
+    <span class="k">for</span> <span class="n">result</span> <span class="ow">in</span> <span class="n">detailed_results</span><span class="p">:</span>
+        <span class="n">answer</span>  <span class="o">=</span> <span class="n">result</span><span class="p">[</span><span class="s">"Answer"</span><span class="p">]</span>
+        <span class="n">entropy</span> <span class="o">=</span> <span class="n">result</span><span class="p">[</span><span class="s">"Entropy"</span><span class="p">]</span>
+
+        <span class="k">if</span> <span class="n">answer</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="n">weight</span> <span class="o">=</span> <span class="mf">1.0</span> <span class="o">/</span> <span class="nb">max</span><span class="p">(</span><span class="n">entropy</span><span class="p">,</span> <span class="mf">1e-9</span><span class="p">)</span>
+            <span class="n">answer_weights</span><span class="p">[</span><span class="n">answer</span><span class="p">]</span> <span class="o">+=</span> <span class="n">weight</span>
+            <span class="n">answer_votes</span><span class="p">[</span><span class="n">answer</span><span class="p">]</span>   <span class="o">+=</span> <span class="mi">1</span>
+
+    <span class="n">scored_answers</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span>
+        <span class="p">[</span>
+            <span class="p">{</span><span class="s">"answer"</span><span class="p">:</span> <span class="n">ans</span><span class="p">,</span> <span class="s">"votes"</span><span class="p">:</span> <span class="n">answer_votes</span><span class="p">[</span><span class="n">ans</span><span class="p">],</span> <span class="s">"score"</span><span class="p">:</span> <span class="n">score</span><span class="p">}</span>
+            <span class="k">for</span> <span class="n">ans</span><span class="p">,</span> <span class="n">score</span> <span class="ow">in</span> <span class="n">answer_weights</span><span class="p">.</span><span class="n">items</span><span class="p">()</span>
+        <span class="p">],</span>
+        <span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="p">(</span><span class="n">x</span><span class="p">[</span><span class="s">"votes"</span><span class="p">],</span> <span class="n">x</span><span class="p">[</span><span class="s">"score"</span><span class="p">]),</span>
+        <span class="n">reverse</span><span class="o">=</span><span class="bp">True</span>
+    <span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">scored_answers</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="s">"answer"</span><span class="p">]</span> <span class="k">if</span> <span class="n">scored_answers</span> <span class="k">else</span> <span class="mi">0</span>
+</code></pre></div></div>
+
+<p>This still respects majority vote first, but it also distinguishes between answers that were produced confidently and answers that appeared through noisy reasoning.</p>
+
+<p>In practice, this made the output table much more useful. I could inspect not just the winning answer, but also the vote count, confidence score, response length, Python calls, and Python errors for every attempt.</p>
+
+<hr />
+
+<h3>Tool Use: Persistent Python Sandboxes</h3>
+
+<p>A key part of the solver is that each reasoning attempt can call Python.</p>
+
+<p>Instead of starting a fresh Python process every time, the notebook initializes a pool of persistent Jupyter kernels:</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">print</span><span class="p">(</span><span class="sa">f</span><span class="s">"Initializing </span><span class="si">{</span><span class="bp">self</span><span class="p">.</span><span class="n">cfg</span><span class="p">.</span><span class="n">workers</span><span class="si">}</span><span class="s"> persistent Jupyter kernels..."</span><span class="p">)</span>
+
+<span class="bp">self</span><span class="p">.</span><span class="n">sandbox_pool</span> <span class="o">=</span> <span class="n">queue</span><span class="p">.</span><span class="n">Queue</span><span class="p">()</span>
+
+<span class="k">with</span> <span class="n">ThreadPoolExecutor</span><span class="p">(</span><span class="n">max_workers</span><span class="o">=</span><span class="bp">self</span><span class="p">.</span><span class="n">cfg</span><span class="p">.</span><span class="n">workers</span><span class="p">)</span> <span class="k">as</span> <span class="n">executor</span><span class="p">:</span>
+    <span class="n">futures</span> <span class="o">=</span> <span class="p">[</span>
+        <span class="n">executor</span><span class="p">.</span><span class="n">submit</span><span class="p">(</span><span class="n">_create_sandbox</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="p">.</span><span class="n">cfg</span><span class="p">.</span><span class="n">workers</span><span class="p">)</span>
+    <span class="p">]</span>
+
+    <span class="k">for</span> <span class="n">future</span> <span class="ow">in</span> <span class="n">as_completed</span><span class="p">(</span><span class="n">futures</span><span class="p">):</span>
+        <span class="bp">self</span><span class="p">.</span><span class="n">sandbox_pool</span><span class="p">.</span><span class="n">put</span><span class="p">(</span><span class="n">future</span><span class="p">.</span><span class="n">result</span><span class="p">())</span>
+</code></pre></div></div>
+
+<p>Each sandbox preloads tools like:</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kn">import</span> <span class="nn">math</span>
+<span class="kn">import</span> <span class="nn">numpy</span>
+<span class="kn">import</span> <span class="nn">sympy</span>
+<span class="kn">import</span> <span class="nn">itertools</span>
+<span class="kn">import</span> <span class="nn">collections</span>
+<span class="kn">import</span> <span class="nn">mpmath</span>
+</code></pre></div></div>
+
+<p>This made verification practical. The model could run symbolic checks, brute-force small cases, or test numerical patterns without paying the full startup cost each time.</p>
+
+<p>The tool wrapper also adds a small quality-of-life fix: if the model’s last line is an expression, it wraps it in <code class="language-plaintext highlighter-rouge">print(...)</code> so the output is visible.</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">def</span> <span class="nf">_ensure_last_print</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">code</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+    <span class="n">lines</span> <span class="o">=</span> <span class="n">code</span><span class="p">.</span><span class="n">strip</span><span class="p">().</span><span class="n">split</span><span class="p">(</span><span class="s">"</span><span class="se">\n</span><span class="s">"</span><span class="p">)</span>
+    <span class="n">last_line</span> <span class="o">=</span> <span class="n">lines</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">].</span><span class="n">strip</span><span class="p">()</span>
+
+    <span class="k">if</span> <span class="s">"print"</span> <span class="ow">in</span> <span class="n">last_line</span> <span class="ow">or</span> <span class="s">"import"</span> <span class="ow">in</span> <span class="n">last_line</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">code</span>
+
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">last_line</span> <span class="ow">or</span> <span class="n">last_line</span><span class="p">.</span><span class="n">startswith</span><span class="p">(</span><span class="s">"#"</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">code</span>
+
+    <span class="n">lines</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="s">"print("</span> <span class="o">+</span> <span class="n">last_line</span> <span class="o">+</span> <span class="s">")"</span>
+    <span class="k">return</span> <span class="s">"</span><span class="se">\n</span><span class="s">"</span><span class="p">.</span><span class="n">join</span><span class="p">(</span><span class="n">lines</span><span class="p">)</span>
+</code></pre></div></div>
+
+<p>This is a small detail, but small details matter in tool-using systems.</p>
+
+<hr />
+
+<h3>Answer Extraction</h3>
+
+<p>The solver expects a final non-negative integer between 0 and 99999. The primary extraction target is a boxed answer, with a fallback for phrases like “final answer is …”.</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">def</span> <span class="nf">_scan_for_answer</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">text</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span> <span class="o">|</span> <span class="bp">None</span><span class="p">:</span>
+    <span class="n">pattern</span> <span class="o">=</span> <span class="sa">r</span><span class="s">"\\boxed\s*\{\s*([0-9,]+)\s*\}"</span>
+    <span class="n">matches</span> <span class="o">=</span> <span class="n">re</span><span class="p">.</span><span class="n">findall</span><span class="p">(</span><span class="n">pattern</span><span class="p">,</span> <span class="n">text</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">matches</span><span class="p">:</span>
+        <span class="n">value</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">matches</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">].</span><span class="n">replace</span><span class="p">(</span><span class="s">","</span><span class="p">,</span> <span class="s">""</span><span class="p">))</span>
+        <span class="k">if</span> <span class="mi">0</span> <span class="o">&lt;=</span> <span class="n">value</span> <span class="o">&lt;=</span> <span class="mi">99999</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">value</span>
+
+    <span class="n">pattern</span> <span class="o">=</span> <span class="sa">r</span><span class="s">"final\s+answer\s+is\s*([0-9,]+)"</span>
+    <span class="n">matches</span> <span class="o">=</span> <span class="n">re</span><span class="p">.</span><span class="n">findall</span><span class="p">(</span><span class="n">pattern</span><span class="p">,</span> <span class="n">text</span><span class="p">,</span> <span class="n">re</span><span class="p">.</span><span class="n">IGNORECASE</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">matches</span><span class="p">:</span>
+        <span class="n">value</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">matches</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">].</span><span class="n">replace</span><span class="p">(</span><span class="s">","</span><span class="p">,</span> <span class="s">""</span><span class="p">))</span>
+        <span class="k">if</span> <span class="mi">0</span> <span class="o">&lt;=</span> <span class="n">value</span> <span class="o">&lt;=</span> <span class="mi">99999</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">value</span>
+
+    <span class="k">return</span> <span class="bp">None</span>
+</code></pre></div></div>
+
+<p>This is less flashy than prompting, but just as important. A correct solution is useless if the parser misses the final answer.</p>
+
+<hr />
+
+<h3>What Changed From the Original Version</h3>
+
+<p>The original version was already useful: it ran multiple attempts, extracted answers, and selected a result.</p>
+
+<p>But it had three weaknesses:</p>
+
+<ol>
+  <li>Every attempt used the same prompt.</li>
+  <li>Early stopping depended mostly on raw vote count.</li>
+  <li>The final selection did not fully use confidence information.</li>
+</ol>
+
+<p>The updated solver fixes those issues by adding:</p>
+
+<ul>
+  <li>prompt diversity across standard, verify, and alternative modes</li>
+  <li>batch-level convergence with vote count, lead margin, and minimum valid answers</li>
+  <li>entropy-weighted answer scoring</li>
+  <li>variable temperature by attempt position</li>
+  <li>extended time budgets for harder problems</li>
+  <li>richer result logging for debugging</li>
+</ul>
+
+<p>The biggest conceptual shift was this:</p>
+
+<blockquote>
+  <p>I stopped treating agreement as enough. I started asking whether the agreement was strong, diverse, and confident.</p>
+</blockquote>
+
+<hr />
+
+<h3>Observed Behavior</h3>
+
+<p>The solver handled easy and hard problems very differently.</p>
+
+<p>For easier problems, it often stopped after one batch once six or more attempts agreed. For harder problems, it kept running additional batches because the lead was not strong enough.</p>
+
+<p>One example produced a messy distribution after the first batch, continued through multiple batches, and eventually selected the correct answer after 36 attempts. That was a good sign: the solver did not panic when early generations disagreed.</p>
+
+<p>This is the behavior I wanted from the system:</p>
+
+<ul>
+  <li>move fast when consensus is obvious</li>
+  <li>slow down when answers are unstable</li>
+  <li>keep track of uncertainty instead of hiding it</li>
+</ul>
+
+<hr />
+
+<h3>Takeaways</h3>
+
+<p>The biggest lesson from this project is that benchmark performance depends heavily on orchestration.</p>
+
+<p>The model matters, but the surrounding system matters just as much:</p>
+
+<ul>
+  <li>Prompt diversity creates better search.</li>
+  <li>Verification reduces hallucinated confidence.</li>
+  <li>Conservative convergence prevents premature stopping.</li>
+  <li>Entropy scoring gives a useful confidence signal.</li>
+  <li>Good answer extraction prevents silent failures.</li>
+</ul>
+
+<p>AIMO3 is not just a test of math ability. It is a test of whether you can build a system that turns probabilistic reasoning into reliable final answers.</p>
+
+<hr />
+
+<h3>Final Thoughts</h3>
+
+<p>I started this project thinking the goal was to make the model solve harder problems.</p>
+
+<p>By the end, the real goal felt different:</p>
+
+<blockquote>
+  <p>Build a solver that knows when not to trust itself yet.</p>
+</blockquote>
+
+<p>That means generating multiple attempts, forcing different reasoning styles, verifying with tools, and only committing once the evidence is strong enough.</p>
+
+<p>For AIMO3-style problems, that made the difference.</p>
+
+        
+      </section>
+
+      <footer class="page__meta">
+        
+        
+  
+
+
+  
+  
+  
+
+  <p class="page__taxonomy">
+    <strong><i class="fas fa-fw fa-tags" aria-hidden="true"></i> Tags: </strong>
+    <span itemprop="keywords">
+    
+      
+      
+      <a href="/tags/#agent" class="page__taxonomy-item" rel="tag">Agent</a><span class="sep">, </span>
+    
+      
+      
+      <a href="/tags/#gpt-oss-120b" class="page__taxonomy-item" rel="tag">GPT-OSS-120B</a>
+    
+    </span>
+  </p>
+
+
+
+
+  
+
+
+  
+  
+  
+
+  <p class="page__taxonomy">
+    <strong><i class="fas fa-fw fa-folder-open" aria-hidden="true"></i> Categories: </strong>
+    <span itemprop="keywords">
+    
+      
+      
+      <a href="/categories/#artificial-intelligence" class="page__taxonomy-item" rel="tag">Artificial Intelligence</a><span class="sep">, </span>
+    
+      
+      
+      <a href="/categories/#computer-science" class="page__taxonomy-item" rel="tag">Computer Science</a><span class="sep">, </span>
+    
+      
+      
+      <a href="/categories/#machine-learning" class="page__taxonomy-item" rel="tag">Machine Learning</a><span class="sep">, </span>
+    
+      
+      
+      <a href="/categories/#mathematics" class="page__taxonomy-item" rel="tag">Mathematics</a>
+    
+    </span>
+  </p>
+
+
+        
+  <p class="page__date"><strong><i class="fas fa-fw fa-calendar-alt" aria-hidden="true"></i> Updated:</strong> <time datetime="2026-04-23T00:00:00-04:00">April 23, 2026</time></p>
+
+
+      </footer>
+
+      <section class="page__share">
+  
+
+  <a href="https://twitter.com/intent/tweet?text=Solving+International+Mathematical+Olympiad+with+GPT-OSS-120B+%28AIMO3%29+%20%2Fmachine%2520learning%2Fcomputer%2520science%2Fmathematics%2Fartificial%2520intelligence%2Faimo3_solver_blog%2F" class="btn btn--twitter" onclick="window.open(this.href, 'window', 'left=20,top=20,width=500,height=500,toolbar=1,resizable=0'); return false;" title="Share on Twitter"><i class="fa-brands fa-x-twitter" aria-hidden="true"></i><span> X</span></a>
+
+
+  <a href="https://www.facebook.com/sharer/sharer.php?u=%2Fmachine%2520learning%2Fcomputer%2520science%2Fmathematics%2Fartificial%2520intelligence%2Faimo3_solver_blog%2F" class="btn btn--facebook" aria-label="Share on Facebook" onclick="window.open(this.href, 'window', 'left=20,top=20,width=500,height=500,toolbar=1,resizable=0'); return false;" title="Share on Facebook">
+    <i class="fab fa-fw fa-facebook" aria-hidden="true"></i><span> Facebook</span>
+  </a>
+  
+  <a href="https://www.linkedin.com/shareArticle?mini=true&url=%2Fmachine%2520learning%2Fcomputer%2520science%2Fmathematics%2Fartificial%2520intelligence%2Faimo3_solver_blog%2F" class="btn btn--linkedin" onclick="window.open(this.href, 'window', 'left=20,top=20,width=500,height=500,toolbar=1,resizable=0'); return false;" title="Share on LinkedIn"><i class="fab fa-fw fa-linkedin" aria-hidden="true"></i><span> LinkedIn</span></a>
+
+  <a href="https://bsky.app/intent/compose?text=Solving+International+Mathematical+Olympiad+with+GPT-OSS-120B+%28AIMO3%29+%20%2Fmachine%2520learning%2Fcomputer%2520science%2Fmathematics%2Fartificial%2520intelligence%2Faimo3_solver_blog%2F" class="btn btn--bluesky" onclick="window.open(this.href, 'window', 'left=20,top=20,width=500,height=500,toolbar=1,resizable=0'); return false;" title="Share on Bluesky">
+    <i class="fab fa-fw fa-bluesky" aria-hidden="true"></i><span> Bluesky</span>
+  </a>
+</section>
+
+
+      
+  <nav class="pagination">
+    
+      <a href="/computer%20science/energy_based_model_character_recognition/" class="pagination--pager" title="Energy-Based Models &amp; Structured Prediction
+">Previous</a>
+    
+    
+      <a href="/machine%20learning/computer%20science/mathematics/universal_function_approximator/" class="pagination--pager" title="Universal Function Approximator
+">Next</a>
+    
+  </nav>
+
+    </div>
+
+    
+  </article>
+
+  
+  
+    <div class="page__related">
+      <h4 class="page__related-title">You May Also Enjoy</h4>
+      <div class="grid__wrapper">
+        
+          
+
+
+
+<div class="grid__item">
+  <article class="archive__item" itemscope itemtype="https://schema.org/CreativeWork">
+    
+    <h2 class="archive__item-title no_toc" itemprop="headline">
+      
+        <a href="/machine%20learning/computer%20science/mathematics/universal_function_approximator/" rel="permalink">Universal Function Approximator
+</a>
+      
+    </h2>
+    
+
+  <p class="page__meta">
+    
+
+    
+
+    
+      
+      
+
+      <span class="page__meta-readtime">
+        <i class="far fa-clock" aria-hidden="true"></i>
+        
+          less than 1 minute read
+        
+      </span>
+    
+  </p>
+
+
+    <p class="archive__item-excerpt" itemprop="description">
+  
+  
+
+
+Universal Approximation Theorem
+The universal approximation theorems (UATs) state that neural networks with a certain structure can, in principle, a...</p>
+  </article>
+</div>
+
+        
+          
+
+
+
+<div class="grid__item">
+  <article class="archive__item" itemscope itemtype="https://schema.org/CreativeWork">
+    
+    <h2 class="archive__item-title no_toc" itemprop="headline">
+      
+        <a href="/computer%20science/energy_based_model_character_recognition/" rel="permalink">Energy-Based Models &amp; Structured Prediction
+</a>
+      
+    </h2>
+    
+
+  <p class="page__meta">
+    
+
+    
+
+    
+      
+      
+
+      <span class="page__meta-readtime">
+        <i class="far fa-clock" aria-hidden="true"></i>
+        
+          10 minute read
+        
+      </span>
+    
+  </p>
+
+
+    <p class="archive__item-excerpt" itemprop="description">Energy-Based Models (EBMs) assign a scalar energy to configurations of variables and perform inference by minimizing energy.  
+
+Intro
+
+We tackle structured p...</p>
+  </article>
+</div>
+
+        
+          
+
+
+
+<div class="grid__item">
+  <article class="archive__item" itemscope itemtype="https://schema.org/CreativeWork">
+    
+    <h2 class="archive__item-title no_toc" itemprop="headline">
+      
+        <a href="/computer%20science/data%20science/transformer_tutorial/" rel="permalink">Transformer Architecture Tutorial
+</a>
+      
+    </h2>
+    
+
+  <p class="page__meta">
+    
+
+    
+
+    
+      
+      
+
+      <span class="page__meta-readtime">
+        <i class="far fa-clock" aria-hidden="true"></i>
+        
+          less than 1 minute read
+        
+      </span>
+    
+  </p>
+
+
+    <p class="archive__item-excerpt" itemprop="description">Here is the list of good resources to understand transformer architecture.
+
+
+  
+    Distilled AI on Transformer
+  
+  
+    Harvard Annotated Transformer
+  
+  ...</p>
+  </article>
+</div>
+
+        
+          
+
+
+
+<div class="grid__item">
+  <article class="archive__item" itemscope itemtype="https://schema.org/CreativeWork">
+    
+    <h2 class="archive__item-title no_toc" itemprop="headline">
+      
+        <a href="/philosohpy/perserverance/" rel="permalink">Curiosity &amp; Perserverance
+</a>
+      
+    </h2>
+    
+
+  <p class="page__meta">
+    
+
+    
+
+    
+      
+      
+
+      <span class="page__meta-readtime">
+        <i class="far fa-clock" aria-hidden="true"></i>
+        
+          less than 1 minute read
+        
+      </span>
+    
+  </p>
+
+
+    <p class="archive__item-excerpt" itemprop="description">This is a good tweet.
+
+Riding my first #ebike today and it feels like the future has arrived.&mdash; Ben Cichy (@bencichy) November 22, 2019
+
+
+</p>
+  </article>
+</div>
+
+        
+      </div>
+    </div>
+  
+  
+</div>
+
+    </div>
+
+    
+      <div class="search-content">
+        <div class="search-content__inner-wrap"><form class="search-content__form" onkeydown="return event.key != 'Enter';">
+    <label class="sr-only" for="search">
+      Enter your search term...
+    </label>
+    <input type="search" id="search" class="search-input" tabindex="-1" placeholder="Enter your search term..." />
+  </form>
+  <div id="results" class="results"></div></div>
+
+      </div>
+    
+
+    <div id="footer" class="page__footer">
+      <footer>
+        <!-- start custom footer snippets -->
+
+<!-- end custom footer snippets -->
+        <!-- <div class="page__footer-follow">
+  <ul class="social-icons">
+    
+
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+
+    <li><a href="/feed.xml"><i class="fas fa-fw fa-rss-square" aria-hidden="true"></i> Feed</a></li>
+  </ul>
+</div>
+ -->
+<div class="page__footer-copyright">&copy; <!-- 2026  -->Zhehan Shi<!-- . Powered by <a href="https://jekyllrb.com" rel="nofollow">Jekyll</a> &amp; --></div>
+
+      </footer>
+    </div>
+
+    
+  <script src="/assets/js/main.min.js"></script>
+
+
+
+
+<script src="/assets/js/lunr/lunr.min.js"></script>
+<script src="/assets/js/lunr/lunr-store.js"></script>
+<script src="/assets/js/lunr/lunr-en.js"></script>
+
+
+
+
+
+
+<script type="text/javascript" async
+  src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-MML-AM_CHTML">
+</script>
+
+<script type="text/x-mathjax-config">
+   MathJax.Hub.Config({
+     extensions: ["tex2jax.js"],
+     jax: ["input/TeX", "output/HTML-CSS"],
+     tex2jax: {
+       inlineMath: [ ['$','$'], ["\\(","\\)"] ],
+       displayMath: [ ['$$','$$'], ["\\[","\\]"] ],
+       processEscapes: true
+     },
+     "HTML-CSS": { availableFonts: ["TeX"] }
+   });
+</script>
+
+  </body>
+</html>

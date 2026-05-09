@@ -66,9 +66,9 @@ var store = [{
         "teaser": null
       },{
         "title": "Solving International Mathematical Olympiad with GPT-OSS-120B (AIMO3) ",
-        "excerpt":"My Work This post documents my hosted implementation and results. AIMO3 + GPT-OSS 120B Jupyter Notebook HTML Result: On the IMO-style test set, my solver achieved a 10/10 solve rate. AIMO3-style math problems reward more than a single model call: the strongest solvers combine reasoning, verification, self-consistency, and careful answer...","categories": ["Machine Learning","Computer Science","Mathematics"],
+        "excerpt":"My Work This post documents my hosted implementation and results. AIMO3 + GPT-OSS 120B Jupyter Notebook HTML Result: On the IMO-style test set, my solver achieved a 10/10 solve rate. AIMO3-style math problems reward more than a single model call: the strongest solvers combine reasoning, verification, self-consistency, and careful answer...","categories": ["Machine Learning","Computer Science","Mathematics","Artificial Intelligence"],
         "tags": ["Agent","GPT-OSS-120B"],
-        "url": "/machine%20learning/computer%20science/mathematics/aimo3_solver_blog/",
+        "url": "/machine%20learning/computer%20science/mathematics/artificial%20intelligence/aimo3_solver_blog/",
         "teaser": null
       },{
         "title": "Universal Function Approximator",
