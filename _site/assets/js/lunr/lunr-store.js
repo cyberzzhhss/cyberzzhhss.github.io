@@ -77,6 +77,12 @@ var store = [{
         "url": "/machine%20learning/computer%20science/mathematics/universal_function_approximator/",
         "teaser": null
       },{
+        "title": "Creating New Words: From Learned Programs to Dynamic Vocabularies",
+        "excerpt":"Our research began with a question about computational concept formation: can an AI identify a recurring computation, assign it a symbol, and compose it with subsequent discoveries? Repeated addition provides an elementary model: \\[f(n,x)=\\underbrace{x+\\cdots+x}_{n\\text{ terms}} \\quad\\longrightarrow\\quad \\sigma(n,x):=f(n,x).\\] Here, $n$ is a positive integer, $x$ is the value being added, and...","categories": ["Machine Learning","Computer Science"],
+        "tags": ["Artificial Intelligence","Language Models","Program Synthesis"],
+        "url": "/machine%20learning/computer%20science/creating-new-words/",
+        "teaser": null
+      },{
         "title": "Question Answering (SQuAD)",
         "excerpt":"This task is about extractive question answering, where questions are posed about a document and answers are identified as spans of text within the document itself. Conducted data pre-processing pipeline such as that included tokenization of questions and context, handling long contexts using stride, and mapping correct answer positions into...","categories": [],
         "tags": [],

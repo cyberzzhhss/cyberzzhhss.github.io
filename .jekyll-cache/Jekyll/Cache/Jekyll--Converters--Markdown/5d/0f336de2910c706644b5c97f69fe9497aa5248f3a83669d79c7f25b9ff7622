@@ -1,0 +1,139 @@
+I"�-<p>Our research began with a question about <strong>computational concept formation</strong>: can an AI identify a recurring computation, assign it a symbol, and compose it with subsequent discoveries? Repeated addition provides an elementary model:</p>
+
+\[f(n,x)=\underbrace{x+\cdots+x}_{n\text{ terms}}
+\quad\longrightarrow\quad
+\sigma(n,x):=f(n,x).\]
+
+<p>Here, $n$ is a positive integer, $x$ is the value being added, and $\sigma$ names the procedure $f$. If $\sigma$ is assigned a dedicated input token, let $\mathbf e_\sigma\in\mathbb R^{d_{\mathrm{model}}}$ denote that token’s <strong>input embedding vector</strong>, where $d_{\mathrm{model}}$ is the model’s embedding dimension. This vector lets the model receive the symbol as input; it does not itself guarantee that the model can execute $f$. An output vocabulary entry may require a separate output vector.</p>
+
+<p>The association $\sigma\leftrightarrow f\leftrightarrow\mathbf e_\sigma$ is our motivating proposal, not a mechanism jointly demonstrated by the six papers. They address distinct parts of program induction, vocabulary expansion, tool creation, and emergent communication.</p>
+
+<!--more-->
+
+<h2 id="research-lineage-and-scope">Research lineage and scope</h2>
+
+<p>The direct methodological lineage is <strong>DreamCoder → Bayesian Program Learning by Decompiling Amortized Knowledge</strong>. The remaining papers develop related mechanisms rather than a single sequence of extensions.</p>
+
+<table>
+  <thead>
+    <tr>
+      <th>Direction</th>
+      <th>Papers</th>
+      <th>Object being learned or extended</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Program abstraction</td>
+      <td>DreamCoder; Decompiling Amortized Knowledge</td>
+      <td>Executable library and neural search policy</td>
+    </tr>
+    <tr>
+      <td>Lexical representation</td>
+      <td>From Tokens to Words</td>
+      <td>Access to internal word representations</td>
+    </tr>
+    <tr>
+      <td>Dynamic generation</td>
+      <td>Generation with Dynamic Vocabulary</td>
+      <td>Input and output units available on demand</td>
+    </tr>
+    <tr>
+      <td>Tool construction</td>
+      <td>Large Language Models as Tool Makers</td>
+      <td>Reusable external procedures</td>
+    </tr>
+    <tr>
+      <td>Emergent communication</td>
+      <td>GlossoGen</td>
+      <td>Shared linguistic conventions</td>
+    </tr>
+  </tbody>
+</table>
+
+<p>The papers address different mechanisms. The following summaries distinguish their methods, principal contributions, and scope.</p>
+
+<h2 id="1-dreamcoder-learning-a-language-of-reusable-programs">1. DreamCoder: learning a language of reusable programs</h2>
+
+<p><strong>Kevin Ellis and colleagues · 2020 preprint</strong><br />
+<a href="https://arxiv.org/abs/2006.08381">DreamCoder: Growing Generalizable, Interpretable Knowledge with Wake-Sleep Bayesian Program Learning</a></p>
+
+<p>DreamCoder searches for programs that explain task examples. It extracts reusable abstractions from discovered solutions and adds them to a library. A neural recognition model learns to guide subsequent searches using generated tasks and previously solved examples.</p>
+
+<p>The library and search model improve together. Useful computations become available as components, and later abstractions can call earlier ones. This can make solutions shorter and more accessible within a limited search budget.</p>
+
+<p><strong>Principal contribution:</strong> a system that jointly develops a computational language and learns how to search within it. It provides the strongest conceptual precedent here for cumulative abstraction learning.</p>
+
+<p><strong>Scope:</strong> the learned concepts are executable program components within a designed synthesis framework. The paper does not establish the full combination of autonomous concept naming and language-model token allocation described in our opening idea.</p>
+
+<h2 id="2-decompiling-amortized-knowledge-using-neural-knowledge-to-select-abstractions">2. Decompiling Amortized Knowledge: using neural knowledge to select abstractions</h2>
+
+<p><strong>Alessandro Palmarini and colleagues · 2023 preprint</strong><br />
+<a href="https://arxiv.org/abs/2306.07856">Bayesian Program Learning by Decompiling Amortized Knowledge</a></p>
+
+<p>This paper directly extends DreamCoder by using knowledge accumulated in its neural search policy to guide library learning. Its central distinction is between avoiding unpromising search branches and shortening the programs that must be constructed.</p>
+
+<p>One proposed variant ranks candidate components by their average probability under the recognition model. The authors identify limitations of that approach and develop another variant that models whether adding a component is likely to benefit search overall.</p>
+
+<p><strong>Principal contribution:</strong> connect the knowledge used to navigate a search space with the knowledge used to restructure that space. The authors report faster domain proficiency and improved generalization in evaluated domains, particularly with fewer example solutions.</p>
+
+<p><strong>Scope:</strong> adding abstractions creates a tradeoff. Programs may become shorter, but the system also has more components to choose from. Library growth therefore needs a selection criterion; more abstractions do not automatically imply easier search.</p>
+
+<h2 id="3-from-tokens-to-words-accessing-an-internal-lexicon">3. From Tokens to Words: accessing an internal lexicon</h2>
+
+<p><strong>Guy Kaplan and colleagues · 2024 preprint, ICLR 2025</strong><br />
+<a href="https://arxiv.org/abs/2410.05864">From Tokens to Words: On the Inner Lexicon of LLMs</a></p>
+
+<p>The authors investigate how language models represent words split into multiple subword tokens. They find evidence that information about the complete word accumulates at its final token, primarily in early and middle layers. This process extends to alternative token splits and words outside the tokenizer’s vocabulary.</p>
+
+<p>Their vocabulary-expansion procedure identifies internal states from which a whole word can be recovered. Learned projections map those states into input and output vocabulary spaces, followed by a refinement step for the new entries.</p>
+
+<p><strong>Principal contribution:</strong> evidence that word-level representations extend beyond the tokenizer’s explicit inventory, together with a method for exposing those representations as vocabulary entries.</p>
+
+<p><strong>Scope:</strong> the core model remains frozen, but auxiliary projections and refinement mappings are learned. The work concerns lexical representation and vocabulary access; it does not demonstrate the discovery of executable computational concepts.</p>
+
+<h2 id="4-generation-with-dynamic-vocabulary-generating-text-spans-as-units">4. Generation with Dynamic Vocabulary: generating text spans as units</h2>
+
+<p><strong>Yanting Liu and colleagues · 2024</strong><br />
+<a href="https://arxiv.org/abs/2410.08481">Generation with Dynamic Vocabulary</a></p>
+
+<p>This paper augments a language model’s static vocabulary with text spans available on demand. A trained phrase encoder produces representations that let these spans function as input and output units. A phrase that ordinarily requires several tokens can then be generated in one step.</p>
+
+<p>Supporting this flexibility requires more than appending vocabulary entries. The training procedure interleaves ordinary tokens and phrase units and uses informative negative examples to help the model learn useful phrase representations.</p>
+
+<p><strong>Principal contribution:</strong> a mechanism for flexible generation units, with reported improvements in evaluated generation settings and applications to domain adaptation and citation generation.</p>
+
+<p><strong>Scope:</strong> the method changes how text is represented and generated. It does not establish that the model discovers the conceptual or executable meaning of a new mathematical operation.</p>
+
+<h2 id="5-large-language-models-as-tool-makers-creating-procedures-for-repeated-use">5. Large Language Models as Tool Makers: creating procedures for repeated use</h2>
+
+<p><strong>Tianle Cai and colleagues · 2023 preprint</strong><br />
+<a href="https://arxiv.org/abs/2305.17126">Large Language Models as Tool Makers</a></p>
+
+<p>The LATM framework separates tool construction from tool application. A tool-making LLM generates reusable Python functions from task demonstrations. A tool-using LLM converts subsequent problems into calls to those functions.</p>
+
+<p>This division allows a stronger model to construct tools that a lighter model can use. The cost of building a tool is spread across related task instances. The paper also introduces a dispatcher that checks for suitable existing tools and helps trigger tool creation for new task types.</p>
+
+<p><strong>Principal contribution:</strong> a practical framework for reusable executable knowledge, demonstrating how tool creation can improve the capabilities and cost efficiency of tool-using models in evaluated settings.</p>
+
+<p><strong>Scope:</strong> the capability resides partly in external code and execution. Its benefits do not require adding a new token or changing the language model’s internal representation of an operation.</p>
+
+<h2 id="6-glossogen-developing-and-transmitting-shared-conventions">6. GlossoGen: developing and transmitting shared conventions</h2>
+
+<p><strong>Elias Stengel-Eskin and colleagues · September 2026 preprint</strong><br />
+<a href="https://arxiv.org/abs/2609.01491">GlossoGen: Emergent Language in Complex Multi-Agent LLM Interactions</a></p>
+
+<p>GlossoGen studies language evolution in interacting LLM agents. Its SaveVeyru scenario gives agents partial information and requires communication under pressure. Agents both send and receive messages rather than occupying fixed speaker and listener roles.</p>
+
+<p>The authors report conventions with compositional and morphologically productive structure. Efficiency pressure, model capability, and postmortem opportunities to discuss conventions influence emergence. They also study how newcomers acquire established conventions through usage.</p>
+
+<p><strong>Principal contribution:</strong> investigate both the emergence and transmission of structured communication in a controlled multi-agent setting. Productivity is tested through novel form–meaning combinations, going beyond the reuse of memorized codes.</p>
+
+<p><strong>Scope:</strong> the analysis uses induced linguistic paradigms and model-based semantic judgments, with separate robustness evaluations. The findings concern communication conventions in the studied environments, rather than a general mechanism for learning executable concepts or allocating embeddings.</p>
+
+<h2 id="what-connects-these-contributions">What connects these contributions</h2>
+
+<p>The direct lineage from DreamCoder to its decompilation extension concerns <strong>learning and selecting computational abstractions</strong>. The two vocabulary papers address <strong>access to neural representations and flexible generation units</strong>. LATM studies <strong>external executable reuse</strong>, while GlossoGen examines <strong>shared conventions and their transmission</strong>.</p>
+
+<p>These are complementary forms of learning, with different evidence requirements. A shorter expression, a reusable procedure, an accessible word representation, and a convention understood by another agent each establish a different capability. Keeping those distinctions explicit makes the connection to computational concept formation precise without attributing a unified mechanism to the papers.</p>
+:ET
