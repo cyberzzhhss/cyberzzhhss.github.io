@@ -83,6 +83,12 @@ var store = [{
         "url": "/machine%20learning/computer%20science/creating-new-words/",
         "teaser": null
       },{
+        "title": "Computation Inside Language Models",
+        "excerpt":"A language model asked to multiply two matrices can write a program and hand it to an external runtime. Now imagine that its next forward pass executes an instruction from that program. The following pass executes another. Eventually, the answer is sitting in memory maintained by the model. The visible...","categories": ["Machine Learning","Computer Science"],
+        "tags": ["Artificial Intelligence","Language Models","Transformers"],
+        "url": "/machine%20learning/computer%20science/computation-inside-language-models/",
+        "teaser": null
+      },{
         "title": "Question Answering (SQuAD)",
         "excerpt":"This task is about extractive question answering, where questions are posed about a document and answers are identified as spans of text within the document itself. Conducted data pre-processing pipeline such as that included tokenization of questions and context, handling long contexts using stride, and mapping correct answer positions into...","categories": [],
         "tags": [],
