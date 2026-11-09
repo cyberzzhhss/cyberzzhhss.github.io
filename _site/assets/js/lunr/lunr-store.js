@@ -89,6 +89,24 @@ var store = [{
         "url": "/machine%20learning/computer%20science/computation-inside-language-models/",
         "teaser": null
       },{
+        "title": "How Cadence Learns From Live Experience",
+        "excerpt":"Imagine a creature that sees one of two cues and must choose left or right. It learns which choice pays off. Halfway through its life, the rule flips. Its old behavior now earns the wrong outcome, and it has to recover while continuing to act. Cadence is a Python research...","categories": ["Machine Learning","Computer Science"],
+        "tags": ["Artificial Intelligence","Continual Learning","Reinforcement Learning"],
+        "url": "/machine%20learning/computer%20science/cadence-learning-from-live-experience/",
+        "teaser": null
+      },{
+        "title": "How gpu-unlock Changes GeForce Tensor Throughput",
+        "excerpt":"Some GeForce cards can do certain kinds of AI math faster than they do with their default settings. gpu-unlock is a Linux project that changes one of those settings when the computer starts. The project reports that some AI workloads finish faster, particularly when the GPU spends much of its...","categories": ["Machine Learning","Computer Science"],
+        "tags": ["GPUs","NVIDIA","Performance Engineering"],
+        "url": "/machine%20learning/computer%20science/gpu-unlock-tensor-throughput/",
+        "teaser": null
+      },{
+        "title": "Redesigning Language Models During Training",
+        "excerpt":"A model learning to solve algorithm problems can do well on the input lengths it sees during training and stumble on the lengths in between. An engineer might inspect those failures and add a computation that handles the missing case. DoubleAI asks what happens when a coding agent can do...","categories": ["Machine Learning","Computer Science"],
+        "tags": ["Artificial Intelligence","Language Models","Model Architecture"],
+        "url": "/machine%20learning/computer%20science/redesigning-language-models-during-training/",
+        "teaser": null
+      },{
         "title": "Question Answering (SQuAD)",
         "excerpt":"This task is about extractive question answering, where questions are posed about a document and answers are identified as spans of text within the document itself. Conducted data pre-processing pipeline such as that included tokenization of questions and context, handling long contexts using stride, and mapping correct answer positions into...","categories": [],
         "tags": [],

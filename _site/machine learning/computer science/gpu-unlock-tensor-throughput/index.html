@@ -1,0 +1,618 @@
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    <meta charset="utf-8">
+
+<!-- begin _includes/seo.html --><title>How gpu-unlock Changes GeForce Tensor Throughput - Zhehan Shi</title>
+<meta name="description" content="gpu-unlock lifts a limit on certain kinds of math on selected GeForce cards. It does this during Linux startup, before the NVIDIA driver takes over.">
+
+
+  <meta name="author" content="Zhehan Shi">
+  
+  <meta property="article:author" content="Zhehan Shi">
+  
+
+
+<meta property="og:type" content="article">
+<meta property="og:locale" content="en_US">
+<meta property="og:site_name" content="Zhehan Shi">
+<meta property="og:title" content="How gpu-unlock Changes GeForce Tensor Throughput">
+<meta property="og:url" content="/machine%20learning/computer%20science/gpu-unlock-tensor-throughput/">
+
+
+  <meta property="og:description" content="gpu-unlock lifts a limit on certain kinds of math on selected GeForce cards. It does this during Linux startup, before the NVIDIA driver takes over.">
+
+
+
+
+
+
+
+  <meta property="article:published_time" content="2026-11-09T00:00:00-05:00">
+
+
+
+
+
+  
+
+  
+
+
+<link rel="canonical" href="/machine%20learning/computer%20science/gpu-unlock-tensor-throughput/">
+
+
+
+
+<script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    
+      "@type": "Person",
+      "name": "Zhehan Shi",
+      "url": "/"
+    
+  }
+</script>
+
+
+
+
+
+
+<!-- end _includes/seo.html -->
+
+
+<link href="/feed.xml" type="application/atom+xml" rel="alternate" title="Zhehan Shi Feed">
+
+<!-- https://t.co/dKP3o1e -->
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<script>
+  document.documentElement.className = document.documentElement.className.replace(/\bno-js\b/g, '') + ' js ';
+</script>
+
+<!-- For all browsers -->
+<link rel="stylesheet" href="/assets/css/main.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6/css/all.min.css">
+
+<!--[if IE]>
+  <style>
+    /* old IE unsupported flexbox fixes */
+    .greedy-nav .site-title {
+      padding-right: 3em;
+    }
+    .greedy-nav button {
+      position: absolute;
+      top: 0;
+      right: 0;
+      height: 100%;
+    }
+  </style>
+<![endif]-->
+
+
+
+    <!-- start custom head snippets -->
+
+<!-- insert favicons. use https://realfavicongenerator.net/ -->
+<link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+<link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
+<link rel="manifest" href="/site.webmanifest">
+<!-- end custom head snippets -->
+
+  </head>
+
+  <body class="layout--single wide">
+    <nav class="skip-links">
+  <h2 class="screen-reader-text">Skip links</h2>
+  <ul>
+    <li><a href="#site-nav" class="screen-reader-shortcut">Skip to primary navigation</a></li>
+    <li><a href="#main" class="screen-reader-shortcut">Skip to content</a></li>
+    <li><a href="#footer" class="screen-reader-shortcut">Skip to footer</a></li>
+  </ul>
+</nav>
+
+    <!--[if lt IE 9]>
+<div class="notice--danger align-center" style="margin: 0;">You are using an <strong>outdated</strong> browser. Please <a href="https://browsehappy.com/">upgrade your browser</a> to improve your experience.</div>
+<![endif]-->
+
+    
+
+<div class="masthead">
+  <div class="masthead__inner-wrap">
+    <div class="masthead__menu">
+      <nav id="site-nav" class="greedy-nav">
+        
+        <a class="site-title" href="/">
+          Zhehan Shi
+          
+        </a>
+        <ul class="visible-links"><li class="masthead__menu-item">
+              <a href="/">Home</a>
+            </li><li class="masthead__menu-item">
+              <a href="/projects/">Projects</a>
+            </li><li class="masthead__menu-item">
+              <a href="/posts/">Posts</a>
+            </li><li class="masthead__menu-item">
+              <a href="/about/">About</a>
+            </li></ul>
+        
+        <button class="search__toggle" type="button">
+          <span class="visually-hidden">Toggle search</span>
+          <svg class="icon" width="16" height="16" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 15.99 16">
+            <path d="M15.5,13.12L13.19,10.8a1.69,1.69,0,0,0-1.28-.55l-0.06-.06A6.5,6.5,0,0,0,5.77,0,6.5,6.5,0,0,0,2.46,11.59a6.47,6.47,0,0,0,7.74.26l0.05,0.05a1.65,1.65,0,0,0,.5,1.24l2.38,2.38A1.68,1.68,0,0,0,15.5,13.12ZM6.4,2A4.41,4.41,0,1,1,2,6.4,4.43,4.43,0,0,1,6.4,2Z" transform="translate(-.01)"></path>
+          </svg>
+        </button>
+        
+        <button class="greedy-nav__toggle hidden" type="button">
+          <span class="visually-hidden">Toggle menu</span>
+          <div class="navicon"></div>
+        </button>
+        <ul class="hidden-links hidden"></ul>
+      </nav>
+    </div>
+  </div>
+</div>
+
+
+    <div class="initial-content">
+      
+
+
+
+<div id="main" role="main">
+  
+
+
+  <article class="page" itemscope itemtype="https://schema.org/CreativeWork">
+    <meta itemprop="headline" content="How gpu-unlock Changes GeForce Tensor Throughput">
+    <meta itemprop="description" content="gpu-unlock lifts a limit on certain kinds of math on selected GeForce cards. It does this during Linux startup, before the NVIDIA driver takes over.">
+    <meta itemprop="datePublished" content="2026-11-09T00:00:00-05:00">
+    
+
+    <div class="page__inner-wrap">
+      
+        <header>
+          <h1 id="page-title" class="page__title" itemprop="headline">How gpu-unlock Changes GeForce Tensor Throughput
+</h1>
+          
+
+  <p class="page__meta">
+    
+
+    
+
+    
+      
+      
+
+      <span class="page__meta-readtime">
+        <i class="far fa-clock" aria-hidden="true"></i>
+        
+          3 minute read
+        
+      </span>
+    
+  </p>
+
+
+        </header>
+      
+
+      <section class="page__content" itemprop="text">
+        
+        <p>Some GeForce cards can do certain kinds of AI math faster than they do with their default settings. <strong>gpu-unlock</strong> is a Linux project that changes one of those settings when the computer starts. The project reports that some AI workloads finish faster, particularly when the GPU spends much of its time multiplying matrices. <a href="https://github.com/Zagitta/gpu-unlock">gpu-unlock repository</a></p>
+
+<!--more-->
+
+<h2 id="how-gpu-unlock-lifts-the-limit">How gpu-unlock lifts the limit</h2>
+
+<p>Think of a GPU as a factory with several workstations. One workstation, the tensor cores, specializes in the matrix math that AI models use. On the cards covered by this project, a setting limits how often the GPU can send certain kinds of work to that station. Lifting that limit lets the existing hardware take on those operations more frequently. <a href="https://github.com/Zagitta/gpu-unlock#how-it-works">Project explanation</a></p>
+
+<p>The setting is protected. The project’s Ampere write-up explains how a flaw in the GPU’s startup firmware gives the module a way to change who can write to it. That lets the module lift the limit during Linux startup. By the time the regular NVIDIA driver takes over, the faster setting is already in place. <a href="https://github.com/Zagitta/gpu-unlock/blob/7eb51bccae0a0b7e599e084d971170e9a1e82d0c/docs/How%20Ampere%20was%20unlocked.md">How Ampere was unlocked</a> · <a href="https://github.com/Zagitta/gpu-unlock#boot-flow-and-opt-in">Boot flow</a></p>
+
+<p>The change lasts while the card has power. If the system cuts power to the GPU during sleep, the project can reapply the setting when the computer wakes. The project lists selected RTX 30 series cards as stable, with experimental support for selected RTX 20 and 40 series cards. <a href="https://github.com/Zagitta/gpu-unlock#supported-gpus">Supported GPUs and boot behavior</a></p>
+
+<h2 id="what-gets-faster">What gets faster</h2>
+
+<p>Consider what happens when you ask a language model a question. It first processes your prompt, then begins generating an answer. During prompt processing, the GPU can work on many tokens together and reuse the same model weights across them. This gives its math units more work to do for each trip to memory, so a faster math unit can help. <a href="https://docs.nvidia.com/deeplearning/performance/dl-performance-matrix-multiplication/">NVIDIA’s matrix multiplication guide</a></p>
+
+<p>Once the answer starts streaming, a lightly loaded GPU may spend more of its time fetching model weights to produce each new token. In that case, the math units finish quickly and wait for the next data to arrive. You might see the first token sooner and then watch the answer stream at much the same pace. Batching several requests can shift that balance by letting the GPU reuse weights across requests. <a href="https://docs.nvidia.com/deeplearning/performance/dl-performance-gpu-background/">NVIDIA’s GPU performance guide</a></p>
+
+<p>The project summarizes user reports of <strong>25–55% higher prompt processing throughput</strong> and <strong>25–50% faster BF16 fine-tuning</strong>, with little improvement for token generation when memory is the bottleneck. These figures come from specific setups and workloads. The practical comparison is how long your own job spends doing the kind of math the project accelerates. <a href="https://github.com/Zagitta/gpu-unlock#what-you-get">Reported application benchmarks</a></p>
+
+<h2 id="appendix">Appendix</h2>
+
+<h3 id="firmware-access-and-driver-handoff">Firmware access and driver handoff</h3>
+
+<p>The Linux kernel module runs from the initramfs and selects supported cards by PCI device ID after an explicit boot-time opt-in. On Ampere, the project documents a vulnerable bootloader path on the GPU’s Security Engine 2. It uses the V67 firmware payload to change a privilege level mask governing write access to the speed selector registers. The host then sets the overrides in SS0 and SS1. The module performs a PCI function-level reset before the stock NVIDIA driver binds to the card. <a href="https://github.com/Zagitta/gpu-unlock/blob/7eb51bccae0a0b7e599e084d971170e9a1e82d0c/docs/How%20Ampere%20was%20unlocked.md">Ampere firmware and register details</a> · <a href="https://github.com/Zagitta/gpu-unlock/blob/7eb51bccae0a0b7e599e084d971170e9a1e82d0c/kernel/gpu_unlock/main.c">Module entry point</a> · <a href="https://github.com/Zagitta/gpu-unlock#how-it-works">Driver handoff</a></p>
+
+<h3 id="matrix-multiplication-benchmarks">Matrix multiplication benchmarks</h3>
+
+<p>The project targets the issue rate of selected tensor operations using FP16, BF16, or TF32 inputs with FP32 accumulation. Issue rate measures how frequently hardware can dispatch instructions of a given class. Clock frequency measures how quickly the chip cycles. The project reports the following BF16 matrix multiplication throughput with FP32 accumulation and stock power limits. <a href="https://github.com/Zagitta/gpu-unlock/blob/7eb51bccae0a0b7e599e084d971170e9a1e82d0c/README.md#what-you-get">Published benchmark table</a></p>
+
+<table>
+  <thead>
+    <tr>
+      <th>GPU</th>
+      <th style="text-align: right">BF16 before</th>
+      <th style="text-align: right">BF16 after</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>RTX 3060 12 GB</td>
+      <td style="text-align: right">27 TFLOPS</td>
+      <td style="text-align: right">51 TFLOPS</td>
+    </tr>
+    <tr>
+      <td>RTX 3090</td>
+      <td style="text-align: right">75 TFLOPS</td>
+      <td style="text-align: right">125 TFLOPS</td>
+    </tr>
+    <tr>
+      <td>RTX 4080</td>
+      <td style="text-align: right">104 TFLOPS</td>
+      <td style="text-align: right">193 TFLOPS</td>
+    </tr>
+  </tbody>
+</table>
+
+<p>The README separately reports a near doubling of the RTX 4090’s <strong>peak</strong> matrix instruction rate. It reports smaller gains in large matrix multiplies at stock power limits, where the card reaches its power ceiling. <a href="https://github.com/Zagitta/gpu-unlock#what-you-get">RTX 4090 benchmark note</a></p>
+
+        
+      </section>
+
+      <footer class="page__meta">
+        
+        
+  
+
+
+  
+  
+  
+
+  <p class="page__taxonomy">
+    <strong><i class="fas fa-fw fa-tags" aria-hidden="true"></i> Tags: </strong>
+    <span itemprop="keywords">
+    
+      
+      
+      <a href="/tags/#gpus" class="page__taxonomy-item" rel="tag">GPUs</a><span class="sep">, </span>
+    
+      
+      
+      <a href="/tags/#nvidia" class="page__taxonomy-item" rel="tag">NVIDIA</a><span class="sep">, </span>
+    
+      
+      
+      <a href="/tags/#performance-engineering" class="page__taxonomy-item" rel="tag">Performance Engineering</a>
+    
+    </span>
+  </p>
+
+
+
+
+  
+
+
+  
+  
+  
+
+  <p class="page__taxonomy">
+    <strong><i class="fas fa-fw fa-folder-open" aria-hidden="true"></i> Categories: </strong>
+    <span itemprop="keywords">
+    
+      
+      
+      <a href="/categories/#computer-science" class="page__taxonomy-item" rel="tag">Computer Science</a><span class="sep">, </span>
+    
+      
+      
+      <a href="/categories/#machine-learning" class="page__taxonomy-item" rel="tag">Machine Learning</a>
+    
+    </span>
+  </p>
+
+
+        
+  <p class="page__date"><strong><i class="fas fa-fw fa-calendar-alt" aria-hidden="true"></i> Updated:</strong> <time datetime="2026-11-09T00:00:00-05:00">November 9, 2026</time></p>
+
+
+      </footer>
+
+      <section class="page__share">
+  
+
+  <a href="https://twitter.com/intent/tweet?text=How+gpu-unlock+Changes+GeForce+Tensor+Throughput%20%2Fmachine%2520learning%2Fcomputer%2520science%2Fgpu-unlock-tensor-throughput%2F" class="btn btn--twitter" onclick="window.open(this.href, 'window', 'left=20,top=20,width=500,height=500,toolbar=1,resizable=0'); return false;" title="Share on Twitter"><i class="fa-brands fa-x-twitter" aria-hidden="true"></i><span> X</span></a>
+
+
+  <a href="https://www.facebook.com/sharer/sharer.php?u=%2Fmachine%2520learning%2Fcomputer%2520science%2Fgpu-unlock-tensor-throughput%2F" class="btn btn--facebook" aria-label="Share on Facebook" onclick="window.open(this.href, 'window', 'left=20,top=20,width=500,height=500,toolbar=1,resizable=0'); return false;" title="Share on Facebook">
+    <i class="fab fa-fw fa-facebook" aria-hidden="true"></i><span> Facebook</span>
+  </a>
+  
+  <a href="https://www.linkedin.com/shareArticle?mini=true&url=%2Fmachine%2520learning%2Fcomputer%2520science%2Fgpu-unlock-tensor-throughput%2F" class="btn btn--linkedin" onclick="window.open(this.href, 'window', 'left=20,top=20,width=500,height=500,toolbar=1,resizable=0'); return false;" title="Share on LinkedIn"><i class="fab fa-fw fa-linkedin" aria-hidden="true"></i><span> LinkedIn</span></a>
+
+  <a href="https://bsky.app/intent/compose?text=How+gpu-unlock+Changes+GeForce+Tensor+Throughput%20%2Fmachine%2520learning%2Fcomputer%2520science%2Fgpu-unlock-tensor-throughput%2F" class="btn btn--bluesky" onclick="window.open(this.href, 'window', 'left=20,top=20,width=500,height=500,toolbar=1,resizable=0'); return false;" title="Share on Bluesky">
+    <i class="fab fa-fw fa-bluesky" aria-hidden="true"></i><span> Bluesky</span>
+  </a>
+</section>
+
+
+      
+  <nav class="pagination">
+    
+      <a href="/machine%20learning/computer%20science/cadence-learning-from-live-experience/" class="pagination--pager" title="How Cadence Learns From Live Experience
+">Previous</a>
+    
+    
+      <a href="/machine%20learning/computer%20science/redesigning-language-models-during-training/" class="pagination--pager" title="Redesigning Language Models During Training
+">Next</a>
+    
+  </nav>
+
+    </div>
+
+    
+  </article>
+
+  
+  
+    <div class="page__related">
+      <h4 class="page__related-title">You May Also Enjoy</h4>
+      <div class="grid__wrapper">
+        
+          
+
+
+
+<div class="grid__item">
+  <article class="archive__item" itemscope itemtype="https://schema.org/CreativeWork">
+    
+    <h2 class="archive__item-title no_toc" itemprop="headline">
+      
+        <a href="/machine%20learning/computer%20science/redesigning-language-models-during-training/" rel="permalink">Redesigning Language Models During Training
+</a>
+      
+    </h2>
+    
+
+  <p class="page__meta">
+    
+
+    
+
+    
+      
+      
+
+      <span class="page__meta-readtime">
+        <i class="far fa-clock" aria-hidden="true"></i>
+        
+          3 minute read
+        
+      </span>
+    
+  </p>
+
+
+    <p class="archive__item-excerpt" itemprop="description">DoubleAI gives a coding agent a role in training. The agent diagnoses failures, proposes new computations, and tests where they fit inside a model.
+</p>
+  </article>
+</div>
+
+        
+          
+
+
+
+<div class="grid__item">
+  <article class="archive__item" itemscope itemtype="https://schema.org/CreativeWork">
+    
+    <h2 class="archive__item-title no_toc" itemprop="headline">
+      
+        <a href="/machine%20learning/computer%20science/cadence-learning-from-live-experience/" rel="permalink">How Cadence Learns From Live Experience
+</a>
+      
+    </h2>
+    
+
+  <p class="page__meta">
+    
+
+    
+
+    
+      
+      
+
+      <span class="page__meta-readtime">
+        <i class="far fa-clock" aria-hidden="true"></i>
+        
+          5 minute read
+        
+      </span>
+    
+  </p>
+
+
+    <p class="archive__item-excerpt" itemprop="description">Cadence is a Python research library that uses a recurrent network to choose actions, remember outcomes, and adapt as an environment changes.
+</p>
+  </article>
+</div>
+
+        
+          
+
+
+
+<div class="grid__item">
+  <article class="archive__item" itemscope itemtype="https://schema.org/CreativeWork">
+    
+    <h2 class="archive__item-title no_toc" itemprop="headline">
+      
+        <a href="/machine%20learning/computer%20science/computation-inside-language-models/" rel="permalink">Computation Inside Language Models
+</a>
+      
+    </h2>
+    
+
+  <p class="page__meta">
+    
+
+    
+
+    
+      
+      
+
+      <span class="page__meta-readtime">
+        <i class="far fa-clock" aria-hidden="true"></i>
+        
+          5 minute read
+        
+      </span>
+    
+  </p>
+
+
+    <p class="archive__item-excerpt" itemprop="description">Four projects explore what changes when a transformer can execute programs, train smaller models, and load new capabilities from memory.
+</p>
+  </article>
+</div>
+
+        
+          
+
+
+
+<div class="grid__item">
+  <article class="archive__item" itemscope itemtype="https://schema.org/CreativeWork">
+    
+    <h2 class="archive__item-title no_toc" itemprop="headline">
+      
+        <a href="/machine%20learning/computer%20science/creating-new-words/" rel="permalink">Creating New Words: From Learned Programs to Dynamic Vocabularies
+</a>
+      
+    </h2>
+    
+
+  <p class="page__meta">
+    
+
+    
+
+    
+      
+      
+
+      <span class="page__meta-readtime">
+        <i class="far fa-clock" aria-hidden="true"></i>
+        
+          6 minute read
+        
+      </span>
+    
+  </p>
+
+
+    <p class="archive__item-excerpt" itemprop="description">How six papers connect reusable program abstractions, neural representations, dynamic vocabularies, tool creation, and emergent language.
+</p>
+  </article>
+</div>
+
+        
+      </div>
+    </div>
+  
+  
+</div>
+
+    </div>
+
+    
+      <div class="search-content">
+        <div class="search-content__inner-wrap"><form class="search-content__form" onkeydown="return event.key != 'Enter';">
+    <label class="sr-only" for="search">
+      Enter your search term...
+    </label>
+    <input type="search" id="search" class="search-input" tabindex="-1" placeholder="Enter your search term..." />
+  </form>
+  <div id="results" class="results"></div></div>
+
+      </div>
+    
+
+    <div id="footer" class="page__footer">
+      <footer>
+        <!-- start custom footer snippets -->
+
+<!-- end custom footer snippets -->
+        <!-- <div class="page__footer-follow">
+  <ul class="social-icons">
+    
+
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+
+    <li><a href="/feed.xml"><i class="fas fa-fw fa-rss-square" aria-hidden="true"></i> Feed</a></li>
+  </ul>
+</div>
+ -->
+<div class="page__footer-copyright">&copy; <!-- 2026  -->Zhehan Shi<!-- . Powered by <a href="https://jekyllrb.com" rel="nofollow">Jekyll</a> &amp; --></div>
+
+      </footer>
+    </div>
+
+    
+  <script src="/assets/js/main.min.js"></script>
+
+
+
+
+<script src="/assets/js/lunr/lunr.min.js"></script>
+<script src="/assets/js/lunr/lunr-store.js"></script>
+<script src="/assets/js/lunr/lunr-en.js"></script>
+
+
+
+
+
+
+<script type="text/javascript" async
+  src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-MML-AM_CHTML">
+</script>
+
+<script type="text/x-mathjax-config">
+   MathJax.Hub.Config({
+     extensions: ["tex2jax.js"],
+     jax: ["input/TeX", "output/HTML-CSS"],
+     tex2jax: {
+       inlineMath: [ ['$','$'], ["\\(","\\)"] ],
+       displayMath: [ ['$$','$$'], ["\\[","\\]"] ],
+       processEscapes: true
+     },
+     "HTML-CSS": { availableFonts: ["TeX"] }
+   });
+</script>
+
+  </body>
+</html>

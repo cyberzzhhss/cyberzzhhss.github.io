@@ -1,0 +1,631 @@
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    <meta charset="utf-8">
+
+<!-- begin _includes/seo.html --><title>Redesigning Language Models During Training - Zhehan Shi</title>
+<meta name="description" content="DoubleAI gives a coding agent a role in training. The agent diagnoses failures, proposes new computations, and tests where they fit inside a model.">
+
+
+  <meta name="author" content="Zhehan Shi">
+  
+  <meta property="article:author" content="Zhehan Shi">
+  
+
+
+<meta property="og:type" content="article">
+<meta property="og:locale" content="en_US">
+<meta property="og:site_name" content="Zhehan Shi">
+<meta property="og:title" content="Redesigning Language Models During Training">
+<meta property="og:url" content="/machine%20learning/computer%20science/redesigning-language-models-during-training/">
+
+
+  <meta property="og:description" content="DoubleAI gives a coding agent a role in training. The agent diagnoses failures, proposes new computations, and tests where they fit inside a model.">
+
+
+
+
+
+
+
+  <meta property="article:published_time" content="2026-11-09T00:00:00-05:00">
+
+
+
+
+
+  
+
+  
+
+
+<link rel="canonical" href="/machine%20learning/computer%20science/redesigning-language-models-during-training/">
+
+
+
+
+<script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    
+      "@type": "Person",
+      "name": "Zhehan Shi",
+      "url": "/"
+    
+  }
+</script>
+
+
+
+
+
+
+<!-- end _includes/seo.html -->
+
+
+<link href="/feed.xml" type="application/atom+xml" rel="alternate" title="Zhehan Shi Feed">
+
+<!-- https://t.co/dKP3o1e -->
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<script>
+  document.documentElement.className = document.documentElement.className.replace(/\bno-js\b/g, '') + ' js ';
+</script>
+
+<!-- For all browsers -->
+<link rel="stylesheet" href="/assets/css/main.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6/css/all.min.css">
+
+<!--[if IE]>
+  <style>
+    /* old IE unsupported flexbox fixes */
+    .greedy-nav .site-title {
+      padding-right: 3em;
+    }
+    .greedy-nav button {
+      position: absolute;
+      top: 0;
+      right: 0;
+      height: 100%;
+    }
+  </style>
+<![endif]-->
+
+
+
+    <!-- start custom head snippets -->
+
+<!-- insert favicons. use https://realfavicongenerator.net/ -->
+<link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+<link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
+<link rel="manifest" href="/site.webmanifest">
+<!-- end custom head snippets -->
+
+  </head>
+
+  <body class="layout--single wide">
+    <nav class="skip-links">
+  <h2 class="screen-reader-text">Skip links</h2>
+  <ul>
+    <li><a href="#site-nav" class="screen-reader-shortcut">Skip to primary navigation</a></li>
+    <li><a href="#main" class="screen-reader-shortcut">Skip to content</a></li>
+    <li><a href="#footer" class="screen-reader-shortcut">Skip to footer</a></li>
+  </ul>
+</nav>
+
+    <!--[if lt IE 9]>
+<div class="notice--danger align-center" style="margin: 0;">You are using an <strong>outdated</strong> browser. Please <a href="https://browsehappy.com/">upgrade your browser</a> to improve your experience.</div>
+<![endif]-->
+
+    
+
+<div class="masthead">
+  <div class="masthead__inner-wrap">
+    <div class="masthead__menu">
+      <nav id="site-nav" class="greedy-nav">
+        
+        <a class="site-title" href="/">
+          Zhehan Shi
+          
+        </a>
+        <ul class="visible-links"><li class="masthead__menu-item">
+              <a href="/">Home</a>
+            </li><li class="masthead__menu-item">
+              <a href="/projects/">Projects</a>
+            </li><li class="masthead__menu-item">
+              <a href="/posts/">Posts</a>
+            </li><li class="masthead__menu-item">
+              <a href="/about/">About</a>
+            </li></ul>
+        
+        <button class="search__toggle" type="button">
+          <span class="visually-hidden">Toggle search</span>
+          <svg class="icon" width="16" height="16" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 15.99 16">
+            <path d="M15.5,13.12L13.19,10.8a1.69,1.69,0,0,0-1.28-.55l-0.06-.06A6.5,6.5,0,0,0,5.77,0,6.5,6.5,0,0,0,2.46,11.59a6.47,6.47,0,0,0,7.74.26l0.05,0.05a1.65,1.65,0,0,0,.5,1.24l2.38,2.38A1.68,1.68,0,0,0,15.5,13.12ZM6.4,2A4.41,4.41,0,1,1,2,6.4,4.43,4.43,0,0,1,6.4,2Z" transform="translate(-.01)"></path>
+          </svg>
+        </button>
+        
+        <button class="greedy-nav__toggle hidden" type="button">
+          <span class="visually-hidden">Toggle menu</span>
+          <div class="navicon"></div>
+        </button>
+        <ul class="hidden-links hidden"></ul>
+      </nav>
+    </div>
+  </div>
+</div>
+
+
+    <div class="initial-content">
+      
+
+
+
+<div id="main" role="main">
+  
+
+
+  <article class="page" itemscope itemtype="https://schema.org/CreativeWork">
+    <meta itemprop="headline" content="Redesigning Language Models During Training">
+    <meta itemprop="description" content="DoubleAI gives a coding agent a role in training. The agent diagnoses failures, proposes new computations, and tests where they fit inside a model.">
+    <meta itemprop="datePublished" content="2026-11-09T00:00:00-05:00">
+    
+
+    <div class="page__inner-wrap">
+      
+        <header>
+          <h1 id="page-title" class="page__title" itemprop="headline">Redesigning Language Models During Training
+</h1>
+          
+
+  <p class="page__meta">
+    
+
+    
+
+    
+      
+      
+
+      <span class="page__meta-readtime">
+        <i class="far fa-clock" aria-hidden="true"></i>
+        
+          3 minute read
+        
+      </span>
+    
+  </p>
+
+
+        </header>
+      
+
+      <section class="page__content" itemprop="text">
+        
+        <p>A model learning to solve algorithm problems can do well on the input lengths it sees during training and stumble on the lengths in between. An engineer might inspect those failures and add a computation that handles the missing case. DoubleAI asks what happens when a coding agent can do that work while the model is still training. In one reported experiment, adding agent-written code raised accuracy on those intermediate lengths from 33% to 79%. <a href="https://www.doubleai.com/research/can-llms-redesign-themselves-as-they-train#taking-on-jaggedness">DoubleAI’s research article</a></p>
+
+<!--more-->
+
+<h2 id="the-agent-diagnoses-a-failure-and-proposes-a-change">The agent diagnoses a failure and proposes a change</h2>
+
+<p>DoubleAI calls this approach <strong>mechanistic intervention</strong>. The agent inspects a model’s internal representations and looks for recurring errors. One diagnostic, called a <em>phantom gradient</em>, measures how a small change to an internal representation would affect the loss. A recurring signal can suggest where a correction could help. The agent still has to work out what computation would produce it. <a href="https://www.doubleai.com/research/can-llms-redesign-themselves-as-they-train#nanochat-where-does-a-language-model-need-help">Nanochat experiment and diagnostics</a></p>
+
+<p>Imagine a model trying to keep track of the largest number in a list. A useful intervention might read the numbers from the model’s internal representation, calculate the largest value seen so far, and return that result to a later layer. This splits the work into three pieces. The model supplies a representation, a program performs the operation, and the network learns how to use the result. In DoubleAI’s experiments, a running maximum is one example of a computation a code layer can supply. <a href="https://www.doubleai.com/research/can-llms-redesign-themselves-as-they-train#taking-on-jaggedness">Code layers on CLRS-Text</a></p>
+
+<h2 id="how-the-code-enters-the-model">How the code enters the model</h2>
+
+<p>In the training experiments, a <strong>code layer</strong> is an extra branch in the model’s forward pass. It runs alongside the existing computation and adds a result to the information that flows to later layers. A learnable multiplier, called a <em>gate</em>, scales that addition. It starts at zero, so the new branch contributes nothing at first. As training resumes, the optimizer can change how much the branch contributes. <a href="https://www.doubleai.com/research/can-llms-redesign-themselves-as-they-train#nanochat-where-does-a-language-model-need-help">Code layer integration</a></p>
+
+<p>The gate gives two kinds of changes their own roles. The agent proposes a discrete edit by writing a program and choosing where to connect it. Training adjusts numerical weights, including the gate. DoubleAI compares candidates with runs from the same checkpoint and with controls that scramble the information a branch carries. Those comparisons help separate the benefit of the computation from the benefit of giving the model extra capacity. <a href="https://www.doubleai.com/research/can-llms-redesign-themselves-as-they-train#nanochat-where-does-a-language-model-need-help">Candidate comparisons</a></p>
+
+<figure>
+  <iframe src="/assets/html/doubleai-training-figures/code-layer-gate.html" title="DoubleAI Figure 5. A code layer enters behind a gate that starts at zero." width="100%" height="800" loading="lazy" sandbox="allow-scripts" style="border: 1px solid #d1d5db; border-radius: 8px;"></iframe>
+  <figcaption>Figure 5 shows how the new branch begins to contribute as training resumes. <a href="https://www.doubleai.com/research/can-llms-redesign-themselves-as-they-train#nanochat-where-does-a-language-model-need-help">View on DoubleAI</a></figcaption>
+</figure>
+
+<h2 id="what-the-experiments-measured">What the experiments measured</h2>
+
+<table>
+  <thead>
+    <tr>
+      <th>Setup</th>
+      <th>Intervention</th>
+      <th>Result reported by DoubleAI</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Nanochat</td>
+      <td>Added three code layers during training</td>
+      <td>Lower validation loss through the end of the run</td>
+    </tr>
+    <tr>
+      <td>Sliding-window transformer</td>
+      <td>Added the same lookup halfway through training or at the start</td>
+      <td>72% vs. 55% recall beyond the attention window</td>
+    </tr>
+    <tr>
+      <td>CLRS-Text</td>
+      <td>Added code layers during training</td>
+      <td>84% vs. 55% overall accuracy and 79% vs. 33% at intermediate input lengths</td>
+    </tr>
+    <tr>
+      <td>DeepSeek-V4.1-Flash</td>
+      <td>Used a probe on completed solutions to decide when to retry</td>
+      <td>71% vs. 64% contest math accuracy</td>
+    </tr>
+    <tr>
+      <td>Qwen3-8B</td>
+      <td>Wrote a policy that uses existing probes to stop, restart, or retry</td>
+      <td>66% vs. 59% contest math accuracy, with more thinking tokens than a single attempt</td>
+    </tr>
+  </tbody>
+</table>
+
+<p>The rows compare different kinds of intervention. The first three concern changes to models during training. The DeepSeek and Qwen results concern decisions made while generating answers. For Qwen, the policy used about 2.8 times the thinking tokens of a single attempt. Its improvement over a length-based retry policy was 3.3 percentage points, compared with seven points over the single-attempt baseline. That makes the choice of comparison important when interpreting the gain. <a href="https://www.doubleai.com/research/can-llms-redesign-themselves-as-they-train">DoubleAI’s experiments and baselines</a></p>
+
+<figure>
+  <iframe src="/assets/html/doubleai-training-figures/clrs-training-accuracy.html" title="DoubleAI Figure 8. CLRS-Text accuracy across training and code layer insertions." width="100%" height="800" loading="lazy" sandbox="allow-scripts" style="border: 1px solid #d1d5db; border-radius: 8px;"></iframe>
+  <figcaption>Figure 8 shows CLRS-Text accuracy during training. Select an insertion to see what its code layer computes. <a href="https://www.doubleai.com/research/can-llms-redesign-themselves-as-they-train#taking-on-jaggedness">View on DoubleAI</a></figcaption>
+</figure>
+
+<h2 id="choosing-what-the-model-can-compute">Choosing what the model can compute</h2>
+
+<p>In my earlier post, <a href="/machine%20learning/computer%20science/computation-inside-language-models/">Computation Inside Language Models</a>, the examples mostly started with a procedure and asked where it could run. DoubleAI starts with an observed failure and asks what procedure should be added, where to connect it, and when to introduce it. The lookup experiment makes the timing question concrete. The same operation produced different recall depending on when the model acquired it.</p>
+
+<p>The next question is whether a system can reuse what it learns about intervention. A tool that finds a bottleneck in one model might help diagnose another. To test that possibility, I would track which diagnostic methods transfer across tasks and architectures, and count the cost of the agent’s search along with the cost of training the model it changes.</p>
+
+        
+      </section>
+
+      <footer class="page__meta">
+        
+        
+  
+
+
+  
+  
+  
+
+  <p class="page__taxonomy">
+    <strong><i class="fas fa-fw fa-tags" aria-hidden="true"></i> Tags: </strong>
+    <span itemprop="keywords">
+    
+      
+      
+      <a href="/tags/#artificial-intelligence" class="page__taxonomy-item" rel="tag">Artificial Intelligence</a><span class="sep">, </span>
+    
+      
+      
+      <a href="/tags/#language-models" class="page__taxonomy-item" rel="tag">Language Models</a><span class="sep">, </span>
+    
+      
+      
+      <a href="/tags/#model-architecture" class="page__taxonomy-item" rel="tag">Model Architecture</a>
+    
+    </span>
+  </p>
+
+
+
+
+  
+
+
+  
+  
+  
+
+  <p class="page__taxonomy">
+    <strong><i class="fas fa-fw fa-folder-open" aria-hidden="true"></i> Categories: </strong>
+    <span itemprop="keywords">
+    
+      
+      
+      <a href="/categories/#computer-science" class="page__taxonomy-item" rel="tag">Computer Science</a><span class="sep">, </span>
+    
+      
+      
+      <a href="/categories/#machine-learning" class="page__taxonomy-item" rel="tag">Machine Learning</a>
+    
+    </span>
+  </p>
+
+
+        
+  <p class="page__date"><strong><i class="fas fa-fw fa-calendar-alt" aria-hidden="true"></i> Updated:</strong> <time datetime="2026-11-09T00:00:00-05:00">November 9, 2026</time></p>
+
+
+      </footer>
+
+      <section class="page__share">
+  
+
+  <a href="https://twitter.com/intent/tweet?text=Redesigning+Language+Models+During+Training%20%2Fmachine%2520learning%2Fcomputer%2520science%2Fredesigning-language-models-during-training%2F" class="btn btn--twitter" onclick="window.open(this.href, 'window', 'left=20,top=20,width=500,height=500,toolbar=1,resizable=0'); return false;" title="Share on Twitter"><i class="fa-brands fa-x-twitter" aria-hidden="true"></i><span> X</span></a>
+
+
+  <a href="https://www.facebook.com/sharer/sharer.php?u=%2Fmachine%2520learning%2Fcomputer%2520science%2Fredesigning-language-models-during-training%2F" class="btn btn--facebook" aria-label="Share on Facebook" onclick="window.open(this.href, 'window', 'left=20,top=20,width=500,height=500,toolbar=1,resizable=0'); return false;" title="Share on Facebook">
+    <i class="fab fa-fw fa-facebook" aria-hidden="true"></i><span> Facebook</span>
+  </a>
+  
+  <a href="https://www.linkedin.com/shareArticle?mini=true&url=%2Fmachine%2520learning%2Fcomputer%2520science%2Fredesigning-language-models-during-training%2F" class="btn btn--linkedin" onclick="window.open(this.href, 'window', 'left=20,top=20,width=500,height=500,toolbar=1,resizable=0'); return false;" title="Share on LinkedIn"><i class="fab fa-fw fa-linkedin" aria-hidden="true"></i><span> LinkedIn</span></a>
+
+  <a href="https://bsky.app/intent/compose?text=Redesigning+Language+Models+During+Training%20%2Fmachine%2520learning%2Fcomputer%2520science%2Fredesigning-language-models-during-training%2F" class="btn btn--bluesky" onclick="window.open(this.href, 'window', 'left=20,top=20,width=500,height=500,toolbar=1,resizable=0'); return false;" title="Share on Bluesky">
+    <i class="fab fa-fw fa-bluesky" aria-hidden="true"></i><span> Bluesky</span>
+  </a>
+</section>
+
+
+      
+  <nav class="pagination">
+    
+      <a href="/machine%20learning/computer%20science/gpu-unlock-tensor-throughput/" class="pagination--pager" title="How gpu-unlock Changes GeForce Tensor Throughput
+">Previous</a>
+    
+    
+      <a href="#" class="pagination--pager disabled">Next</a>
+    
+  </nav>
+
+    </div>
+
+    
+  </article>
+
+  
+  
+    <div class="page__related">
+      <h4 class="page__related-title">You May Also Enjoy</h4>
+      <div class="grid__wrapper">
+        
+          
+
+
+
+<div class="grid__item">
+  <article class="archive__item" itemscope itemtype="https://schema.org/CreativeWork">
+    
+    <h2 class="archive__item-title no_toc" itemprop="headline">
+      
+        <a href="/machine%20learning/computer%20science/gpu-unlock-tensor-throughput/" rel="permalink">How gpu-unlock Changes GeForce Tensor Throughput
+</a>
+      
+    </h2>
+    
+
+  <p class="page__meta">
+    
+
+    
+
+    
+      
+      
+
+      <span class="page__meta-readtime">
+        <i class="far fa-clock" aria-hidden="true"></i>
+        
+          3 minute read
+        
+      </span>
+    
+  </p>
+
+
+    <p class="archive__item-excerpt" itemprop="description">gpu-unlock lifts a limit on certain kinds of math on selected GeForce cards. It does this during Linux startup, before the NVIDIA driver takes over.
+</p>
+  </article>
+</div>
+
+        
+          
+
+
+
+<div class="grid__item">
+  <article class="archive__item" itemscope itemtype="https://schema.org/CreativeWork">
+    
+    <h2 class="archive__item-title no_toc" itemprop="headline">
+      
+        <a href="/machine%20learning/computer%20science/cadence-learning-from-live-experience/" rel="permalink">How Cadence Learns From Live Experience
+</a>
+      
+    </h2>
+    
+
+  <p class="page__meta">
+    
+
+    
+
+    
+      
+      
+
+      <span class="page__meta-readtime">
+        <i class="far fa-clock" aria-hidden="true"></i>
+        
+          5 minute read
+        
+      </span>
+    
+  </p>
+
+
+    <p class="archive__item-excerpt" itemprop="description">Cadence is a Python research library that uses a recurrent network to choose actions, remember outcomes, and adapt as an environment changes.
+</p>
+  </article>
+</div>
+
+        
+          
+
+
+
+<div class="grid__item">
+  <article class="archive__item" itemscope itemtype="https://schema.org/CreativeWork">
+    
+    <h2 class="archive__item-title no_toc" itemprop="headline">
+      
+        <a href="/machine%20learning/computer%20science/computation-inside-language-models/" rel="permalink">Computation Inside Language Models
+</a>
+      
+    </h2>
+    
+
+  <p class="page__meta">
+    
+
+    
+
+    
+      
+      
+
+      <span class="page__meta-readtime">
+        <i class="far fa-clock" aria-hidden="true"></i>
+        
+          5 minute read
+        
+      </span>
+    
+  </p>
+
+
+    <p class="archive__item-excerpt" itemprop="description">Four projects explore what changes when a transformer can execute programs, train smaller models, and load new capabilities from memory.
+</p>
+  </article>
+</div>
+
+        
+          
+
+
+
+<div class="grid__item">
+  <article class="archive__item" itemscope itemtype="https://schema.org/CreativeWork">
+    
+    <h2 class="archive__item-title no_toc" itemprop="headline">
+      
+        <a href="/machine%20learning/computer%20science/creating-new-words/" rel="permalink">Creating New Words: From Learned Programs to Dynamic Vocabularies
+</a>
+      
+    </h2>
+    
+
+  <p class="page__meta">
+    
+
+    
+
+    
+      
+      
+
+      <span class="page__meta-readtime">
+        <i class="far fa-clock" aria-hidden="true"></i>
+        
+          6 minute read
+        
+      </span>
+    
+  </p>
+
+
+    <p class="archive__item-excerpt" itemprop="description">How six papers connect reusable program abstractions, neural representations, dynamic vocabularies, tool creation, and emergent language.
+</p>
+  </article>
+</div>
+
+        
+      </div>
+    </div>
+  
+  
+</div>
+
+    </div>
+
+    
+      <div class="search-content">
+        <div class="search-content__inner-wrap"><form class="search-content__form" onkeydown="return event.key != 'Enter';">
+    <label class="sr-only" for="search">
+      Enter your search term...
+    </label>
+    <input type="search" id="search" class="search-input" tabindex="-1" placeholder="Enter your search term..." />
+  </form>
+  <div id="results" class="results"></div></div>
+
+      </div>
+    
+
+    <div id="footer" class="page__footer">
+      <footer>
+        <!-- start custom footer snippets -->
+
+<!-- end custom footer snippets -->
+        <!-- <div class="page__footer-follow">
+  <ul class="social-icons">
+    
+
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+
+    <li><a href="/feed.xml"><i class="fas fa-fw fa-rss-square" aria-hidden="true"></i> Feed</a></li>
+  </ul>
+</div>
+ -->
+<div class="page__footer-copyright">&copy; <!-- 2026  -->Zhehan Shi<!-- . Powered by <a href="https://jekyllrb.com" rel="nofollow">Jekyll</a> &amp; --></div>
+
+      </footer>
+    </div>
+
+    
+  <script src="/assets/js/main.min.js"></script>
+
+
+
+
+<script src="/assets/js/lunr/lunr.min.js"></script>
+<script src="/assets/js/lunr/lunr-store.js"></script>
+<script src="/assets/js/lunr/lunr-en.js"></script>
+
+
+
+
+
+
+<script type="text/javascript" async
+  src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-MML-AM_CHTML">
+</script>
+
+<script type="text/x-mathjax-config">
+   MathJax.Hub.Config({
+     extensions: ["tex2jax.js"],
+     jax: ["input/TeX", "output/HTML-CSS"],
+     tex2jax: {
+       inlineMath: [ ['$','$'], ["\\(","\\)"] ],
+       displayMath: [ ['$$','$$'], ["\\[","\\]"] ],
+       processEscapes: true
+     },
+     "HTML-CSS": { availableFonts: ["TeX"] }
+   });
+</script>
+
+  </body>
+</html>

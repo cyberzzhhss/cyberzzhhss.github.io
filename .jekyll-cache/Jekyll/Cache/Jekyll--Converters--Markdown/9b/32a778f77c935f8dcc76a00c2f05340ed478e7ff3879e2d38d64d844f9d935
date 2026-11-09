@@ -1,0 +1,59 @@
+I"�<p>Some GeForce cards can do certain kinds of AI math faster than they do with their default settings. <strong>gpu-unlock</strong> is a Linux project that changes one of those settings when the computer starts. The project reports that some AI workloads finish faster, particularly when the GPU spends much of its time multiplying matrices. <a href="https://github.com/Zagitta/gpu-unlock">gpu-unlock repository</a></p>
+
+<!--more-->
+
+<h2 id="how-gpu-unlock-lifts-the-limit">How gpu-unlock lifts the limit</h2>
+
+<p>Think of a GPU as a factory with several workstations. One workstation, the tensor cores, specializes in the matrix math that AI models use. On the cards covered by this project, a setting limits how often the GPU can send certain kinds of work to that station. Lifting that limit lets the existing hardware take on those operations more frequently. <a href="https://github.com/Zagitta/gpu-unlock#how-it-works">Project explanation</a></p>
+
+<p>The setting is protected. The project’s Ampere write-up explains how a flaw in the GPU’s startup firmware gives the module a way to change who can write to it. That lets the module lift the limit during Linux startup. By the time the regular NVIDIA driver takes over, the faster setting is already in place. <a href="https://github.com/Zagitta/gpu-unlock/blob/7eb51bccae0a0b7e599e084d971170e9a1e82d0c/docs/How%20Ampere%20was%20unlocked.md">How Ampere was unlocked</a> · <a href="https://github.com/Zagitta/gpu-unlock#boot-flow-and-opt-in">Boot flow</a></p>
+
+<p>The change lasts while the card has power. If the system cuts power to the GPU during sleep, the project can reapply the setting when the computer wakes. The project lists selected RTX 30 series cards as stable, with experimental support for selected RTX 20 and 40 series cards. <a href="https://github.com/Zagitta/gpu-unlock#supported-gpus">Supported GPUs and boot behavior</a></p>
+
+<h2 id="what-gets-faster">What gets faster</h2>
+
+<p>Consider what happens when you ask a language model a question. It first processes your prompt, then begins generating an answer. During prompt processing, the GPU can work on many tokens together and reuse the same model weights across them. This gives its math units more work to do for each trip to memory, so a faster math unit can help. <a href="https://docs.nvidia.com/deeplearning/performance/dl-performance-matrix-multiplication/">NVIDIA’s matrix multiplication guide</a></p>
+
+<p>Once the answer starts streaming, a lightly loaded GPU may spend more of its time fetching model weights to produce each new token. In that case, the math units finish quickly and wait for the next data to arrive. You might see the first token sooner and then watch the answer stream at much the same pace. Batching several requests can shift that balance by letting the GPU reuse weights across requests. <a href="https://docs.nvidia.com/deeplearning/performance/dl-performance-gpu-background/">NVIDIA’s GPU performance guide</a></p>
+
+<p>The project summarizes user reports of <strong>25–55% higher prompt processing throughput</strong> and <strong>25–50% faster BF16 fine-tuning</strong>, with little improvement for token generation when memory is the bottleneck. These figures come from specific setups and workloads. The practical comparison is how long your own job spends doing the kind of math the project accelerates. <a href="https://github.com/Zagitta/gpu-unlock#what-you-get">Reported application benchmarks</a></p>
+
+<h2 id="appendix">Appendix</h2>
+
+<h3 id="firmware-access-and-driver-handoff">Firmware access and driver handoff</h3>
+
+<p>The Linux kernel module runs from the initramfs and selects supported cards by PCI device ID after an explicit boot-time opt-in. On Ampere, the project documents a vulnerable bootloader path on the GPU’s Security Engine 2. It uses the V67 firmware payload to change a privilege level mask governing write access to the speed selector registers. The host then sets the overrides in SS0 and SS1. The module performs a PCI function-level reset before the stock NVIDIA driver binds to the card. <a href="https://github.com/Zagitta/gpu-unlock/blob/7eb51bccae0a0b7e599e084d971170e9a1e82d0c/docs/How%20Ampere%20was%20unlocked.md">Ampere firmware and register details</a> · <a href="https://github.com/Zagitta/gpu-unlock/blob/7eb51bccae0a0b7e599e084d971170e9a1e82d0c/kernel/gpu_unlock/main.c">Module entry point</a> · <a href="https://github.com/Zagitta/gpu-unlock#how-it-works">Driver handoff</a></p>
+
+<h3 id="matrix-multiplication-benchmarks">Matrix multiplication benchmarks</h3>
+
+<p>The project targets the issue rate of selected tensor operations using FP16, BF16, or TF32 inputs with FP32 accumulation. Issue rate measures how frequently hardware can dispatch instructions of a given class. Clock frequency measures how quickly the chip cycles. The project reports the following BF16 matrix multiplication throughput with FP32 accumulation and stock power limits. <a href="https://github.com/Zagitta/gpu-unlock/blob/7eb51bccae0a0b7e599e084d971170e9a1e82d0c/README.md#what-you-get">Published benchmark table</a></p>
+
+<table>
+  <thead>
+    <tr>
+      <th>GPU</th>
+      <th style="text-align: right">BF16 before</th>
+      <th style="text-align: right">BF16 after</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>RTX 3060 12 GB</td>
+      <td style="text-align: right">27 TFLOPS</td>
+      <td style="text-align: right">51 TFLOPS</td>
+    </tr>
+    <tr>
+      <td>RTX 3090</td>
+      <td style="text-align: right">75 TFLOPS</td>
+      <td style="text-align: right">125 TFLOPS</td>
+    </tr>
+    <tr>
+      <td>RTX 4080</td>
+      <td style="text-align: right">104 TFLOPS</td>
+      <td style="text-align: right">193 TFLOPS</td>
+    </tr>
+  </tbody>
+</table>
+
+<p>The README separately reports a near doubling of the RTX 4090’s <strong>peak</strong> matrix instruction rate. It reports smaller gains in large matrix multiplies at stock power limits, where the card reaches its power ceiling. <a href="https://github.com/Zagitta/gpu-unlock#what-you-get">RTX 4090 benchmark note</a></p>
+:ET

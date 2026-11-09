@@ -1,0 +1,394 @@
+<!doctype html>
+<html lang="en-GB" data-theme="light">
+<head>
+<!-- DoubleAI Figure 5. Source: https://www.doubleai.com/research/can-llms-redesign-themselves-as-they-train -->
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src data:">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Opening the Gate</title>
+<style>
+
+
+
+
+
+/* layout: on the left the residual stream with the code layer feeding it through the gate g; on the right the loss of
+   the runs with and without the layer, with the gate's value underneath on the same steps; one step track drives both */
+:root {
+  --bg: #ffffff; --surface: #ffffff; --ink: #2f2e2b; --ink-2: #5f5e5a; --muted: #91908b;
+  --grid: #efeeeb; --axis: #d6d5d0; --line: #e7e6e2; --chip: #f6f5f2;
+  --agent: #e0601c; --agent-ink: #b44a0f; --agent-band: rgba(224, 96, 28, 0.10); --agent-soft: rgba(224, 96, 28, 0.06);
+  --ordinary: #8a8985; --on-accent: #ffffff;
+  --sans: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #191919; --surface: #202020; --ink: #e8e7e4; --ink-2: #b6b5b0; --muted: #8c8b86;
+    --grid: #2a2a29; --axis: #3e3e3c; --line: #303030; --chip: #232322;
+    --agent: #e26f33; --agent-ink: #f0965f; --agent-band: rgba(226, 111, 51, 0.16); --agent-soft: rgba(226, 111, 51, 0.08);
+    --ordinary: #85847f; --on-accent: #191919; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #191919; --surface: #202020; --ink: #e8e7e4; --ink-2: #b6b5b0; --muted: #8c8b86;
+  --grid: #2a2a29; --axis: #3e3e3c; --line: #303030; --chip: #232322;
+  --agent: #e26f33; --agent-ink: #f0965f; --agent-band: rgba(226, 111, 51, 0.16); --agent-soft: rgba(226, 111, 51, 0.08);
+  --ordinary: #85847f; --on-accent: #191919; color-scheme: dark;
+}
+body {
+  background: var(--bg); color: var(--ink); font-family: var(--sans); font-size: 15px; line-height: 1.55;
+  padding-block: 28px 40px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px));
+}
+.fig { max-width: 840px; margin: 0 auto; display: grid; gap: 18px; }
+h1 { font-size: 1.45rem; font-weight: 600; margin: 0; letter-spacing: -0.01em; text-wrap: balance; line-height: 1.25; }
+.sub { margin: 6px 0 0; color: var(--ink-2); font-size: 1rem; max-width: 68ch; }
+
+.controls { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 16px; padding-bottom: 2.4em; }
+.pp {
+  font: inherit; font-size: 0.78rem; font-weight: 600; color: var(--ink); cursor: pointer;
+  background: var(--surface); border: 1px solid var(--axis); border-radius: 6px; padding: 3px 12px; min-width: 66px;
+}
+.pp:hover { border-color: var(--agent); }
+.pp:focus-visible { outline: 2px solid var(--agent); outline-offset: 2px; }
+.track { position: relative; display: grid; gap: 6px; min-width: 0; }
+input[type=range] { -webkit-appearance: none; appearance: none; width: 100%; height: 18px; margin: 0; background: transparent; cursor: pointer; }
+input[type=range]::-webkit-slider-runnable-track { height: 6px; border-radius: 3px; background: linear-gradient(90deg, var(--agent) var(--p, 0%), var(--axis) var(--p, 0%)); }
+input[type=range]::-moz-range-track { height: 6px; border-radius: 3px; background: var(--axis); }
+input[type=range]::-moz-range-progress { height: 6px; border-radius: 3px; background: var(--agent); }
+input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 18px; height: 18px; border-radius: 50%; margin-top: -6px; background: var(--agent); border: 2px solid var(--bg); box-shadow: 0 0 0 1px var(--agent); }
+input[type=range]::-moz-range-thumb { width: 14px; height: 14px; border-radius: 50%; background: var(--agent); border: 2px solid var(--bg); }
+input[type=range]:focus-visible { outline: 2px solid var(--agent); outline-offset: 4px; border-radius: 4px; }
+.ticks { position: relative; height: 1.3em; font-size: 0.78rem; color: var(--muted); font-variant-numeric: tabular-nums; }
+.ticks > span { position: absolute; transform: translateX(-50%); white-space: nowrap; }
+.ticks .ins { display: flex; flex-direction: column; align-items: center; line-height: 1.3; }
+.ticks .ins b { font-weight: 400; transition: color 0.3s ease; }
+.ticks .ins i { font-style: normal; font-weight: 600; color: var(--agent-ink); visibility: hidden; }
+.ticks .ins.on b { color: var(--agent-ink); font-weight: 600; }
+.ticks .ins.on i { visibility: visible; }
+.stepnow { align-self: start; line-height: 18px; font-size: 0.85rem; color: var(--ink-2); }
+
+.main { display: grid; grid-template-columns: minmax(0, 0.92fr) minmax(0, 1.08fr); gap: 28px; align-items: start; }
+.main > div { min-width: 0; }
+svg { display: block; width: 100%; height: auto; overflow: visible; }
+svg text { font-family: var(--sans); }
+.box { fill: var(--chip); stroke: var(--axis); }
+.boxl { fill: var(--ink-2); font-size: 13px; text-anchor: middle; }
+.stream { stroke: var(--axis); stroke-width: 3; fill: none; }
+.code { fill: var(--agent-soft); stroke: var(--agent); stroke-width: 1.3; }
+.codeh { fill: var(--agent-ink); font-size: 11.5px; font-weight: 600; letter-spacing: 0.04em; }
+.codel { fill: var(--ink); font-family: var(--mono) !important; font-size: 13.5px; }
+.codel .kw { fill: var(--agent-ink); font-weight: 500; }
+.gname { font-family: var(--mono) !important; font-size: 17px; font-weight: 600; text-anchor: middle; }
+.gval { fill: var(--agent-ink); font-family: var(--mono) !important; font-size: 25px; font-weight: 600; font-variant-numeric: tabular-nums; }
+.gstate { fill: var(--ink-2); font-size: 13px; }
+.small { fill: var(--muted); font-size: 12px; }
+.tick { fill: var(--muted); font-size: 11.5px; font-variant-numeric: tabular-nums; }
+.gridl { stroke: var(--grid); }
+.axisl { stroke: var(--axis); }
+.endl { font-size: 12.5px; }
+.endl.o { fill: var(--ink-2); }
+.endl.a { fill: var(--agent-ink); font-weight: 600; }
+.gapl { fill: var(--agent-ink); font-size: 12.5px; font-weight: 600; font-variant-numeric: tabular-nums; }
+.insl { fill: var(--agent-ink); font-size: 12px; font-weight: 500; }
+.panel { fill: var(--ink-2); font-size: 12px; font-weight: 500; }
+.layer { transition: opacity 0.45s ease; }
+.formula { margin: 6px 0 0; text-align: center; font-family: var(--mono); font-size: 0.82rem; color: var(--ink-2); }
+.formula b { color: var(--agent-ink); font-weight: 600; }
+#loss { cursor: ew-resize; touch-action: pan-y; }
+.cap { margin: 0; font-size: 0.97rem; color: var(--ink); max-width: 72ch; min-height: 3.2em; }
+@media (max-width: 640px) {
+  .main { grid-template-columns: minmax(0, 1fr); }
+}
+@media (prefers-reduced-motion: reduce) { .layer { transition: none; } }
+</style>
+
+<script>(function(){try{var t=parent.document.getElementById("dai-figure-fonts");if(t){var s=document.createElement("style");s.textContent=t.content?t.content.textContent:t.textContent;document.head.appendChild(s)}}catch(e){}})();</script><style>body{padding-bottom:6px!important;margin-bottom:0!important}@media (max-width:520px){.controls{grid-template-columns:auto minmax(0,1fr)!important}.stepnow{display:none!important}.ticks>span:first-child{display:none}}</style></head>
+<body>
+<figure class="fig">
+  <div>
+    <h1>Training decides whether to open the gate</h1>
+    <p class="sub">The agent inserts the code layer behind a gate at 0, so the network computes exactly what it did before. From then on, gradient descent sets the gate like any other weight.</p>
+  </div>
+
+  <div class="controls">
+    <button type="button" class="pp" id="pp">Pause</button>
+    <div class="track">
+      <input type="range" id="step" min="875" max="1500" step="1" value="875" aria-label="Training step">
+      <div class="ticks" id="ticks"></div>
+    </div>
+    <div class="stepnow" aria-hidden="true">Step</div>
+  </div>
+
+  <div class="main">
+    <div>
+      <svg id="diag" viewBox="0 0 430 372" role="img" aria-label="The residual stream x runs up from block 11 to the output layer. The mistake memory reads x and adds its output back through a gate g. The gate starts at 0 and gradient descent opens it to about 0.55."></svg>
+      <p class="formula">x ← x + tanh(<b>g</b>) · mistake_memory(x)</p>
+    </div>
+    <div><svg id="loss" role="img" aria-label="Validation loss and gate value against training step. Before step 1,000 there is one run. At step 1,000 the agent inserts the code layer and the run splits in two at the same loss. The gate opens within about 100 steps. With the layer, the loss falls below the run without it, by 0.015 bits per byte at step 1,250."></svg></div>
+  </div>
+
+  <p class="cap" id="cap" aria-live="polite"></p>
+</figure>
+
+<script>
+(() => {
+  // exp035, the mistake memory's insertion at step 1,000 (logs/alonv-ddna-x35-*). Before 1,000: the parent run r0_msw.
+  // After it: r2_fK, which has the layer, against the mean of r2_ctl and r2_ctl2, the same recipe without it. Both
+  // continue from r0_msw's step-1,000 weights. GATE is the layer's learned gate every 25 steps from 1,000, starting at
+  // its initial value 0.
+  const PRE = [[750, 0.611216], [875, 0.595723], [1000, 0.582793]];
+  const WITH = [[1000, 0.582793], [1125, 0.564161], [1250, 0.556686], [1375, 0.552289], [1500, 0.551495]];
+  const WITHOUT = [[1000, 0.582793], [1125, (0.576610 + 0.576619) / 2], [1250, (0.572589 + 0.570701) / 2],
+                   [1375, (0.564898 + 0.564185) / 2], [1500, (0.562068 + 0.563893) / 2]];
+  const GATE = [0, 0.2505, 0.4156, 0.482, 0.5099, 0.5255, 0.5389, 0.5454, 0.5429, 0.5414, 0.5472,
+                0.5384, 0.5556, 0.5405, 0.5574, 0.557, 0.5463, 0.5552, 0.5811, 0.5767, 0.5767];
+  const S0 = 875, SI = 1000, S1 = 1500;
+
+  // monotone cubic interpolation between the evaluations, which ran every 125 steps
+  function interp(pts) {
+    const n = pts.length, xs = pts.map(p => p[0]), ys = pts.map(p => p[1]);
+    const d = [], m = [];
+    for (let i = 0; i < n - 1; i++) d.push((ys[i + 1] - ys[i]) / (xs[i + 1] - xs[i]));
+    m.push(d[0]);
+    for (let i = 1; i < n - 1; i++) m.push(d[i - 1] * d[i] <= 0 ? 0 : (d[i - 1] + d[i]) / 2);
+    m.push(d[n - 2]);
+    for (let i = 0; i < n - 1; i++) {
+      if (d[i] === 0) { m[i] = m[i + 1] = 0; continue; }
+      const a = m[i] / d[i], b = m[i + 1] / d[i], h = a * a + b * b;
+      if (h > 9) { const t = 3 / Math.sqrt(h); m[i] = t * a * d[i]; m[i + 1] = t * b * d[i]; }
+    }
+    return x => {
+      if (x <= xs[0]) return ys[0];
+      if (x >= xs[n - 1]) return ys[n - 1];
+      let i = 0; while (x > xs[i + 1]) i++;
+      const h = xs[i + 1] - xs[i], t = (x - xs[i]) / h, t2 = t * t, t3 = t2 * t;
+      return (2 * t3 - 3 * t2 + 1) * ys[i] + (t3 - 2 * t2 + t) * h * m[i] + (-2 * t3 + 3 * t2) * ys[i + 1] + (t3 - t2) * h * m[i + 1];
+    };
+  }
+  const fPre = interp(PRE), fWith = interp(WITH), fWithout = interp(WITHOUT);
+  const gateAt = s => {
+    if (s <= SI) return 0;
+    const i = Math.min(GATE.length - 2, Math.floor((s - SI) / 25)), u = (s - SI - i * 25) / 25;
+    return GATE[i] + (GATE[i + 1] - GATE[i]) * Math.max(0, Math.min(1, u));
+  };
+
+  const NS = "http://www.w3.org/2000/svg";
+  const el = (n, a, p) => { const e = document.createElementNS(NS, n); for (const k in a) e.setAttribute(k, a[k]); if (p) p.appendChild(e); return e; };
+  const txt = (p, x, y, s, cls, extra) => { const e = el("text", Object.assign({ x, y, class: cls }, extra || {}), p); e.textContent = s; return e; };
+  const fmtStep = s => Math.round(s).toLocaleString("en-GB");
+  const pct = s => (s - S0) / (S1 - S0) * 100;
+  const samples = (a, b) => { const out = []; for (let s = a; s < b; s += 4) out.push(s); out.push(b); return out; };
+
+  // slider ticks, with the insertion marked
+  const ticks = document.getElementById("ticks");
+  let insTick = null;
+  for (const s of [875, 1000, 1250, 1500]) {
+    const sp = document.createElement("span"); sp.style.left = pct(s) + "%";
+    if (s === SI) { sp.className = "ins"; sp.innerHTML = "<b>1,000</b><i>code inserted</i>"; insTick = sp; }
+    else sp.textContent = fmtStep(s);
+    if (s === S0) sp.style.transform = "none";
+    if (s === S1) sp.style.transform = "translateX(-100%)";
+    ticks.appendChild(sp);
+  }
+
+  // ---- the diagram: a fixed drawing, scaled by its viewBox
+  const diag = document.getElementById("diag"), D = {};
+  (function drawDiag() {
+    const sx = 50, jy = 136, ry = 252, bx = 130, bw = 294, by = 186, bh = 118, wx = 312, gx = 168;
+    el("line", { class: "stream", x1: sx, y1: 372, x2: sx, y2: 72 }, diag);
+    el("path", { d: `M${sx - 7},74 L${sx},60 L${sx + 7},74 Z`, fill: "var(--axis)" }, diag);
+    el("rect", { class: "box", x: 2, y: 312, width: 96, height: 40, rx: 8 }, diag);
+    txt(diag, sx, 337, "block 11", "boxl");
+    el("rect", { class: "box", x: 2, y: 16, width: 96, height: 40, rx: 8 }, diag);
+    txt(diag, sx, 41, "output layer", "boxl");
+    txt(diag, sx + 10, 296, "x", "small", { "font-style": "italic" });
+
+    const g = D.layer = el("g", { class: "layer" }, diag);
+    // the layer reads x below the junction
+    el("path", { d: `M${sx},${ry} H${bx - 2}`, fill: "none", stroke: "var(--agent)", "stroke-width": 1.5, "stroke-opacity": 0.7 }, g);
+    el("path", { d: `M${bx - 9},${ry - 5} L${bx - 1},${ry} L${bx - 9},${ry + 5}`, fill: "none", stroke: "var(--agent)", "stroke-width": 1.5 }, g);
+    el("circle", { cx: sx, cy: ry, r: 3.5, fill: "var(--agent)" }, g);
+    txt(g, sx + 12, ry - 8, "reads x", "small");
+    el("rect", { class: "code", x: bx, y: by, width: bw, height: bh, rx: 8 }, g);
+    txt(g, bx + 14, by + 22, "CODE LAYER · MISTAKE MEMORY", "codeh");
+    const lines = [
+      [["def ", "kw"], ["mistake_memory(x):"]],
+      [["  near = similar_past(x, k=64)"]],
+      [["  err  = loss_grad[near].mean()"]],
+      [["  "], ["return ", "kw"], ["-step_size * err"]],
+    ];
+    lines.forEach((parts, i) => {
+      const t = el("text", { x: bx + 14, y: by + 48 + i * 19, class: "codel" }, g);
+      t.setAttributeNS("http://www.w3.org/XML/1998/namespace", "xml:space", "preserve");
+      for (const [s, c] of parts) { const sp = el("tspan", c ? { class: c } : {}, t); sp.textContent = s; }
+    });
+    // the write path: out of the box, through the gate, into the stream
+    const wd = `M${wx},${by} V${jy} H${sx + 12}`;
+    el("path", { d: wd, fill: "none", stroke: "var(--agent)", "stroke-width": 1.2, "stroke-opacity": 0.3, "stroke-linejoin": "round" }, g);
+    D.wire = el("path", { d: wd, fill: "none", stroke: "var(--agent)", "stroke-width": 2, "stroke-linejoin": "round", "stroke-linecap": "round", "stroke-dasharray": "1 10" }, g);
+    el("path", { d: `M${sx + 22},${jy - 5} L${sx + 13},${jy} L${sx + 22},${jy + 5}`, fill: "none", stroke: "var(--agent)", "stroke-width": 1.6 }, g);
+    el("circle", { cx: gx, cy: jy, r: 19, fill: "var(--bg)" }, g);
+    D.gfill = el("circle", { cx: gx, cy: jy, r: 19, fill: "var(--agent)", "fill-opacity": 0 }, g);
+    el("circle", { cx: gx, cy: jy, r: 19, fill: "none", stroke: "var(--agent)", "stroke-width": 2 }, g);
+    D.gname = txt(g, gx, jy + 6, "g", "gname");
+    el("circle", { cx: sx, cy: jy, r: 12, fill: "var(--bg)", stroke: "var(--ink-2)", "stroke-width": 1.6 }, g);
+    txt(g, sx, jy + 6, "+", "boxl", { style: "font-size:18px" });
+    D.gval = txt(g, gx + 32, jy - 36, "g = 0.00", "gval");
+    D.gstate = txt(g, gx + 32, jy - 15, "", "gstate");
+  })();
+
+  // ---- the chart: loss on top, the gate underneath, on one step axis
+  const loss = document.getElementById("loss"), L = {};
+  function buildLoss() {
+    const W = Math.max(300, loss.parentElement.clientWidth), H = 404;
+    const ml = 44, mr = 120, lt = 26, lb = 246, gt = 290, gb = 360;
+    const pw = W - ml - mr, lo = 0.545, hi = 0.600;
+    const x = s => ml + (s - S0) / (S1 - S0) * pw, y = v => lt + (hi - v) / (hi - lo) * (lb - lt);
+    const yg = v => gb - v / 0.6 * (gb - gt);
+    Object.assign(L, { x, y, yg, W, ml, pw });
+    loss.setAttribute("viewBox", `0 0 ${W} ${H}`); loss.replaceChildren();
+
+    txt(loss, ml, 12, "Validation loss (bits per byte)", "panel");
+    for (const v of [0.55, 0.56, 0.57, 0.58, 0.59, 0.60]) {
+      el("line", { class: "gridl", x1: ml, x2: ml + pw, y1: y(v), y2: y(v) }, loss);
+      txt(loss, ml - 7, y(v) + 4, v.toFixed(2), "tick", { "text-anchor": "end" });
+    }
+    txt(loss, ml, gt - 14, "Gate g", "panel");
+    for (const v of [0, 0.2, 0.4, 0.6]) {
+      el("line", { class: v ? "gridl" : "axisl", x1: ml, x2: ml + pw, y1: yg(v), y2: yg(v) }, loss);
+      txt(loss, ml - 7, yg(v) + 4, v ? v.toFixed(1) : "0", "tick", { "text-anchor": "end" });
+    }
+    for (const s of (document.documentElement.clientWidth < 560 ? [1000, 1250, 1500] : [875, 1000, 1250, 1500])) txt(loss, x(s), gb + 20, fmtStep(s), "tick", { "text-anchor": "middle" });
+    txt(loss, ml + pw, gb + 38, "training step", "tick", { "text-anchor": "end" });
+    L.insLine = el("line", { x1: x(SI), x2: x(SI), y1: lt - 4, y2: gb, stroke: "var(--agent)", "stroke-opacity": 0.55, "stroke-dasharray": "3 4" }, loss);
+    L.insLabel = txt(loss, x(SI) + 6, lt + 8, "code inserted", "insl");
+
+    L.band = el("path", { fill: "var(--agent-band)", stroke: "none" }, loss);
+    L.pre = el("path", { fill: "none", stroke: "var(--ordinary)", "stroke-width": 2.2, "stroke-linecap": "round", "stroke-linejoin": "round" }, loss);
+    L.wo = el("path", { fill: "none", stroke: "var(--ordinary)", "stroke-width": 2.2, "stroke-linecap": "round", "stroke-linejoin": "round" }, loss);
+    L.wi = el("path", { fill: "none", stroke: "var(--agent)", "stroke-width": 2.8, "stroke-linecap": "round", "stroke-linejoin": "round" }, loss);
+    L.gateFill = el("path", { fill: "var(--agent-band)", stroke: "none" }, loss);
+    L.gate = el("path", { fill: "none", stroke: "var(--agent)", "stroke-width": 2.2, "stroke-linecap": "round", "stroke-linejoin": "round" }, loss);
+    L.cursor = el("line", { y1: lt - 4, y2: gb, stroke: "var(--ink-2)", "stroke-opacity": 0.22 }, loss);
+    L.fork = el("circle", { cx: x(SI), cy: y(fPre(SI)), r: 5, fill: "var(--ink)", stroke: "var(--bg)", "stroke-width": 2 }, loss);
+    L.dwo = el("circle", { r: 4.5, fill: "var(--ordinary)", stroke: "var(--bg)", "stroke-width": 2 }, loss);
+    L.dwi = el("circle", { r: 5, fill: "var(--agent)", stroke: "var(--bg)", "stroke-width": 2 }, loss);
+    L.dg = el("circle", { r: 4.5, fill: "var(--agent)", stroke: "var(--bg)", "stroke-width": 2 }, loss);
+    L.lwo = txt(loss, 0, 0, "", "endl o");
+    L.lwi = txt(loss, 0, 0, "with the layer", "endl a");
+    L.gap = txt(loss, 0, 0, "", "gapl");
+    L.lg = txt(loss, 0, 0, "", "gapl");
+    paint();
+  }
+  const trace = (f, a, b, yf) => samples(a, b).map((s, i) => `${i ? "L" : "M"}${L.x(s).toFixed(1)},${yf(f(s)).toFixed(1)}`).join("");
+
+  let step = S0, flow = 0;
+  const slider = document.getElementById("step");
+  const cap = document.getElementById("cap"), pp = document.getElementById("pp");
+  function paint() {
+    if (!L.x) return;
+    const inserted = step >= SI, after = step > SI;
+    const g = gateAt(step), open = Math.min(1, g / 0.55);
+
+    // diagram
+    D.layer.style.opacity = inserted ? 1 : 0.16;
+    insTick.classList.toggle("on", inserted);
+    L.insLine.setAttribute("opacity", inserted ? 1 : 0);
+    L.insLabel.setAttribute("opacity", inserted ? 1 : 0);
+    D.gfill.setAttribute("fill-opacity", open.toFixed(2));
+    D.gname.setAttribute("fill", open > 0.5 ? "var(--on-accent)" : "var(--agent-ink)");
+    D.wire.setAttribute("stroke-width", (5.5 * open).toFixed(2));
+    D.wire.setAttribute("stroke-opacity", open > 0.01 ? (0.35 + 0.65 * open).toFixed(2) : 0);
+    D.wire.setAttribute("stroke-dashoffset", flow.toFixed(1));
+    D.gval.textContent = `g = ${g.toFixed(2)}`;
+    D.gstate.textContent = !inserted ? "" : g < 0.02 ? "closed: the layer adds nothing" : g < 0.47 ? "opening" : "open";
+
+    // loss
+    const ys = L.y, cx = L.x(step);
+    L.pre.setAttribute("d", trace(fPre, S0, Math.min(step, SI), ys));
+    L.wo.setAttribute("d", after ? trace(fWithout, SI, step, ys) : "");
+    L.wi.setAttribute("d", after ? trace(fWith, SI, step, ys) : "");
+    L.band.setAttribute("d", after
+      ? trace(fWith, SI, step, ys) + samples(SI, step).reverse().map(s => `L${L.x(s).toFixed(1)},${ys(fWithout(s)).toFixed(1)}`).join("") + "Z"
+      : "");
+    L.fork.setAttribute("opacity", inserted ? 1 : 0);
+    const vo = after ? fWithout(step) : fPre(step), vi = after ? fWith(step) : vo;
+    L.cursor.setAttribute("x1", cx); L.cursor.setAttribute("x2", cx);
+    L.dwo.setAttribute("cx", cx); L.dwo.setAttribute("cy", ys(vo));
+    L.dwi.setAttribute("cx", cx); L.dwi.setAttribute("cy", ys(vi));
+    L.dwi.setAttribute("opacity", after ? 1 : 0);
+    const ex = cx + 11, sep = ys(vi) - ys(vo);
+    L.lwo.textContent = after ? "without the layer" : inserted ? "both runs" : "one run";
+    L.lwo.setAttribute("x", ex); L.lwo.setAttribute("y", ys(vo) + (sep > 18 ? -3 : 4));
+    L.lwi.setAttribute("x", ex); L.lwi.setAttribute("y", ys(vi) + 15);
+    L.lwi.setAttribute("opacity", sep > 18 ? 1 : 0);
+    L.gap.setAttribute("x", ex); L.gap.setAttribute("y", (ys(vi) + ys(vo)) / 2 + 5);
+    L.gap.textContent = sep > 40 ? `−${(vo - vi).toFixed(3)}` : "";
+
+    // gate
+    L.gate.setAttribute("d", after ? trace(gateAt, SI, step, L.yg) : "");
+    L.gateFill.setAttribute("d", after ? trace(gateAt, SI, step, L.yg) + `L${cx.toFixed(1)},${L.yg(0)}L${L.x(SI).toFixed(1)},${L.yg(0)}Z` : "");
+    L.dg.setAttribute("cx", cx); L.dg.setAttribute("cy", L.yg(g));
+    L.dg.setAttribute("opacity", inserted ? 1 : 0);
+    L.lg.setAttribute("x", ex); L.lg.setAttribute("y", L.yg(g) + 4.5);
+    L.lg.textContent = inserted ? g.toFixed(2) : "";
+
+    slider.value = Math.round(step);
+    slider.style.setProperty("--p", pct(step).toFixed(1) + "%");
+    cap.textContent = !inserted
+      ? "Before step 1,000 there is one training run."
+      : step < SI + 6
+        ? "At step 1,000 the agent inserts the mistake memory behind a gate at 0. The network computes exactly what it did before, so both runs continue from the same weights and the same loss."
+        : step < 1110
+          ? "Gradient descent moves g like any other weight. The gate passes 0.5 within about 100 steps. The run with the layer starts to pull away."
+          : "With the gate open, the run with the code layer stays below the run without it: 0.015 bits per byte lower at step 1,250 and 0.011 lower at step 1,500.";
+  }
+
+  const REDUCE = !!(window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches);
+  let playing = false, last = null, hold = 0, held = 0;
+  const SPEED = 625 / 11;
+  function frame(ts) {
+    if (!playing) { last = null; return; }
+    if (last !== null) {
+      const dt = Math.min(0.1, (ts - last) / 1000);
+      if (step >= S1) { hold += dt; if (hold > 3.5) { step = S0; hold = 0; held = 0; } }
+      else if (step >= SI && held < 1.8) held += dt;
+      else { const next = Math.min(S1, step + dt * SPEED); step = step < SI && next >= SI ? SI : next; }
+      flow -= dt * 28 * Math.min(1, gateAt(step) / 0.55);
+      paint();
+    }
+    last = ts; requestAnimationFrame(frame);
+  }
+  function setPlaying(p) {
+    if (p === playing) return;
+    playing = p; pp.textContent = p ? "Pause" : "Play";
+    pp.setAttribute("aria-label", p ? "Pause the animation" : "Play the animation");
+    if (p) { if (step >= S1) { step = S0; hold = 0; held = 0; } requestAnimationFrame(frame); }
+  }
+  pp.addEventListener("click", () => setPlaying(!playing));
+  slider.addEventListener("input", () => { setPlaying(false); step = +slider.value; held = 9; paint(); });
+
+  // drag across the chart to scrub
+  const scrub = e => {
+    const r = loss.getBoundingClientRect(), vx = (e.clientX - r.left) / r.width * L.W;
+    step = Math.max(S0, Math.min(S1, S0 + (vx - L.ml) / L.pw * (S1 - S0)));
+    held = 9; paint();
+  };
+  let dragging = false;
+  loss.addEventListener("pointerdown", e => { dragging = true; setPlaying(false); loss.setPointerCapture(e.pointerId); scrub(e); });
+  loss.addEventListener("pointermove", e => { if (dragging) scrub(e); });
+  loss.addEventListener("pointerup", () => { dragging = false; });
+  loss.addEventListener("pointercancel", () => { dragging = false; });
+
+  if (REDUCE) step = S1;
+  buildLoss();
+  pp.textContent = "Play";
+  setPlaying(!REDUCE);
+  new ResizeObserver(() => buildLoss()).observe(loss.parentElement);
+})();
+</script>
+
+<script>(function(){function s(){try{var f=window.frameElement;if(f){f.style.height=Math.ceil(document.documentElement.getBoundingClientRect().height)+"px"}}catch(e){}}if(window.ResizeObserver){new ResizeObserver(s).observe(document.documentElement)}addEventListener("load",s);s()})();</script></body>
+</html>

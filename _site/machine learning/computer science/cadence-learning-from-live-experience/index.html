@@ -1,0 +1,637 @@
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    <meta charset="utf-8">
+
+<!-- begin _includes/seo.html --><title>How Cadence Learns From Live Experience - Zhehan Shi</title>
+<meta name="description" content="Cadence is a Python research library that uses a recurrent network to choose actions, remember outcomes, and adapt as an environment changes.">
+
+
+  <meta name="author" content="Zhehan Shi">
+  
+  <meta property="article:author" content="Zhehan Shi">
+  
+
+
+<meta property="og:type" content="article">
+<meta property="og:locale" content="en_US">
+<meta property="og:site_name" content="Zhehan Shi">
+<meta property="og:title" content="How Cadence Learns From Live Experience">
+<meta property="og:url" content="/machine%20learning/computer%20science/cadence-learning-from-live-experience/">
+
+
+  <meta property="og:description" content="Cadence is a Python research library that uses a recurrent network to choose actions, remember outcomes, and adapt as an environment changes.">
+
+
+
+
+
+
+
+  <meta property="article:published_time" content="2026-11-09T00:00:00-05:00">
+
+
+
+
+
+  
+
+  
+
+
+<link rel="canonical" href="/machine%20learning/computer%20science/cadence-learning-from-live-experience/">
+
+
+
+
+<script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    
+      "@type": "Person",
+      "name": "Zhehan Shi",
+      "url": "/"
+    
+  }
+</script>
+
+
+
+
+
+
+<!-- end _includes/seo.html -->
+
+
+<link href="/feed.xml" type="application/atom+xml" rel="alternate" title="Zhehan Shi Feed">
+
+<!-- https://t.co/dKP3o1e -->
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<script>
+  document.documentElement.className = document.documentElement.className.replace(/\bno-js\b/g, '') + ' js ';
+</script>
+
+<!-- For all browsers -->
+<link rel="stylesheet" href="/assets/css/main.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6/css/all.min.css">
+
+<!--[if IE]>
+  <style>
+    /* old IE unsupported flexbox fixes */
+    .greedy-nav .site-title {
+      padding-right: 3em;
+    }
+    .greedy-nav button {
+      position: absolute;
+      top: 0;
+      right: 0;
+      height: 100%;
+    }
+  </style>
+<![endif]-->
+
+
+
+    <!-- start custom head snippets -->
+
+<!-- insert favicons. use https://realfavicongenerator.net/ -->
+<link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+<link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
+<link rel="manifest" href="/site.webmanifest">
+<!-- end custom head snippets -->
+
+  </head>
+
+  <body class="layout--single wide">
+    <nav class="skip-links">
+  <h2 class="screen-reader-text">Skip links</h2>
+  <ul>
+    <li><a href="#site-nav" class="screen-reader-shortcut">Skip to primary navigation</a></li>
+    <li><a href="#main" class="screen-reader-shortcut">Skip to content</a></li>
+    <li><a href="#footer" class="screen-reader-shortcut">Skip to footer</a></li>
+  </ul>
+</nav>
+
+    <!--[if lt IE 9]>
+<div class="notice--danger align-center" style="margin: 0;">You are using an <strong>outdated</strong> browser. Please <a href="https://browsehappy.com/">upgrade your browser</a> to improve your experience.</div>
+<![endif]-->
+
+    
+
+<div class="masthead">
+  <div class="masthead__inner-wrap">
+    <div class="masthead__menu">
+      <nav id="site-nav" class="greedy-nav">
+        
+        <a class="site-title" href="/">
+          Zhehan Shi
+          
+        </a>
+        <ul class="visible-links"><li class="masthead__menu-item">
+              <a href="/">Home</a>
+            </li><li class="masthead__menu-item">
+              <a href="/projects/">Projects</a>
+            </li><li class="masthead__menu-item">
+              <a href="/posts/">Posts</a>
+            </li><li class="masthead__menu-item">
+              <a href="/about/">About</a>
+            </li></ul>
+        
+        <button class="search__toggle" type="button">
+          <span class="visually-hidden">Toggle search</span>
+          <svg class="icon" width="16" height="16" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 15.99 16">
+            <path d="M15.5,13.12L13.19,10.8a1.69,1.69,0,0,0-1.28-.55l-0.06-.06A6.5,6.5,0,0,0,5.77,0,6.5,6.5,0,0,0,2.46,11.59a6.47,6.47,0,0,0,7.74.26l0.05,0.05a1.65,1.65,0,0,0,.5,1.24l2.38,2.38A1.68,1.68,0,0,0,15.5,13.12ZM6.4,2A4.41,4.41,0,1,1,2,6.4,4.43,4.43,0,0,1,6.4,2Z" transform="translate(-.01)"></path>
+          </svg>
+        </button>
+        
+        <button class="greedy-nav__toggle hidden" type="button">
+          <span class="visually-hidden">Toggle menu</span>
+          <div class="navicon"></div>
+        </button>
+        <ul class="hidden-links hidden"></ul>
+      </nav>
+    </div>
+  </div>
+</div>
+
+
+    <div class="initial-content">
+      
+
+
+
+<div id="main" role="main">
+  
+
+
+  <article class="page" itemscope itemtype="https://schema.org/CreativeWork">
+    <meta itemprop="headline" content="How Cadence Learns From Live Experience">
+    <meta itemprop="description" content="Cadence is a Python research library that uses a recurrent network to choose actions, remember outcomes, and adapt as an environment changes.">
+    <meta itemprop="datePublished" content="2026-11-09T00:00:00-05:00">
+    
+
+    <div class="page__inner-wrap">
+      
+        <header>
+          <h1 id="page-title" class="page__title" itemprop="headline">How Cadence Learns From Live Experience
+</h1>
+          
+
+  <p class="page__meta">
+    
+
+    
+
+    
+      
+      
+
+      <span class="page__meta-readtime">
+        <i class="far fa-clock" aria-hidden="true"></i>
+        
+          5 minute read
+        
+      </span>
+    
+  </p>
+
+
+        </header>
+      
+
+      <section class="page__content" itemprop="text">
+        
+        <p>Imagine a creature that sees one of two cues and must choose left or right. It learns which choice pays off. Halfway through its life, the rule flips. Its old behavior now earns the wrong outcome, and it has to recover while continuing to act.</p>
+
+<p>Cadence is a Python research library built for experiments like this. Each interaction gives the system a new observation and, when available, the outcome of its previous action. The network settles on its next action, and the same stream can also teach it. The repository includes an example where the reward rule reverses partway through a run. <a href="https://github.com/muellerberndt/cadence">Cadence repository</a> · <a href="https://github.com/muellerberndt/cadence/blob/main/docs/start.md#routine-and-repair-live">Continuous interaction example</a></p>
+
+<p>In his article on embodied AGI, Cadence creator Bernhard Mueller puts the same problem in a kitchen. A robot has to learn what happens when it grips a particular cup or pulls on a drawer that sticks. Its experience has to carry forward into the next attempt, while the robot continues to operate within its compute budget. Cadence explores how recurrent activity, memory, and local updates could support that kind of learning. <a href="https://muellerberndt.medium.com/you-dont-need-attention-after-all-the-road-to-embodied-agi-with-cadence-8606a64e40df">Bernhard Mueller, The road to embodied AGI with Cadence</a></p>
+
+<!--more-->
+
+<figure>
+  <img src="https://miro.medium.com/v2/resize:fit:1400/1*_S5bUYAovJa0Fq7Alh4u6g.png" width="700" height="477" loading="lazy" alt="Cadence readback loop connecting observations, candidate actions, stored records, and witnessed outcomes" />
+  <figcaption>A candidate action can consult memory. The result of a real action can update what the system remembers. <a href="https://muellerberndt.medium.com/you-dont-need-attention-after-all-the-road-to-embodied-agi-with-cadence-8606a64e40df#33cf">Diagram from Bernhard Mueller’s article</a>.</figcaption>
+</figure>
+
+<h2 id="an-answer-forms-as-the-network-settles">An answer forms as the network settles</h2>
+
+<p>Picture the cue activating one group of neurons while two other groups represent the possible actions. Connections carry influence in both directions. The cue shapes the network’s interpretation, and the state of the action groups can influence earlier activity while the answer forms. Cadence repeatedly updates this shared state under the current observation. Once the state satisfies the network’s equations within a tolerance, the system can use it to choose an action. This is what the project calls <em>settling</em>. <a href="https://github.com/muellerberndt/cadence/blob/main/docs/settling.md#settling-and-equilibrium">Cadence’s guide to settling</a></p>
+
+<figure>
+  <img src="https://miro.medium.com/v2/resize:fit:1400/1*53-rjQjHph5wQqX8-8Fj2Q.png" width="700" height="490" loading="lazy" alt="A Cadence neuron combining weighted activity from its neighbors and an external input" />
+  <figcaption>One neuron adjusts its state in response to its inputs. The example illustrates a local update. <a href="https://muellerberndt.medium.com/you-dont-need-attention-after-all-the-road-to-embodied-agi-with-cadence-8606a64e40df#77ba">Diagram from Bernhard Mueller’s article</a>.</figcaption>
+</figure>
+
+<p>A settled answer can still be wrong. The settlement check tells us how closely the current state satisfies the network’s equations. The reward tells us whether the choice actually worked. Cadence records the solver’s error and how many sweeps it needed, so a slow decision and a bad decision can be measured separately. <a href="https://github.com/muellerberndt/cadence/blob/main/docs/start.md#qualification-and-refusal">Settlement checks and refusal</a></p>
+
+<h2 id="how-the-system-learns-from-a-correction">How the system learns from a correction</h2>
+
+<p>Suppose a teacher shows the creature that a cue calls for the left action. Cadence can let the network settle on its own, then run additional settles with small pushes toward and away from the taught answer. Each connection’s update uses the difference in the activity of the neurons it joins across the nudged states. The rule comes from equilibrium propagation, a family of methods that uses differences between equilibria to estimate how weights should change. <a href="https://github.com/muellerberndt/cadence/blob/main/docs/settling.md#learning-the-freenudged-rule">Cadence’s learning rule</a> · <a href="https://arxiv.org/abs/1602.05179">Equilibrium Propagation</a></p>
+
+<p>When the environment supplies a reward instead of the correct answer, it gives the system a different kind of information. A connection keeps a fading record of its recent contribution to action choices. When the outcome arrives, a shared signal compares the earlier prediction with the reward received plus the estimated value of what follows. That signal scales the updates to those connections. This gives a later outcome a way to affect a recent choice. <a href="https://github.com/muellerberndt/cadence/blob/main/docs/reward.md#eligibility-traces-and-dopamine">Cadence’s reward learning guide</a></p>
+
+<p>In the continuing interaction mode, Cadence uses a rule it calls <em>arousal</em> to decide when to spend effort learning. In routine conditions it can choose an action after one settle. An unexpected outcome or a drop in reward can switch on exploration, learning, and memory writes. In the reversal example, the interesting part is what happens immediately after the change. An action that used to pay now fails, and the system can revise its behavior while the task is still running. <a href="https://github.com/muellerberndt/cadence/blob/main/docs/start.md#routine-and-repair-live">Routine and repair in Cadence</a></p>
+
+<h2 id="three-kinds-of-change">Three kinds of change</h2>
+
+<p>An action can change because the current observation is different, because the system remembers an earlier outcome, or because experience changed its connections. Cadence exposes those mechanisms separately. <a href="https://github.com/muellerberndt/cadence/blob/main/docs/settling.md#three-state-lifetimes">State lifetimes in Cadence</a></p>
+
+<table>
+  <thead>
+    <tr>
+      <th>What changes</th>
+      <th>What it does in the cue example</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Current neural activity</td>
+      <td>Forms a choice for the cue in front of the creature</td>
+    </tr>
+    <tr>
+      <td>Carried state and memory</td>
+      <td>Brings information from earlier moments into the current choice</td>
+    </tr>
+    <tr>
+      <td>Learned connection strengths</td>
+      <td>Changes how the network responds to future cues</td>
+    </tr>
+  </tbody>
+</table>
+
+<figure>
+  <img src="https://miro.medium.com/v2/resize:fit:1400/1*W5_OJgxH9Fthbo5QirOfVA.png" width="700" height="591" loading="lazy" alt="Three forms of state carried between decisions in Cadence: neuron potentials, fading traces, and stored records" />
+  <figcaption>The previous neural state gives the next solve a starting point. Fading traces and stored associations can also influence what the system sees in the next moment. <a href="https://muellerberndt.medium.com/you-dont-need-attention-after-all-the-road-to-embodied-agi-with-cadence-8606a64e40df#184a">Diagram from Bernhard Mueller’s article</a>.</figcaption>
+</figure>
+
+<p>That separation makes the reward reversal a better test than a final accuracy score alone. If the creature recovers, we can ask whether it recalled an earlier association or changed its policy through new feedback. A comparison with memory disabled or learning frozen could help tell those explanations apart.</p>
+
+<h2 id="from-simulation-to-a-physical-robot">From simulation to a physical robot</h2>
+
+<p>Mueller describes simulated bodies that learn from stored outcomes and a separate solver that reduces work when a change is local. Those results test parts of the design. The larger claim depends on putting them together in a physical robot that can learn a new task, adapt when conditions change, and retain older skills. The comparison would have to count the cost of settling, communication, memory, and learning as well as task success. <a href="https://muellerberndt.medium.com/you-dont-need-attention-after-all-the-road-to-embodied-agi-with-cadence-8606a64e40df#55f2">Mueller’s account of the evidence and open tests</a></p>
+
+<h2 id="appendix">Appendix</h2>
+
+<h3 id="what-the-equilibrium-comparison-tests">What the equilibrium comparison tests</h3>
+
+<p>Cadence’s finite grammar benchmark compares its local update with an implicit equilibrium gradient on the same network. The task is to judge subject and verb agreement with a distractor noun between them, using supplied inputs that identify the words and their roles. The setup has 24 training sentences and eight test sentences. It tests whether the local update can learn a small nonlinear judgment from those inputs. The project separately describes full-sentence language as a research goal. <a href="https://github.com/muellerberndt/cadence/tree/main/benchmarks/local_equilibrium">Local equilibrium benchmark</a> · <a href="https://github.com/muellerberndt/cadence#why-cadence">Cadence research goals</a></p>
+
+<p>The gradient connection depends on conditions such as smooth, stable equilibria and symmetric effective weights. At a finite nudge and with imperfect solves, the local contrast is an estimate. Evaluating efficiency also means counting the work of all the solves used to answer and learn, along with memory maintenance. For the reversal task, I would compare recovery time and the cost of each interaction against a recurrent learner given the same observations and rewards. <a href="https://github.com/muellerberndt/cadence#where-the-learning-signal-comes-from">Cadence’s learning assumptions and comparison</a></p>
+
+        
+      </section>
+
+      <footer class="page__meta">
+        
+        
+  
+
+
+  
+  
+  
+
+  <p class="page__taxonomy">
+    <strong><i class="fas fa-fw fa-tags" aria-hidden="true"></i> Tags: </strong>
+    <span itemprop="keywords">
+    
+      
+      
+      <a href="/tags/#artificial-intelligence" class="page__taxonomy-item" rel="tag">Artificial Intelligence</a><span class="sep">, </span>
+    
+      
+      
+      <a href="/tags/#continual-learning" class="page__taxonomy-item" rel="tag">Continual Learning</a><span class="sep">, </span>
+    
+      
+      
+      <a href="/tags/#reinforcement-learning" class="page__taxonomy-item" rel="tag">Reinforcement Learning</a>
+    
+    </span>
+  </p>
+
+
+
+
+  
+
+
+  
+  
+  
+
+  <p class="page__taxonomy">
+    <strong><i class="fas fa-fw fa-folder-open" aria-hidden="true"></i> Categories: </strong>
+    <span itemprop="keywords">
+    
+      
+      
+      <a href="/categories/#computer-science" class="page__taxonomy-item" rel="tag">Computer Science</a><span class="sep">, </span>
+    
+      
+      
+      <a href="/categories/#machine-learning" class="page__taxonomy-item" rel="tag">Machine Learning</a>
+    
+    </span>
+  </p>
+
+
+        
+  <p class="page__date"><strong><i class="fas fa-fw fa-calendar-alt" aria-hidden="true"></i> Updated:</strong> <time datetime="2026-11-09T00:00:00-05:00">November 9, 2026</time></p>
+
+
+      </footer>
+
+      <section class="page__share">
+  
+
+  <a href="https://twitter.com/intent/tweet?text=How+Cadence+Learns+From+Live+Experience%20%2Fmachine%2520learning%2Fcomputer%2520science%2Fcadence-learning-from-live-experience%2F" class="btn btn--twitter" onclick="window.open(this.href, 'window', 'left=20,top=20,width=500,height=500,toolbar=1,resizable=0'); return false;" title="Share on Twitter"><i class="fa-brands fa-x-twitter" aria-hidden="true"></i><span> X</span></a>
+
+
+  <a href="https://www.facebook.com/sharer/sharer.php?u=%2Fmachine%2520learning%2Fcomputer%2520science%2Fcadence-learning-from-live-experience%2F" class="btn btn--facebook" aria-label="Share on Facebook" onclick="window.open(this.href, 'window', 'left=20,top=20,width=500,height=500,toolbar=1,resizable=0'); return false;" title="Share on Facebook">
+    <i class="fab fa-fw fa-facebook" aria-hidden="true"></i><span> Facebook</span>
+  </a>
+  
+  <a href="https://www.linkedin.com/shareArticle?mini=true&url=%2Fmachine%2520learning%2Fcomputer%2520science%2Fcadence-learning-from-live-experience%2F" class="btn btn--linkedin" onclick="window.open(this.href, 'window', 'left=20,top=20,width=500,height=500,toolbar=1,resizable=0'); return false;" title="Share on LinkedIn"><i class="fab fa-fw fa-linkedin" aria-hidden="true"></i><span> LinkedIn</span></a>
+
+  <a href="https://bsky.app/intent/compose?text=How+Cadence+Learns+From+Live+Experience%20%2Fmachine%2520learning%2Fcomputer%2520science%2Fcadence-learning-from-live-experience%2F" class="btn btn--bluesky" onclick="window.open(this.href, 'window', 'left=20,top=20,width=500,height=500,toolbar=1,resizable=0'); return false;" title="Share on Bluesky">
+    <i class="fab fa-fw fa-bluesky" aria-hidden="true"></i><span> Bluesky</span>
+  </a>
+</section>
+
+
+      
+  <nav class="pagination">
+    
+      <a href="/machine%20learning/computer%20science/computation-inside-language-models/" class="pagination--pager" title="Computation Inside Language Models
+">Previous</a>
+    
+    
+      <a href="/machine%20learning/computer%20science/gpu-unlock-tensor-throughput/" class="pagination--pager" title="How gpu-unlock Changes GeForce Tensor Throughput
+">Next</a>
+    
+  </nav>
+
+    </div>
+
+    
+  </article>
+
+  
+  
+    <div class="page__related">
+      <h4 class="page__related-title">You May Also Enjoy</h4>
+      <div class="grid__wrapper">
+        
+          
+
+
+
+<div class="grid__item">
+  <article class="archive__item" itemscope itemtype="https://schema.org/CreativeWork">
+    
+    <h2 class="archive__item-title no_toc" itemprop="headline">
+      
+        <a href="/machine%20learning/computer%20science/redesigning-language-models-during-training/" rel="permalink">Redesigning Language Models During Training
+</a>
+      
+    </h2>
+    
+
+  <p class="page__meta">
+    
+
+    
+
+    
+      
+      
+
+      <span class="page__meta-readtime">
+        <i class="far fa-clock" aria-hidden="true"></i>
+        
+          3 minute read
+        
+      </span>
+    
+  </p>
+
+
+    <p class="archive__item-excerpt" itemprop="description">DoubleAI gives a coding agent a role in training. The agent diagnoses failures, proposes new computations, and tests where they fit inside a model.
+</p>
+  </article>
+</div>
+
+        
+          
+
+
+
+<div class="grid__item">
+  <article class="archive__item" itemscope itemtype="https://schema.org/CreativeWork">
+    
+    <h2 class="archive__item-title no_toc" itemprop="headline">
+      
+        <a href="/machine%20learning/computer%20science/gpu-unlock-tensor-throughput/" rel="permalink">How gpu-unlock Changes GeForce Tensor Throughput
+</a>
+      
+    </h2>
+    
+
+  <p class="page__meta">
+    
+
+    
+
+    
+      
+      
+
+      <span class="page__meta-readtime">
+        <i class="far fa-clock" aria-hidden="true"></i>
+        
+          3 minute read
+        
+      </span>
+    
+  </p>
+
+
+    <p class="archive__item-excerpt" itemprop="description">gpu-unlock lifts a limit on certain kinds of math on selected GeForce cards. It does this during Linux startup, before the NVIDIA driver takes over.
+</p>
+  </article>
+</div>
+
+        
+          
+
+
+
+<div class="grid__item">
+  <article class="archive__item" itemscope itemtype="https://schema.org/CreativeWork">
+    
+    <h2 class="archive__item-title no_toc" itemprop="headline">
+      
+        <a href="/machine%20learning/computer%20science/computation-inside-language-models/" rel="permalink">Computation Inside Language Models
+</a>
+      
+    </h2>
+    
+
+  <p class="page__meta">
+    
+
+    
+
+    
+      
+      
+
+      <span class="page__meta-readtime">
+        <i class="far fa-clock" aria-hidden="true"></i>
+        
+          5 minute read
+        
+      </span>
+    
+  </p>
+
+
+    <p class="archive__item-excerpt" itemprop="description">Four projects explore what changes when a transformer can execute programs, train smaller models, and load new capabilities from memory.
+</p>
+  </article>
+</div>
+
+        
+          
+
+
+
+<div class="grid__item">
+  <article class="archive__item" itemscope itemtype="https://schema.org/CreativeWork">
+    
+    <h2 class="archive__item-title no_toc" itemprop="headline">
+      
+        <a href="/machine%20learning/computer%20science/creating-new-words/" rel="permalink">Creating New Words: From Learned Programs to Dynamic Vocabularies
+</a>
+      
+    </h2>
+    
+
+  <p class="page__meta">
+    
+
+    
+
+    
+      
+      
+
+      <span class="page__meta-readtime">
+        <i class="far fa-clock" aria-hidden="true"></i>
+        
+          6 minute read
+        
+      </span>
+    
+  </p>
+
+
+    <p class="archive__item-excerpt" itemprop="description">How six papers connect reusable program abstractions, neural representations, dynamic vocabularies, tool creation, and emergent language.
+</p>
+  </article>
+</div>
+
+        
+      </div>
+    </div>
+  
+  
+</div>
+
+    </div>
+
+    
+      <div class="search-content">
+        <div class="search-content__inner-wrap"><form class="search-content__form" onkeydown="return event.key != 'Enter';">
+    <label class="sr-only" for="search">
+      Enter your search term...
+    </label>
+    <input type="search" id="search" class="search-input" tabindex="-1" placeholder="Enter your search term..." />
+  </form>
+  <div id="results" class="results"></div></div>
+
+      </div>
+    
+
+    <div id="footer" class="page__footer">
+      <footer>
+        <!-- start custom footer snippets -->
+
+<!-- end custom footer snippets -->
+        <!-- <div class="page__footer-follow">
+  <ul class="social-icons">
+    
+
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+
+    <li><a href="/feed.xml"><i class="fas fa-fw fa-rss-square" aria-hidden="true"></i> Feed</a></li>
+  </ul>
+</div>
+ -->
+<div class="page__footer-copyright">&copy; <!-- 2026  -->Zhehan Shi<!-- . Powered by <a href="https://jekyllrb.com" rel="nofollow">Jekyll</a> &amp; --></div>
+
+      </footer>
+    </div>
+
+    
+  <script src="/assets/js/main.min.js"></script>
+
+
+
+
+<script src="/assets/js/lunr/lunr.min.js"></script>
+<script src="/assets/js/lunr/lunr-store.js"></script>
+<script src="/assets/js/lunr/lunr-en.js"></script>
+
+
+
+
+
+
+<script type="text/javascript" async
+  src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-MML-AM_CHTML">
+</script>
+
+<script type="text/x-mathjax-config">
+   MathJax.Hub.Config({
+     extensions: ["tex2jax.js"],
+     jax: ["input/TeX", "output/HTML-CSS"],
+     tex2jax: {
+       inlineMath: [ ['$','$'], ["\\(","\\)"] ],
+       displayMath: [ ['$$','$$'], ["\\[","\\]"] ],
+       processEscapes: true
+     },
+     "HTML-CSS": { availableFonts: ["TeX"] }
+   });
+</script>
+
+  </body>
+</html>
