@@ -1,0 +1,937 @@
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    <meta charset="utf-8">
+
+<!-- begin _includes/seo.html --><title>Inside the Top Two ARC-AGI-3 Teams’ Solutions - Zhehan Shi</title>
+<meta name="description" content="How threerabbits and Tufa Labs organize perception, experimentation, executable world models, memory, and inference in their published ARC-AGI-3 notebooks.">
+
+
+  <meta name="author" content="Zhehan Shi">
+  
+  <meta property="article:author" content="Zhehan Shi">
+  
+
+
+<meta property="og:type" content="article">
+<meta property="og:locale" content="en_US">
+<meta property="og:site_name" content="Zhehan Shi">
+<meta property="og:title" content="Inside the Top Two ARC-AGI-3 Teams’ Solutions">
+<meta property="og:url" content="/machine%20learning/computer%20science/inside-top-two-arc-agi-3-solutions/">
+
+
+  <meta property="og:description" content="How threerabbits and Tufa Labs organize perception, experimentation, executable world models, memory, and inference in their published ARC-AGI-3 notebooks.">
+
+
+
+
+
+
+
+  <meta property="article:published_time" content="2026-11-10T00:00:00-05:00">
+
+
+
+
+
+  
+
+  
+
+
+<link rel="canonical" href="/machine%20learning/computer%20science/inside-top-two-arc-agi-3-solutions/">
+
+
+
+
+<script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    
+      "@type": "Person",
+      "name": "Zhehan Shi",
+      "url": "/"
+    
+  }
+</script>
+
+
+
+
+
+
+<!-- end _includes/seo.html -->
+
+
+<link href="/feed.xml" type="application/atom+xml" rel="alternate" title="Zhehan Shi Feed">
+
+<!-- https://t.co/dKP3o1e -->
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<script>
+  document.documentElement.className = document.documentElement.className.replace(/\bno-js\b/g, '') + ' js ';
+</script>
+
+<!-- For all browsers -->
+<link rel="stylesheet" href="/assets/css/main.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6/css/all.min.css">
+
+<!--[if IE]>
+  <style>
+    /* old IE unsupported flexbox fixes */
+    .greedy-nav .site-title {
+      padding-right: 3em;
+    }
+    .greedy-nav button {
+      position: absolute;
+      top: 0;
+      right: 0;
+      height: 100%;
+    }
+  </style>
+<![endif]-->
+
+
+
+    <!-- start custom head snippets -->
+
+<!-- insert favicons. use https://realfavicongenerator.net/ -->
+<link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+<link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
+<link rel="manifest" href="/site.webmanifest">
+<!-- end custom head snippets -->
+
+  </head>
+
+  <body class="layout--single wide">
+    <nav class="skip-links">
+  <h2 class="screen-reader-text">Skip links</h2>
+  <ul>
+    <li><a href="#site-nav" class="screen-reader-shortcut">Skip to primary navigation</a></li>
+    <li><a href="#main" class="screen-reader-shortcut">Skip to content</a></li>
+    <li><a href="#footer" class="screen-reader-shortcut">Skip to footer</a></li>
+  </ul>
+</nav>
+
+    <!--[if lt IE 9]>
+<div class="notice--danger align-center" style="margin: 0;">You are using an <strong>outdated</strong> browser. Please <a href="https://browsehappy.com/">upgrade your browser</a> to improve your experience.</div>
+<![endif]-->
+
+    
+
+<div class="masthead">
+  <div class="masthead__inner-wrap">
+    <div class="masthead__menu">
+      <nav id="site-nav" class="greedy-nav">
+        
+        <a class="site-title" href="/">
+          Zhehan Shi
+          
+        </a>
+        <ul class="visible-links"><li class="masthead__menu-item">
+              <a href="/">Home</a>
+            </li><li class="masthead__menu-item">
+              <a href="/projects/">Projects</a>
+            </li><li class="masthead__menu-item">
+              <a href="/posts/">Posts</a>
+            </li><li class="masthead__menu-item">
+              <a href="/about/">About</a>
+            </li></ul>
+        
+        <button class="search__toggle" type="button">
+          <span class="visually-hidden">Toggle search</span>
+          <svg class="icon" width="16" height="16" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 15.99 16">
+            <path d="M15.5,13.12L13.19,10.8a1.69,1.69,0,0,0-1.28-.55l-0.06-.06A6.5,6.5,0,0,0,5.77,0,6.5,6.5,0,0,0,2.46,11.59a6.47,6.47,0,0,0,7.74.26l0.05,0.05a1.65,1.65,0,0,0,.5,1.24l2.38,2.38A1.68,1.68,0,0,0,15.5,13.12ZM6.4,2A4.41,4.41,0,1,1,2,6.4,4.43,4.43,0,0,1,6.4,2Z" transform="translate(-.01)"></path>
+          </svg>
+        </button>
+        
+        <button class="greedy-nav__toggle hidden" type="button">
+          <span class="visually-hidden">Toggle menu</span>
+          <div class="navicon"></div>
+        </button>
+        <ul class="hidden-links hidden"></ul>
+      </nav>
+    </div>
+  </div>
+</div>
+
+
+    <div class="initial-content">
+      
+
+
+
+<div id="main" role="main">
+  
+
+
+  <article class="page" itemscope itemtype="https://schema.org/CreativeWork">
+    <meta itemprop="headline" content="Inside the Top Two ARC-AGI-3 Teams’ Solutions">
+    <meta itemprop="description" content="How threerabbits and Tufa Labs organize perception, experimentation, executable world models, memory, and inference in their published ARC-AGI-3 notebooks.">
+    <meta itemprop="datePublished" content="2026-11-10T00:00:00-05:00">
+    
+
+    <div class="page__inner-wrap">
+      
+        <header>
+          <h1 id="page-title" class="page__title" itemprop="headline">Inside the Top Two ARC-AGI-3 Teams’ Solutions
+</h1>
+          
+
+
+  <p class="page__meta">
+    
+
+    
+
+    
+      
+      
+
+      <span class="page__meta-readtime">
+        <i class="far fa-clock" aria-hidden="true"></i>
+        
+          16 minute read
+        
+      </span>
+    
+  </p>
+
+
+        </header>
+      
+
+      <section class="page__content" itemprop="text">
+        
+        <p>An agent arrives in a game with no explanation of its rules. Colored objects fill the board. Some actions move things; others appear to do nothing. The goal itself may need to be discovered. Every experiment consumes part of the action budget.</p>
+
+<p>Solving this requires more than recognizing a pattern. The agent has to turn observations into hypotheses, test those hypotheses, preserve what it learns, and plan under rules that are still uncertain.</p>
+
+<p>As of <strong>November 10, 2026</strong>, Kaggle’s <strong>public leaderboard</strong> for ARC Prize 2026—ARC-AGI-3 lists these teams first and second:</p>
+
+<table>
+  <thead>
+    <tr>
+      <th>Public rank</th>
+      <th>Team</th>
+      <th>Public score</th>
+      <th>Notebook examined</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>1</td>
+      <td>Yi-Chia Chen @ Fields Model (<code class="language-plaintext highlighter-rouge">threerabbits</code>)</td>
+      <td>75.56</td>
+      <td><a href="https://www.kaggle.com/code/threerabbits/arc-code-hs110-click/notebook">ARC-Code HS110 Click</a></td>
+    </tr>
+    <tr>
+      <td>2</td>
+      <td>Tufa Labs</td>
+      <td>70.24</td>
+      <td><a href="https://www.kaggle.com/code/jeroencottaar/tufa-labs-arc3-final-solution">Tufa Labs ARC3 Final Solution</a></td>
+    </tr>
+  </tbody>
+</table>
+
+<p>Kaggle states that the private leaderboard is awaiting verification and that final standings may differ. These are team rankings: a published notebook snapshot is not, by itself, proof that its exact code and configuration produced the team’s highest score. <a href="https://www.kaggle.com/competitions/arc-prize-2026-arc-agi-3/leaderboard">Kaggle leaderboard</a></p>
+
+<!--more-->
+
+<h2 id="what-the-agents-are-trying-to-learn">What the agents are trying to learn</h2>
+
+<p>ARC-AGI-3 uses interactive environments. Agents must discover goals and dynamics through actions, then carry that understanding across increasingly difficult levels. The benchmark evaluates how efficiently they acquire and apply those skills, with action counts compared against human baselines. <a href="https://arcprize.org/arc-agi/3">ARC Prize’s benchmark overview</a></p>
+
+<p>Both solutions give a language model the means to write and execute Python. That creates a productive division of labor: the model proposes explanations and programs; code measures changes, simulates consequences, and searches possibilities.</p>
+
+<p>The critical engineering question is how to connect those programs to reality. A perfectly executed search can still fail if its simulator encodes the wrong rule. A correct observation can still be lost when the conversation becomes too long.</p>
+
+<h2 id="first-ranked-team-arc-code-as-an-experimental-workspace">First-ranked team: ARC-Code as an experimental workspace</h2>
+
+<p>The <code class="language-plaintext highlighter-rouge">arc-code-hs110-click</code> notebook packages an entire agent deployment. Its embedded archive contains the launcher, game middleware, action client, recording system, prompts, reviewer, and supporting code. A pinned local model server supplies the language model.</p>
+
+<p>The core idea is to give each game an independent coding workspace. The agent can inspect the board, write parsers and simulators, run bounded experiments, and keep a record of its conclusions. The notebook’s prompts describe a scientific workflow: make a small prediction, spend a few actions testing it, compare the observations, and revise the explanation.</p>
+
+<p>The code and configuration discussed below come from the <a href="https://www.kaggle.com/code/threerabbits/arc-code-hs110-click/notebook">ARC-Code notebook</a>, including its embedded <code class="language-plaintext highlighter-rouge">arcforge.arc_code</code> modules and <code class="language-plaintext highlighter-rouge">work/arc_code</code> files.</p>
+
+<h3 id="a-game-action-becomes-recorded-evidence">A game action becomes recorded evidence</h3>
+
+<p>The agent interacts through a small command-line interface. It can initialize the game, inspect its status or board, and send individual actions or batches. The supplied interface describes a 64×64 board, with clicks addressed by column and row.</p>
+
+<p>A middleware layer sits between the player and the upstream game gateway. It associates each player’s credentials with one game, checks action availability and coordinates, and records the responses. The upstream gateway remains responsible for game behavior and the scorecard.</p>
+
+<p>This placement matters. If the agent writes its own Python client, its actions still pass through the middleware and enter the record. The agent’s own account of what happened is therefore separate from the observation history.</p>
+
+<p>For each step, the workspace receives the final board as text and an image, the returned frame array, and intermediate images or an animation when the action produces multiple frames. A history entry connects the action to the level, outcome, changed-cell count, and the plan supplied with the batch.</p>
+
+<p>The player is instructed to use images for overall structure and code for exact coordinates and differences. This avoids repeatedly transcribing a board by eye. Intermediate frames can also reveal a mechanism that the final frame hides: an object may move and return, or a click may trigger a sequence whose order matters.</p>
+
+<h3 id="the-click-addition-makes-mistakes-easier-to-interpret">The “click” addition makes mistakes easier to interpret</h3>
+
+<p>The named notebook adds feedback about the cell an <code class="language-plaintext highlighter-rouge">ACTION6</code> click actually hit. Before sending the click, the client reads the current board and reports the target’s color and the size and bounds of its same-colored connected region.</p>
+
+<p>If the click lands on the inferred background, it looks nearby for another color. After execution, it can also report that the final board did not change.</p>
+
+<p>This helps distinguish two very different explanations for an unproductive action: the agent clicked the intended object and misunderstood its behavior, or it missed the object entirely. Discovering the second case early can prevent a long investigation of a rule that was never actually tested.</p>
+
+<p>The feedback is computed from visible board data. Its description of a region is geometric; it does not reveal the region’s role in the game. Its background label is also a heuristic based on the most frequent color.</p>
+
+<h3 id="memory-lives-in-files-as-well-as-conversation">Memory lives in files as well as conversation</h3>
+
+<p>ARC-Code separates several kinds of memory:</p>
+
+<table>
+  <thead>
+    <tr>
+      <th>Artifact</th>
+      <th>Purpose</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">record/</code></td>
+      <td>Server-written observations and action history</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">notes.md</code></td>
+      <td>Current beliefs, rejected hypotheses, and ongoing questions</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">levels/</code></td>
+      <td>Explanations and action sequences for cleared levels</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">lib/</code></td>
+      <td>Reusable parsing, simulation, and search code</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">scripts/</code></td>
+      <td>Individual experiments</td>
+    </tr>
+  </tbody>
+</table>
+
+<p>The record is read-only to the player. The remaining files are working material that the player can revise.</p>
+
+<p>Before context compaction, a reminder asks the agent to update its notes. The compaction prompt separates confirmed mechanics, hypotheses, solved levels, current state, useful files, and the next step. Afterward, the player is instructed to reread its durable notes.</p>
+
+<p>This is more than retaining a transcript. It tries to preserve the distinction between a rule supported by an experiment and an attractive guess. That distinction is especially valuable when an assumption would otherwise be copied into a summary and treated as established knowledge.</p>
+
+<h3 id="reviewers-challenge-beliefs-without-spending-game-actions">Reviewers challenge beliefs without spending game actions</h3>
+
+<p>For stalled games, the launcher can start a separate reviewer. The reviewer receives a snapshot of the action record, notes, and code, with updates supplied while the player continues.</p>
+
+<p>Its task is to identify a small number of consequential beliefs that are contradicted or insufficiently tested. Findings must cite recorded steps or reproducible checks. The reviewer cannot operate the game; it delivers a report, and the player decides how to use it.</p>
+
+<p>This arrangement targets a common failure mode: an agent builds a simulator, searches it unsuccessfully, and concludes that the real game has no solution. The reviewer is prompted to ask whether the simulator’s assumptions were ever justified.</p>
+
+<p>The configuration makes this help conditional on available capacity. In the competition configuration, reviews begin only after two hours, target games stalled for at least 45 minutes, and require player-plus-reviewer occupancy below 64. This does not replace the main launcher’s 110-game concurrency setting; it restricts when additional reviewers can enter.</p>
+
+<h3 id="the-serving-system-supports-many-long-running-players">The serving system supports many long-running players</h3>
+
+<p>The notebook serves the local checkpoint under the name <code class="language-plaintext highlighter-rouge">qwen38fn</code>, using a custom SGLang runtime and a patched coding-agent CLI. The CLI is the tool-using driver; requests are routed to the local checkpoint.</p>
+
+<p>The deployment combines low-precision model and cache storage, speculative decoding, and session-cache machinery. These features aim to keep many long conversations affordable. Separately, the launcher adjusts compaction thresholds according to the shared cache budget and the number of running players.</p>
+
+<p>Each game’s processes are also bounded. The configuration sets memory and CPU limits, and a watchdog can stop runaway work. A search that exhausts the machine would otherwise take time and capacity away from every other game.</p>
+
+<h2 id="second-ranked-team-tufas-sealagent-and-executable-world-models">Second-ranked team: Tufa’s SealAgent and executable world models</h2>
+
+<p>Tufa’s notebook uses the Tufa ARC-AGI Framework, or TAAF, to stage a source bundle, prepare inference, load the benchmark, and run its solver. The saved configuration identifies that solver as <strong><code class="language-plaintext highlighter-rouge">SealAgent</code></strong>.</p>
+
+<p>The notebook is primarily the deployment entry point. Its linked source bundle contains the actual implementation in the <code class="language-plaintext highlighter-rouge">seal</code>, <code class="language-plaintext highlighter-rouge">platypus</code>, and supporting packages. This analysis uses both the notebook’s saved configuration and that bundle, rather than assuming every feature in the repository is enabled. <a href="https://www.kaggle.com/code/jeroencottaar/tufa-labs-arc3-final-solution">Tufa notebook</a> · <a href="https://www.kaggle.com/datasets/jeroencottaar/platypus-demo-seal-xkb-keepalive-ds">Linked source bundle</a></p>
+
+<h3 id="a-persistent-python-session-becomes-the-agents-workbench">A persistent Python session becomes the agent’s workbench</h3>
+
+<p>SealAgent provides structured objects for actions, frames, and the history of the current level. The model writes Python in a persistent kernel. Its code can inspect the state, compute a result, submit an action, inspect the returned observation, and continue within the same call.</p>
+
+<p>This reduces the need to convert every useful operation into a separate conversational exchange. A conditional procedure can remain a procedure: inspect a piece, attempt a move, and branch on what actually happened.</p>
+
+<p>In the saved configuration, the kernel persists for a level. Files and journaled knowledge can carry across levels, while level-specific variables are cleared at the boundary. This favors reusing general mechanics without accidentally reusing coordinates or object identities from an earlier board.</p>
+
+<h3 id="perception-includes-structure-and-exact-change-descriptions">Perception includes structure and exact change descriptions</h3>
+
+<p>The agent receives the current grid as an image and can access integer-valued board data in Python. A segmentation helper exposes connected structure for further inspection.</p>
+
+<p>The <code class="language-plaintext highlighter-rouge">framediff</code> machinery adds another representation: a short block of NumPy operations that reconstructs a newly observed frame from an available baseline. That baseline may be the previous frame, the level’s initial frame, or an incorrect prediction from the agent’s world model.</p>
+
+<p>The proposed reconstruction is executed and checked before being shown. This gives the model a compact, exact account of a visual difference when one can be found within the search budget. It still has to infer what the difference means.</p>
+
+<p>The saved configuration enables settled-frame differences and per-action change reports, with animation descriptions available on request. It does not enable every visual aid: the separate difference-image option is off.</p>
+
+<h3 id="a-world-model-is-an-executable-hypothesis">A world model is an executable hypothesis</h3>
+
+<p>SealAgent can maintain a <code class="language-plaintext highlighter-rouge">world_model.py</code> file describing the game’s dynamics. Its interface separates an abstract initial state, a transition function, and a renderer that predicts the visible board. An optional distance-to-goal function can guide search.</p>
+
+<p>This turns a verbal explanation into a program with testable consequences. Instead of merely saying that a colored piece slides until blocked, the agent must specify how its position changes and what the resulting board should look like.</p>
+
+<p><code class="language-plaintext highlighter-rouge">test_world_model()</code> replays the current level’s recorded history through that program. It reports the first mismatch between a prediction and the observations. A passing replay also supplies the agent’s predicted state at each recorded turn.</p>
+
+<p>Crucially, the supplied configuration uses <strong>optional world models</strong>. An agent without a passing model can still act. The system offers verified simulation as a tool, rather than requiring a complete simulator before any progress is possible.</p>
+
+<p>Passing the test validates the modeled history under the configured comparison rules. It does not establish that the program predicts every unseen situation. Partial rendering and tolerance controls make this distinction important.</p>
+
+<h3 id="search-becomes-useful-once-the-simulator-earns-some-trust">Search becomes useful once the simulator earns some trust</h3>
+
+<p>After a Python call explicitly tests the model successfully and makes no real move, the harness can launch a bounded search in a separate process. It rechecks the model there before planning.</p>
+
+<p>The planner explores simulated transitions. It uses a supplied distance-to-goal heuristic when available and falls back to breadth-first ordering otherwise. It can seek a win or a boundary where the model cannot predict what happens next.</p>
+
+<p>A result is returned as suggested actions and predicted intermediate history. The agent retains the decision to execute it. Search therefore operates inside a larger learning loop: build a hypothesis, check it, explore its consequences, and test those consequences against the game.</p>
+
+<p>While a world model passes, real action sequences are checked step by step. A mismatched prediction stops the remaining sequence and returns control for investigation. Previously executed actions still count; the guard limits further damage rather than undoing the mistake.</p>
+
+<p>Click search also uses a reduced action set. It selects representative cells from connected monochromatic regions, with a configured cap, instead of treating all 4,096 board coordinates as equally useful candidates. Failure to find a plan is consequently a result about the modeled transitions and searched candidates.</p>
+
+<h3 id="reflection-audits-and-compaction-serve-different-purposes">Reflection, audits, and compaction serve different purposes</h3>
+
+<p>SealAgent’s memory system includes a journal, saved files, a level-local Python session, and conversation summaries.</p>
+
+<p>After clearing a level, a reflection turn lets it consolidate what it learned before proceeding. Separately, the saved configuration requests a strategy audit after 300,000 completion tokens on a level. During that turn, acting is disabled and the agent is prompted to reconsider its approach, including neglected actions or click targets.</p>
+
+<p>This differs from ARC-Code’s separate reviewer. Tufa schedules a reconsideration phase in the player’s own control loop; ARC-Code can assign another agent to independently inspect the evidence.</p>
+
+<p>The saved Tufa configuration uses a working context budget of 181,184 tokens and a target of 33,925 after compaction, within an engine ceiling of 262,144. Files, relevant Python state, and explicit knowledge reduce the amount that must survive in the prose summary alone.</p>
+
+<h3 id="compute-allocation-is-part-of-the-solution">Compute allocation is part of the solution</h3>
+
+<p>The configuration permits up to 80 concurrent games and chooses the <code class="language-plaintext highlighter-rouge">least_game_tokens</code> scheduling policy. The source implements this as priority for games with the lowest accumulated token expenditure, helping distribute service across the game list.</p>
+
+<p>Inference runs through a custom vLLM backend. The saved deployment uses low-precision weights and KV storage, CPU cache offloading, prefix-cache features, and a speculative draft model. These are serving optimizations; the notebook itself loads existing checkpoints and runs inference rather than training the model on the games.</p>
+
+<p>The distinction matters when interpreting “learning.” Here, adaptation can occur through better code, a corrected simulator, a journal entry, or a revised plan. Those changes can improve behavior without updating neural-network weights during the run.</p>
+
+<h2 id="what-the-supplied-runs-actually-show">What the supplied runs actually show</h2>
+
+<p>The leaderboard scores and the scores printed inside these notebooks describe different evaluations.</p>
+
+<table>
+  <thead>
+    <tr>
+      <th>Evidence</th>
+      <th>ARC-Code saved run</th>
+      <th>Tufa saved run</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Run type</td>
+      <td>Public stand-in gateway</td>
+      <td>Offline demonstration benchmark</td>
+    </tr>
+    <tr>
+      <td>Instances</td>
+      <td>110, expanded from 25 public games</td>
+      <td>110 benchmark entries</td>
+    </tr>
+    <tr>
+      <td>Duration</td>
+      <td>90-minute play budget</td>
+      <td>Approximately 8 hours 48 minutes in diagnostics</td>
+    </tr>
+    <tr>
+      <td>Saved action-efficiency mean</td>
+      <td>21.3384</td>
+      <td>68.18 under the “Official ARC” scorer</td>
+    </tr>
+    <tr>
+      <td>Public team score on November 10</td>
+      <td>75.56</td>
+      <td>70.24</td>
+    </tr>
+  </tbody>
+</table>
+
+<p>ARC-Code’s output reports 295 cleared levels, 11,892 actions, and six wins. Its local ledger agrees with the stand-in gateway’s scorecard. That agreement checks accounting within the rehearsal; it does not convert the rehearsal into a held-out leaderboard evaluation.</p>
+
+<p>Its reviewer log also records 25 launches, three delivered reports, and 22 failures. Some reviews were abandoned because the player moved to another level; others failed to produce the report in time. The record supports the existence of the reviewer mechanism, but it does not establish that reviewers improved the score.</p>
+
+<p>Tufa’s diagnostic report contains its own original learning-progress plot:</p>
+
+<figure>
+  <img src="/assets/images/arc3-solutions/tufa-original-score-vs-wallclock.png" loading="lazy" alt="Original Tufa diagnostic plot of mean ARC action-efficiency score against elapsed job time, rising to approximately 68.18 over the demonstration run" />
+  <figcaption>Original figure extracted from the supplied Tufa notebook's diagnostics. The curve uses its official-formula ARC scorer on that offline benchmark. It is not the 70.24 public leaderboard result. Source: <a href="https://www.kaggle.com/code/jeroencottaar/tufa-labs-arc3-final-solution">Tufa Labs ARC3 Final Solution</a>.</figcaption>
+</figure>
+
+<p>The two saved runs differ in game selection, checkpoints, time budgets, and deployment details. Their means cannot isolate which harness is better or explain the public ranking. The leaderboard provides the ranking; the notebooks explain concrete systems from those teams.</p>
+
+<h2 id="the-shared-lesson-make-beliefs-accountable-to-observations">The shared lesson: make beliefs accountable to observations</h2>
+
+<table>
+  <thead>
+    <tr>
+      <th>Design question</th>
+      <th>ARC-Code</th>
+      <th>Tufa SealAgent</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Main work surface</td>
+      <td>Shell and a per-game directory</td>
+      <td>Persistent Python kernel and file tools</td>
+    </tr>
+    <tr>
+      <td>Observation evidence</td>
+      <td>Server-written boards, frames, animations, history</td>
+      <td>Structured turns, frames, segmentation, verified frame differences</td>
+    </tr>
+    <tr>
+      <td>Simulation</td>
+      <td>Agent-written code supported by prompts</td>
+      <td>Optional world-model interface with replay validation</td>
+    </tr>
+    <tr>
+      <td>Planning</td>
+      <td>Agent-written searches and experiments</td>
+      <td>Agent code plus harness-provided bounded search</td>
+    </tr>
+    <tr>
+      <td>Recovery from a wrong theory</td>
+      <td>Notes, experiments, optional independent reviewer</td>
+      <td>Prediction mismatch, replay test, strategy audit</td>
+    </tr>
+    <tr>
+      <td>Durable knowledge</td>
+      <td>Notes, level documents, reusable code</td>
+      <td>Journal, files, summaries, executable model</td>
+    </tr>
+  </tbody>
+</table>
+
+<p>Both designs make a language model responsible for forming and revising explanations. They also give ordinary software a substantial role in checking details that are difficult to maintain reliably in prose.</p>
+
+<p>ARC-Code emphasizes an auditable experimental workspace. Tufa more explicitly connects a learned simulator to replay tests, planning, and guarded execution. In both, the useful unit of progress is a belief that has survived a relevant test and can be carried into the next decision.</p>
+
+<p>That is a demanding standard. A simulator may fit the past and still fail on a new configuration. A summary may preserve an error. A reviewer may arrive too late. The systems are interesting because their architecture gives those failures places to become visible and correctable.</p>
+
+<h2 id="technical-appendix">Technical appendix</h2>
+
+<h3 id="a-reading-the-first-notebooks-embedded-source">A. Reading the first notebook’s embedded source</h3>
+
+<p>The ARC-Code notebook’s large configuration cell contains a Base64-encoded, gzip-compressed tar archive. The analysis unpacked it as data and checked the hash prefixes of all <strong>539</strong> carried files against its manifest. The important paths are:</p>
+
+<ul>
+  <li><code class="language-plaintext highlighter-rouge">work/arc_code/run_arm.py</code>: orchestration, per-game workspaces, sessions, context budgets, and reviewer integration.</li>
+  <li><code class="language-plaintext highlighter-rouge">src/arcforge/arc_code/middleware.py</code>: game-bound access, action validation, recording, and upstream communication.</li>
+  <li><code class="language-plaintext highlighter-rouge">src/arcforge/arc_code/act_client.py</code>: the generated action client and click feedback.</li>
+  <li><code class="language-plaintext highlighter-rouge">src/arcforge/arc_code/record.py</code>: text boards, images, frame arrays, and animations.</li>
+  <li><code class="language-plaintext highlighter-rouge">work/arc_code/prompts/v14/</code>: the active player brief and compaction prompts.</li>
+  <li><code class="language-plaintext highlighter-rouge">work/arc_code/review_scheduler.py</code> and <code class="language-plaintext highlighter-rouge">review_prompts/r7/</code>: review admission and the active review instructions.</li>
+</ul>
+
+<p>The archive contains other versions and optional features. The two <code class="language-plaintext highlighter-rouge">*-review-click.json</code> configurations identify the paths relevant to this notebook.</p>
+
+<h3 id="b-context-capacity-is-not-one-number">B. Context capacity is not one number</h3>
+
+<p>ARC-Code configures a 240,000-token server context, a 235,000-token driver context, and a 150,000-token automatic-compaction cap. Its dynamic threshold is the safety-adjusted share of the server cache pool per active player, clamped between 100,000 tokens and that cap. A separate reminder helps save notes before compaction.</p>
+
+<p>These values serve different purposes. The server ceiling constrains a request; the driver budget reserves room around it; compaction governs how much history remains active under shared load.</p>
+
+<p>Tufa similarly separates its 262,144-token engine ceiling, 181,184-token working context, and 33,925-token compaction target. Comparing only the largest context numbers would miss how both systems actually manage conversations.</p>
+
+<h3 id="c-scoring-rewards-completion-and-action-efficiency">C. Scoring rewards completion and action efficiency</h3>
+
+<p>The ARC-Code scorer gives a cleared level an efficiency value of <code class="language-plaintext highlighter-rouge">min(100 * (baseline_actions / agent_actions) ** 2, 115)</code>. It weights levels by their one-based index and includes every level’s weight in the denominator, including uncleared levels. A further cap limits the game’s score by the weighted share of levels completed.</p>
+
+<p>Consequently, solving early levels efficiently cannot fully compensate for never reaching later ones. Exploration can be worthwhile when it unlocks progress, but repeated actions that provide no new information reduce efficiency.</p>
+
+<h3 id="d-where-tufas-logic-lives">D. Where Tufa’s logic lives</h3>
+
+<p>The linked source archive identifies the submission repository snapshot as <code class="language-plaintext highlighter-rouge">8863e380</code>. Within <code class="language-plaintext highlighter-rouge">packages/seal/src/seal/</code>:</p>
+
+<ul>
+  <li><code class="language-plaintext highlighter-rouge">agent.py</code> defines the playing loop, active configuration fields, context handling, reflection, and audits.</li>
+  <li><code class="language-plaintext highlighter-rouge">harness/game.py</code> and <code class="language-plaintext highlighter-rouge">harness/test.py</code> connect Python actions and world-model checks to the recorded level history.</li>
+  <li><code class="language-plaintext highlighter-rouge">frame_delta.py</code> builds and verifies compact frame reconstructions.</li>
+  <li><code class="language-plaintext highlighter-rouge">search.py</code>, <code class="language-plaintext highlighter-rouge">search_process.py</code>, and <code class="language-plaintext highlighter-rouge">planner.py</code> run bounded planning and report its provenance.</li>
+  <li><code class="language-plaintext highlighter-rouge">move_lister.py</code> selects candidate actions, including representative clicks.</li>
+</ul>
+
+<p>The saved configuration enables optional world models and search, with a 130-second search budget and 2 GiB of additional search-process memory. The planner’s name is <code class="language-plaintext highlighter-rouge">BFSPlanner</code>, but it uses best-first ordering when a usable heuristic is provided; breadth-first ordering is its fallback.</p>
+
+<p>The configuration also has <code class="language-plaintext highlighter-rouge">expose_undo=False</code> and <code class="language-plaintext highlighter-rouge">confine_filesystem=False</code>. The presence of undo or Landlock confinement code in the package therefore does not establish that those features operated in this saved run.</p>
+
+<h3 id="e-reproduction-and-interpretation">E. Reproduction and interpretation</h3>
+
+<p>Both notebooks depend on mounted model checkpoints, packaged runtimes, and competition infrastructure. Their visible top-level cells are deployment programs rather than self-contained solver algorithms that run unchanged in an ordinary Python environment.</p>
+
+<p>ARC-Code switches between a public stand-in and the competition gateway. Tufa loads its bundled benchmark in demonstration mode and obtains the game list from the competition gateway during a true rerun. Both write a placeholder submission in non-rerun operation; that file’s dummy score is not evidence of game performance.</p>
+
+<p>The attached ARC-Code export also contains configuration notes dated October 27 while its saved execution metadata dates the run to October 26. Its output should therefore not be treated as an ablation proving the effect of the added click feedback.</p>
+
+<h2 id="sources">Sources</h2>
+
+<ul>
+  <li><a href="https://www.kaggle.com/competitions/arc-prize-2026-arc-agi-3/leaderboard">Kaggle public leaderboard</a>, checked November 10, 2026.</li>
+  <li>threerabbits, <a href="https://www.kaggle.com/code/threerabbits/arc-code-hs110-click/notebook">ARC-Code HS110 Click</a>: supplied notebook, embedded source, configurations, and saved output.</li>
+  <li>Jeroen Cottaar / Tufa Labs, <a href="https://www.kaggle.com/code/jeroencottaar/tufa-labs-arc3-final-solution">Tufa Labs ARC3 Final Solution</a>: supplied notebook, saved configuration, and diagnostics.</li>
+  <li>Tufa Labs, <a href="https://www.kaggle.com/datasets/jeroencottaar/platypus-demo-seal-xkb-keepalive-ds">Platypus demonstration source bundle</a>: linked solver source.</li>
+  <li>ARC Prize, <a href="https://arcprize.org/arc-agi/3">ARC-AGI-3 overview</a>.</li>
+</ul>
+
+        
+      </section>
+
+      <footer class="page__meta">
+        
+        
+  
+
+
+  
+  
+  
+
+  <p class="page__taxonomy">
+    <strong><i class="fas fa-fw fa-tags" aria-hidden="true"></i> Tags: </strong>
+    <span itemprop="keywords">
+    
+      
+      
+      <a href="/tags/#ai-agents" class="page__taxonomy-item" rel="tag">AI Agents</a><span class="sep">, </span>
+    
+      
+      
+      <a href="/tags/#arc-agi" class="page__taxonomy-item" rel="tag">ARC-AGI</a><span class="sep">, </span>
+    
+      
+      
+      <a href="/tags/#artificial-intelligence" class="page__taxonomy-item" rel="tag">Artificial Intelligence</a><span class="sep">, </span>
+    
+      
+      
+      <a href="/tags/#program-synthesis" class="page__taxonomy-item" rel="tag">Program Synthesis</a><span class="sep">, </span>
+    
+      
+      
+      <a href="/tags/#world-models" class="page__taxonomy-item" rel="tag">World Models</a>
+    
+    </span>
+  </p>
+
+
+
+
+  
+
+
+  
+  
+  
+
+  <p class="page__taxonomy">
+    <strong><i class="fas fa-fw fa-folder-open" aria-hidden="true"></i> Categories: </strong>
+    <span itemprop="keywords">
+    
+      
+      
+      <a href="/categories/#computer-science" class="page__taxonomy-item" rel="tag">Computer Science</a><span class="sep">, </span>
+    
+      
+      
+      <a href="/categories/#machine-learning" class="page__taxonomy-item" rel="tag">Machine Learning</a>
+    
+    </span>
+  </p>
+
+
+        
+  <p class="page__date"><strong><i class="fas fa-fw fa-calendar-alt" aria-hidden="true"></i> Updated:</strong> <time datetime="2026-11-10T00:00:00-05:00">November 10, 2026</time></p>
+
+
+      </footer>
+
+      <section class="page__share">
+  
+
+  <a href="https://twitter.com/intent/tweet?text=Inside+the+Top+Two+ARC-AGI-3+Teams%E2%80%99+Solutions%20%2Fmachine%2520learning%2Fcomputer%2520science%2Finside-top-two-arc-agi-3-solutions%2F" class="btn btn--twitter" onclick="window.open(this.href, 'window', 'left=20,top=20,width=500,height=500,toolbar=1,resizable=0'); return false;" title="Share on Twitter"><i class="fa-brands fa-x-twitter" aria-hidden="true"></i><span> X</span></a>
+
+
+  <a href="https://www.facebook.com/sharer/sharer.php?u=%2Fmachine%2520learning%2Fcomputer%2520science%2Finside-top-two-arc-agi-3-solutions%2F" class="btn btn--facebook" aria-label="Share on Facebook" onclick="window.open(this.href, 'window', 'left=20,top=20,width=500,height=500,toolbar=1,resizable=0'); return false;" title="Share on Facebook">
+    <i class="fab fa-fw fa-facebook" aria-hidden="true"></i><span> Facebook</span>
+  </a>
+  
+  <a href="https://www.linkedin.com/shareArticle?mini=true&url=%2Fmachine%2520learning%2Fcomputer%2520science%2Finside-top-two-arc-agi-3-solutions%2F" class="btn btn--linkedin" onclick="window.open(this.href, 'window', 'left=20,top=20,width=500,height=500,toolbar=1,resizable=0'); return false;" title="Share on LinkedIn"><i class="fab fa-fw fa-linkedin" aria-hidden="true"></i><span> LinkedIn</span></a>
+
+  <a href="https://bsky.app/intent/compose?text=Inside+the+Top+Two+ARC-AGI-3+Teams%E2%80%99+Solutions%20%2Fmachine%2520learning%2Fcomputer%2520science%2Finside-top-two-arc-agi-3-solutions%2F" class="btn btn--bluesky" onclick="window.open(this.href, 'window', 'left=20,top=20,width=500,height=500,toolbar=1,resizable=0'); return false;" title="Share on Bluesky">
+    <i class="fab fa-fw fa-bluesky" aria-hidden="true"></i><span> Bluesky</span>
+  </a>
+</section>
+
+
+      
+  <nav class="pagination">
+    
+      <a href="/machine%20learning/computer%20science/do-language-models-need-sleep/" class="pagination--pager" title="Do Language Models Need Sleep?
+">Previous</a>
+    
+    
+      <a href="#" class="pagination--pager disabled">Next</a>
+    
+  </nav>
+
+    </div>
+
+    
+  </article>
+
+  
+  
+    <div class="page__related">
+      <h4 class="page__related-title">You May Also Enjoy</h4>
+      <div class="grid__wrapper">
+        
+          
+
+
+
+<div class="grid__item">
+  <article class="archive__item" itemscope itemtype="https://schema.org/CreativeWork">
+    
+    <h2 class="archive__item-title no_toc" itemprop="headline">
+      
+        <a href="/machine%20learning/computer%20science/do-language-models-need-sleep/" rel="permalink">Do Language Models Need Sleep?
+</a>
+      
+    </h2>
+    
+
+
+  <p class="page__meta">
+    
+
+    
+
+    
+      
+      
+
+      <span class="page__meta-readtime">
+        <i class="far fa-clock" aria-hidden="true"></i>
+        
+          5 minute read
+        
+      </span>
+    
+  </p>
+
+
+    <p class="archive__item-excerpt" itemprop="description">Four papers connect the difficulty of staying adaptable with test-time training, offline memory processing, and learning across different timescales.
+</p>
+  </article>
+</div>
+
+        
+          
+
+
+
+<div class="grid__item">
+  <article class="archive__item" itemscope itemtype="https://schema.org/CreativeWork">
+    
+    <h2 class="archive__item-title no_toc" itemprop="headline">
+      
+        <a href="/machine%20learning/computer%20science/ai-interview-preparation-websites/" rel="permalink">A Guide to Hands-On AI and ML Interview Preparation
+</a>
+      
+    </h2>
+    
+
+
+  <p class="page__meta">
+    
+
+    
+
+    
+      
+      
+
+      <span class="page__meta-readtime">
+        <i class="far fa-clock" aria-hidden="true"></i>
+        
+          6 minute read
+        
+      </span>
+    
+  </p>
+
+
+    <p class="archive__item-excerpt" itemprop="description">Where to practice ML implementations, CUDA and Triton kernels, LLM reasoning, system design, and data interviews—and how to choose a focused study path.
+</p>
+  </article>
+</div>
+
+        
+          
+
+
+
+<div class="grid__item">
+  <article class="archive__item" itemscope itemtype="https://schema.org/CreativeWork">
+    
+    <h2 class="archive__item-title no_toc" itemprop="headline">
+      
+        <a href="/machine%20learning/computer%20science/redesigning-language-models-during-training/" rel="permalink">Redesigning Language Models During Training
+</a>
+      
+    </h2>
+    
+
+
+  <p class="page__meta">
+    
+
+    
+
+    
+      
+      
+
+      <span class="page__meta-readtime">
+        <i class="far fa-clock" aria-hidden="true"></i>
+        
+          3 minute read
+        
+      </span>
+    
+  </p>
+
+
+    <p class="archive__item-excerpt" itemprop="description">DoubleAI gives a coding agent a role in training. The agent diagnoses failures, proposes new computations, and tests where they fit inside a model.
+</p>
+  </article>
+</div>
+
+        
+          
+
+
+
+<div class="grid__item">
+  <article class="archive__item" itemscope itemtype="https://schema.org/CreativeWork">
+    
+    <h2 class="archive__item-title no_toc" itemprop="headline">
+      
+        <a href="/machine%20learning/computer%20science/how-ai-agent-teams-learn-to-coordinate/" rel="permalink">How AI Agent Teams Learn to Coordinate
+</a>
+      
+    </h2>
+    
+
+
+  <p class="page__meta">
+    
+
+    
+
+    
+      
+      
+
+      <span class="page__meta-readtime">
+        <i class="far fa-clock" aria-hidden="true"></i>
+        
+          3 minute read
+        
+      </span>
+    
+  </p>
+
+
+    <p class="archive__item-excerpt" itemprop="description">General Reasoning trains agents with a shared reward and a deadline. The results show when parallel work can save time and why coordination still has to earn...</p>
+  </article>
+</div>
+
+        
+      </div>
+    </div>
+  
+  
+</div>
+
+    </div>
+
+    
+      <div class="search-content">
+        <div class="search-content__inner-wrap"><form class="search-content__form" onkeydown="return event.key != 'Enter';">
+    <label class="sr-only" for="search">
+      Enter your search term...
+    </label>
+    <input type="search" id="search" class="search-input" tabindex="-1" placeholder="Enter your search term..." />
+  </form>
+  <div id="results" class="results"></div></div>
+
+      </div>
+    
+
+    <div id="footer" class="page__footer">
+      <footer>
+        <!-- start custom footer snippets -->
+
+<!-- end custom footer snippets -->
+        <!-- <div class="page__footer-follow">
+  <ul class="social-icons">
+    
+
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+
+    <li><a href="/feed.xml"><i class="fas fa-fw fa-rss-square" aria-hidden="true"></i> Feed</a></li>
+  </ul>
+</div>
+ -->
+<div class="page__footer-copyright">&copy; <!-- 2026  -->Zhehan Shi<!-- . Powered by <a href="https://jekyllrb.com" rel="nofollow">Jekyll</a> &amp; --></div>
+
+      </footer>
+    </div>
+
+    
+  <script src="/assets/js/main.min.js"></script>
+
+
+
+
+<script src="/assets/js/lunr/lunr.min.js"></script>
+<script src="/assets/js/lunr/lunr-store.js"></script>
+<script src="/assets/js/lunr/lunr-en.js"></script>
+
+
+
+
+
+
+<script type="text/javascript" async
+  src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-MML-AM_CHTML">
+</script>
+
+<script type="text/x-mathjax-config">
+   MathJax.Hub.Config({
+     extensions: ["tex2jax.js"],
+     jax: ["input/TeX", "output/HTML-CSS"],
+     tex2jax: {
+       inlineMath: [ ['$','$'], ["\\(","\\)"] ],
+       displayMath: [ ['$$','$$'], ["\\[","\\]"] ],
+       processEscapes: true
+     },
+     "HTML-CSS": { availableFonts: ["TeX"] }
+   });
+</script>
+
+  </body>
+</html>
