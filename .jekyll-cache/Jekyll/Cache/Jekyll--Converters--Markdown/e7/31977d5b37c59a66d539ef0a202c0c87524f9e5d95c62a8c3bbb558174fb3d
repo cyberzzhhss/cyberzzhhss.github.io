@@ -1,0 +1,121 @@
+I"�.<p>Recognizing an optimizer’s name, implementing its update rule, and explaining why a training run diverged are different skills. AI preparation gets more useful when the exercise matches the skill you need to build.</p>
+
+<p>Deep-ML, TensorTonic, LeetGPU, and Context Window Prep provide four useful starting points: implement algorithms, assemble model components, optimize kernels, and reason through technical scenarios. The wider landscape adds specialized practice in library fluency, LLM applications, system design, and data analysis.</p>
+
+<!--more-->
+
+<h2 id="choose-by-the-work-you-want-to-practice">Choose by the work you want to practice</h2>
+
+<p>The platforms below overlap, but their main learning activities differ. Use this as a map to a starting point; a question count alone says little about how well a collection fits your needs.</p>
+
+<table>
+  <thead>
+    <tr>
+      <th>Focus</th>
+      <th>Websites to explore</th>
+      <th>Main practice</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>ML algorithms and model components</td>
+      <td><a href="https://www.deep-ml.com/">Deep-ML</a>, <a href="https://www.tensortonic.com/">TensorTonic</a>, <a href="https://mlcoding.net/">ML Coding</a></td>
+      <td>Write implementations and check their behavior</td>
+    </tr>
+    <tr>
+      <td>NumPy, Pandas, and PyTorch fluency</td>
+      <td><a href="https://tensorprep.dev/">TensorPrep</a></td>
+      <td>Solve focused library and numerical exercises</td>
+    </tr>
+    <tr>
+      <td>A guided route toward a language model</td>
+      <td><a href="https://neetcode.io/practice/machine-learning">NeetCode ML</a></td>
+      <td>Work from foundations through a GPT implementation</td>
+    </tr>
+    <tr>
+      <td>GPU kernels and performance</td>
+      <td><a href="https://leetgpu.com/">LeetGPU</a>, <a href="https://tensara.org/">Tensara</a>, <a href="https://gpumode.com/">GPU MODE</a></td>
+      <td>Implement, benchmark, and optimize kernels</td>
+    </tr>
+    <tr>
+      <td>ML interview reasoning</td>
+      <td><a href="https://www.contextwindowprep.com/">Context Window Prep</a>, <a href="https://leetml.org/">LeetML</a></td>
+      <td>Explain mechanisms and solve technical questions</td>
+    </tr>
+    <tr>
+      <td>LLM and AI engineering</td>
+      <td><a href="https://llmdojo.dev/interview">LLM Dojo</a>, <a href="https://routetoai.org/interview">Route to AI</a></td>
+      <td>Reason about retrieval, agents, evaluation, and production behavior</td>
+    </tr>
+    <tr>
+      <td>AI system design</td>
+      <td><a href="https://www.designgurus.io/course/grokking-the-ai-system-design-interview">Design Gurus</a></td>
+      <td>Develop and defend an end-to-end architecture</td>
+    </tr>
+    <tr>
+      <td>Data science and analytics interviews</td>
+      <td><a href="https://www.interviewquery.com/">Interview Query</a>, <a href="https://www.stratascratch.com/">StrataScratch</a>, <a href="https://datalemur.com/">DataLemur</a></td>
+      <td>Practice data questions, SQL, analysis, and interview scenarios</td>
+    </tr>
+  </tbody>
+</table>
+
+<h2 id="build-implementation-fluency">Build implementation fluency</h2>
+
+<p><strong>Deep-ML</strong> offers Python coding challenges with test feedback, alongside learning paths, interactive articles, labs, and projects. Its topics include classical ML, neural networks, computer vision, and NLP. It is a useful place to start when you want to turn a mathematical concept into a function you can test. <a href="https://www.deep-ml.com/">Deep-ML</a></p>
+
+<p><strong>TensorTonic</strong> extends that implementation approach across ML algorithms, GPU programming, and research-paper tracks. Its public examples connect code to interactive views of operations such as cosine similarity and matrix transpose. The Transformer research track breaks the architecture into embeddings, positional encoding, attention, normalization, and other components. This provides a path from individual exercises toward understanding how a model fits together. <a href="https://www.tensortonic.com/">TensorTonic</a> · <a href="https://www.tensortonic.com/research">Research tracks</a></p>
+
+<p><strong>ML Coding</strong> offers focused Python and NumPy exercises with browser tests and support for remote PyTorch execution. Its tracks include metrics, training, data transformations, retrieval, debugging, neural-network components, and models from scratch. That combination makes it worth exploring when you want implementation practice that also touches evaluation and data handling. <a href="https://mlcoding.net/">ML Coding</a></p>
+
+<p><strong>TensorPrep</strong> emphasizes NumPy, Pandas, PyTorch, Matplotlib, probability, and MySQL. Its workflow separates running sample tests from submitting against hidden tests. This is a good fit for practicing the array, dataframe, and tensor operations that can slow you down even when you understand the underlying algorithm. <a href="https://tensorprep.dev/">TensorPrep</a></p>
+
+<p><strong>NeetCode ML</strong> provides a more compact sequence, moving through mathematical foundations, neural networks, PyTorch, training, NLP, attention, and building GPT. It pairs problems with animations, hints, and videos. Consider this route if you prefer a defined progression toward one recognizable model. <a href="https://neetcode.io/practice/machine-learning">NeetCode machine learning</a></p>
+
+<h2 id="learn-to-measure-gpu-performance">Learn to measure GPU performance</h2>
+
+<p>GPU exercises add another dimension to correctness: how efficiently an implementation uses the hardware.</p>
+
+<p><strong>LeetGPU</strong> provides browser-based GPU execution, a kernel playground, challenges, and a CLI. Its homepage lists CUDA, Triton, PyTorch, Mojo, CuTe DSL, and JAX, with challenges covering matrix operations, memory optimization, and kernel fusion. It offers a direct starting point for writing and benchmarking kernels. <a href="https://leetgpu.com/">LeetGPU</a></p>
+
+<p><strong>Tensara</strong> is another close match for this workflow. Its open-source project describes CUDA, Triton, and Mojo challenges, benchmarks on GPU hardware, per-GPU leaderboards, and comparisons against framework implementations. Those comparisons give an optimization attempt a concrete reference. <a href="https://github.com/tensara/tensara">Tensara repository</a></p>
+
+<p><strong>GPU MODE</strong> combines community learning resources with kernel competitions and a leaderboard ecosystem. Its official repositories include lecture materials, KernelBot, and reference problem sets. It is particularly interesting once you want to study shared workloads and compare optimization approaches. <a href="https://github.com/gpu-mode">GPU MODE repositories</a> · <a href="https://github.com/gpu-mode/reference-kernels">Official reference kernels</a></p>
+
+<p>For this kind of practice, keep the benchmark conditions with the result: GPU model, input shapes, numerical tolerance, and reference implementation. A faster kernel on one workload is evidence about that workload; varying the shapes helps reveal where the improvement holds.</p>
+
+<h2 id="practice-explaining-technical-decisions">Practice explaining technical decisions</h2>
+
+<p><strong>Context Window Prep</strong> emphasizes worked questions, with multiple-choice, short-answer, video, and whiteboard formats. Its public homepage includes a scenario where long-context training improves long-document performance but hurts short web and code samples after the data mixture shifts toward books. The useful exercise is to separate the changes and explain which mechanism could cause the regression. The site attributes its adapted material to interviewees, partners, and academic sources; employer labels are its reported provenance. <a href="https://www.contextwindowprep.com/">Context Window Prep</a></p>
+
+<p><strong>LeetML</strong> offers a broader interview bank with role filters, study plans, numeric and multiple-choice answers, browser-tested Python exercises, and worked solutions for open-ended questions. Its company labels identify questions reported by candidates. This mix is useful when your preparation needs to span coding, mathematical reasoning, and design. <a href="https://leetml.org/">LeetML</a></p>
+
+<p><strong>LLM Dojo</strong> focuses on answering technical questions aloud before comparing with model answers. Its topics include tokenization, attention, KV caches, inference costs, retrieval, evaluation, agents, and production systems. It is a useful companion to coding practice when you need to explain why a particular design behaves as it does. <a href="https://llmdojo.dev/interview">LLM Dojo interview prep</a></p>
+
+<p><strong>Route to AI</strong> also emphasizes AI engineering, covering RAG, tool use, security, observability, and system design. Its interview course adds coding drills and a mock-interview plan. Its production-oriented scope makes it worth exploring for roles centered on building applications around models. <a href="https://routetoai.org/interview">Route to AI interview prep</a></p>
+
+<h2 id="connect-components-to-systems-and-data">Connect components to systems and data</h2>
+
+<p><strong>Design Gurus’ Grokking the AI System Design Interview</strong> is a structured course covering classic ML products, LLM serving, RAG, and agentic systems. Its case studies and interview walkthroughs focus on taking a vague request through requirements, architecture, and tradeoffs. <a href="https://www.designgurus.io/course/grokking-the-ai-system-design-interview">Course overview</a></p>
+
+<p><strong>Interview Query</strong> brings together data science interview questions, learning paths, take-home exercises, company guides, and mock-interview options. <strong>StrataScratch</strong> covers analytical, algorithmic, ML, statistics, visualization, and conceptual questions, alongside interview simulations and project work. Both broaden preparation beyond isolated model components. <a href="https://www.interviewquery.com/">Interview Query</a> · <a href="https://www.stratascratch.com/">StrataScratch</a></p>
+
+<p><strong>DataLemur</strong> is especially relevant when SQL and analytics are the immediate gap. Its public problem list includes retention, rolling averages, growth, and aggregation questions. Those exercises complement ML coding by developing the ability to extract and summarize the data a model or evaluation depends on. <a href="https://datalemur.com/">DataLemur</a></p>
+
+<h2 id="build-a-focused-preparation-loop">Build a focused preparation loop</h2>
+
+<p>Choose one main platform and one complement based on your next task:</p>
+
+<ul>
+  <li><strong>ML engineering:</strong> start with Deep-ML, TensorTonic, or ML Coding; add LeetML or Context Window Prep for explanation practice.</li>
+  <li><strong>GPU and ML systems:</strong> start with LeetGPU or Tensara; use GPU MODE resources and workloads to deepen performance analysis.</li>
+  <li><strong>AI application engineering:</strong> pair implementation practice with LLM Dojo or Route to AI, then work through a system-design case.</li>
+  <li><strong>Data science:</strong> start with Interview Query or StrataScratch, and add DataLemur for focused SQL practice.</li>
+</ul>
+
+<p>For each topic, write an implementation, explain its assumptions, and change one condition to see what breaks. An attention exercise can lead to questions about masking and memory use. A retrieval exercise can lead to questions about ranking quality, latency, and evaluation. A working answer becomes more valuable when you can explain the conditions under which it remains useful.</p>
+
+<p>Check free exercises and current plan details before subscribing. Choose a collection whose feedback helps you correct a specific weakness, and revisit difficult problems until you can solve and explain them independently.</p>
+
+<p><em>Website features reviewed November 10, 2026. Catalogs, subscription access, and GPU availability can change.</em></p>
+:ET

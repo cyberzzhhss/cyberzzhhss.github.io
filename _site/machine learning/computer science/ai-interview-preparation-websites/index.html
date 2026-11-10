@@ -1,0 +1,688 @@
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    <meta charset="utf-8">
+
+<!-- begin _includes/seo.html --><title>A Guide to Hands-On AI and ML Interview Preparation - Zhehan Shi</title>
+<meta name="description" content="Where to practice ML implementations, CUDA and Triton kernels, LLM reasoning, system design, and data interviews—and how to choose a focused study path.">
+
+
+  <meta name="author" content="Zhehan Shi">
+  
+  <meta property="article:author" content="Zhehan Shi">
+  
+
+
+<meta property="og:type" content="article">
+<meta property="og:locale" content="en_US">
+<meta property="og:site_name" content="Zhehan Shi">
+<meta property="og:title" content="A Guide to Hands-On AI and ML Interview Preparation">
+<meta property="og:url" content="/machine%20learning/computer%20science/ai-interview-preparation-websites/">
+
+
+  <meta property="og:description" content="Where to practice ML implementations, CUDA and Triton kernels, LLM reasoning, system design, and data interviews—and how to choose a focused study path.">
+
+
+
+
+
+
+
+  <meta property="article:published_time" content="2026-11-10T00:00:00-05:00">
+
+
+
+
+
+  
+
+  
+
+
+<link rel="canonical" href="/machine%20learning/computer%20science/ai-interview-preparation-websites/">
+
+
+
+
+<script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    
+      "@type": "Person",
+      "name": "Zhehan Shi",
+      "url": "/"
+    
+  }
+</script>
+
+
+
+
+
+
+<!-- end _includes/seo.html -->
+
+
+<link href="/feed.xml" type="application/atom+xml" rel="alternate" title="Zhehan Shi Feed">
+
+<!-- https://t.co/dKP3o1e -->
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<script>
+  document.documentElement.className = document.documentElement.className.replace(/\bno-js\b/g, '') + ' js ';
+</script>
+
+<!-- For all browsers -->
+<link rel="stylesheet" href="/assets/css/main.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6/css/all.min.css">
+
+<!--[if IE]>
+  <style>
+    /* old IE unsupported flexbox fixes */
+    .greedy-nav .site-title {
+      padding-right: 3em;
+    }
+    .greedy-nav button {
+      position: absolute;
+      top: 0;
+      right: 0;
+      height: 100%;
+    }
+  </style>
+<![endif]-->
+
+
+
+    <!-- start custom head snippets -->
+
+<!-- insert favicons. use https://realfavicongenerator.net/ -->
+<link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+<link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
+<link rel="manifest" href="/site.webmanifest">
+<!-- end custom head snippets -->
+
+  </head>
+
+  <body class="layout--single wide">
+    <nav class="skip-links">
+  <h2 class="screen-reader-text">Skip links</h2>
+  <ul>
+    <li><a href="#site-nav" class="screen-reader-shortcut">Skip to primary navigation</a></li>
+    <li><a href="#main" class="screen-reader-shortcut">Skip to content</a></li>
+    <li><a href="#footer" class="screen-reader-shortcut">Skip to footer</a></li>
+  </ul>
+</nav>
+
+    <!--[if lt IE 9]>
+<div class="notice--danger align-center" style="margin: 0;">You are using an <strong>outdated</strong> browser. Please <a href="https://browsehappy.com/">upgrade your browser</a> to improve your experience.</div>
+<![endif]-->
+
+    
+
+<div class="masthead">
+  <div class="masthead__inner-wrap">
+    <div class="masthead__menu">
+      <nav id="site-nav" class="greedy-nav">
+        
+        <a class="site-title" href="/">
+          Zhehan Shi
+          
+        </a>
+        <ul class="visible-links"><li class="masthead__menu-item">
+              <a href="/">Home</a>
+            </li><li class="masthead__menu-item">
+              <a href="/projects/">Projects</a>
+            </li><li class="masthead__menu-item">
+              <a href="/posts/">Posts</a>
+            </li><li class="masthead__menu-item">
+              <a href="/about/">About</a>
+            </li></ul>
+        
+        <button class="search__toggle" type="button">
+          <span class="visually-hidden">Toggle search</span>
+          <svg class="icon" width="16" height="16" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 15.99 16">
+            <path d="M15.5,13.12L13.19,10.8a1.69,1.69,0,0,0-1.28-.55l-0.06-.06A6.5,6.5,0,0,0,5.77,0,6.5,6.5,0,0,0,2.46,11.59a6.47,6.47,0,0,0,7.74.26l0.05,0.05a1.65,1.65,0,0,0,.5,1.24l2.38,2.38A1.68,1.68,0,0,0,15.5,13.12ZM6.4,2A4.41,4.41,0,1,1,2,6.4,4.43,4.43,0,0,1,6.4,2Z" transform="translate(-.01)"></path>
+          </svg>
+        </button>
+        
+        <button class="greedy-nav__toggle hidden" type="button">
+          <span class="visually-hidden">Toggle menu</span>
+          <div class="navicon"></div>
+        </button>
+        <ul class="hidden-links hidden"></ul>
+      </nav>
+    </div>
+  </div>
+</div>
+
+
+    <div class="initial-content">
+      
+
+
+
+<div id="main" role="main">
+  
+
+
+  <article class="page" itemscope itemtype="https://schema.org/CreativeWork">
+    <meta itemprop="headline" content="A Guide to Hands-On AI and ML Interview Preparation">
+    <meta itemprop="description" content="Where to practice ML implementations, CUDA and Triton kernels, LLM reasoning, system design, and data interviews—and how to choose a focused study path.">
+    <meta itemprop="datePublished" content="2026-11-10T00:00:00-05:00">
+    
+
+    <div class="page__inner-wrap">
+      
+        <header>
+          <h1 id="page-title" class="page__title" itemprop="headline">A Guide to Hands-On AI and ML Interview Preparation
+</h1>
+          
+
+
+  <p class="page__meta">
+    
+
+    
+
+    
+      
+      
+
+      <span class="page__meta-readtime">
+        <i class="far fa-clock" aria-hidden="true"></i>
+        
+          6 minute read
+        
+      </span>
+    
+  </p>
+
+
+        </header>
+      
+
+      <section class="page__content" itemprop="text">
+        
+        <p>Recognizing an optimizer’s name, implementing its update rule, and explaining why a training run diverged are different skills. AI preparation gets more useful when the exercise matches the skill you need to build.</p>
+
+<p>Deep-ML, TensorTonic, LeetGPU, and Context Window Prep provide four useful starting points: implement algorithms, assemble model components, optimize kernels, and reason through technical scenarios. The wider landscape adds specialized practice in library fluency, LLM applications, system design, and data analysis.</p>
+
+<!--more-->
+
+<h2 id="choose-by-the-work-you-want-to-practice">Choose by the work you want to practice</h2>
+
+<p>The platforms below overlap, but their main learning activities differ. Use this as a map to a starting point; a question count alone says little about how well a collection fits your needs.</p>
+
+<table>
+  <thead>
+    <tr>
+      <th>Focus</th>
+      <th>Websites to explore</th>
+      <th>Main practice</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>ML algorithms and model components</td>
+      <td><a href="https://www.deep-ml.com/">Deep-ML</a>, <a href="https://www.tensortonic.com/">TensorTonic</a>, <a href="https://mlcoding.net/">ML Coding</a></td>
+      <td>Write implementations and check their behavior</td>
+    </tr>
+    <tr>
+      <td>NumPy, Pandas, and PyTorch fluency</td>
+      <td><a href="https://tensorprep.dev/">TensorPrep</a></td>
+      <td>Solve focused library and numerical exercises</td>
+    </tr>
+    <tr>
+      <td>A guided route toward a language model</td>
+      <td><a href="https://neetcode.io/practice/machine-learning">NeetCode ML</a></td>
+      <td>Work from foundations through a GPT implementation</td>
+    </tr>
+    <tr>
+      <td>GPU kernels and performance</td>
+      <td><a href="https://leetgpu.com/">LeetGPU</a>, <a href="https://tensara.org/">Tensara</a>, <a href="https://gpumode.com/">GPU MODE</a></td>
+      <td>Implement, benchmark, and optimize kernels</td>
+    </tr>
+    <tr>
+      <td>ML interview reasoning</td>
+      <td><a href="https://www.contextwindowprep.com/">Context Window Prep</a>, <a href="https://leetml.org/">LeetML</a></td>
+      <td>Explain mechanisms and solve technical questions</td>
+    </tr>
+    <tr>
+      <td>LLM and AI engineering</td>
+      <td><a href="https://llmdojo.dev/interview">LLM Dojo</a>, <a href="https://routetoai.org/interview">Route to AI</a></td>
+      <td>Reason about retrieval, agents, evaluation, and production behavior</td>
+    </tr>
+    <tr>
+      <td>AI system design</td>
+      <td><a href="https://www.designgurus.io/course/grokking-the-ai-system-design-interview">Design Gurus</a></td>
+      <td>Develop and defend an end-to-end architecture</td>
+    </tr>
+    <tr>
+      <td>Data science and analytics interviews</td>
+      <td><a href="https://www.interviewquery.com/">Interview Query</a>, <a href="https://www.stratascratch.com/">StrataScratch</a>, <a href="https://datalemur.com/">DataLemur</a></td>
+      <td>Practice data questions, SQL, analysis, and interview scenarios</td>
+    </tr>
+  </tbody>
+</table>
+
+<h2 id="build-implementation-fluency">Build implementation fluency</h2>
+
+<p><strong>Deep-ML</strong> offers Python coding challenges with test feedback, alongside learning paths, interactive articles, labs, and projects. Its topics include classical ML, neural networks, computer vision, and NLP. It is a useful place to start when you want to turn a mathematical concept into a function you can test. <a href="https://www.deep-ml.com/">Deep-ML</a></p>
+
+<p><strong>TensorTonic</strong> extends that implementation approach across ML algorithms, GPU programming, and research-paper tracks. Its public examples connect code to interactive views of operations such as cosine similarity and matrix transpose. The Transformer research track breaks the architecture into embeddings, positional encoding, attention, normalization, and other components. This provides a path from individual exercises toward understanding how a model fits together. <a href="https://www.tensortonic.com/">TensorTonic</a> · <a href="https://www.tensortonic.com/research">Research tracks</a></p>
+
+<p><strong>ML Coding</strong> offers focused Python and NumPy exercises with browser tests and support for remote PyTorch execution. Its tracks include metrics, training, data transformations, retrieval, debugging, neural-network components, and models from scratch. That combination makes it worth exploring when you want implementation practice that also touches evaluation and data handling. <a href="https://mlcoding.net/">ML Coding</a></p>
+
+<p><strong>TensorPrep</strong> emphasizes NumPy, Pandas, PyTorch, Matplotlib, probability, and MySQL. Its workflow separates running sample tests from submitting against hidden tests. This is a good fit for practicing the array, dataframe, and tensor operations that can slow you down even when you understand the underlying algorithm. <a href="https://tensorprep.dev/">TensorPrep</a></p>
+
+<p><strong>NeetCode ML</strong> provides a more compact sequence, moving through mathematical foundations, neural networks, PyTorch, training, NLP, attention, and building GPT. It pairs problems with animations, hints, and videos. Consider this route if you prefer a defined progression toward one recognizable model. <a href="https://neetcode.io/practice/machine-learning">NeetCode machine learning</a></p>
+
+<h2 id="learn-to-measure-gpu-performance">Learn to measure GPU performance</h2>
+
+<p>GPU exercises add another dimension to correctness: how efficiently an implementation uses the hardware.</p>
+
+<p><strong>LeetGPU</strong> provides browser-based GPU execution, a kernel playground, challenges, and a CLI. Its homepage lists CUDA, Triton, PyTorch, Mojo, CuTe DSL, and JAX, with challenges covering matrix operations, memory optimization, and kernel fusion. It offers a direct starting point for writing and benchmarking kernels. <a href="https://leetgpu.com/">LeetGPU</a></p>
+
+<p><strong>Tensara</strong> is another close match for this workflow. Its open-source project describes CUDA, Triton, and Mojo challenges, benchmarks on GPU hardware, per-GPU leaderboards, and comparisons against framework implementations. Those comparisons give an optimization attempt a concrete reference. <a href="https://github.com/tensara/tensara">Tensara repository</a></p>
+
+<p><strong>GPU MODE</strong> combines community learning resources with kernel competitions and a leaderboard ecosystem. Its official repositories include lecture materials, KernelBot, and reference problem sets. It is particularly interesting once you want to study shared workloads and compare optimization approaches. <a href="https://github.com/gpu-mode">GPU MODE repositories</a> · <a href="https://github.com/gpu-mode/reference-kernels">Official reference kernels</a></p>
+
+<p>For this kind of practice, keep the benchmark conditions with the result: GPU model, input shapes, numerical tolerance, and reference implementation. A faster kernel on one workload is evidence about that workload; varying the shapes helps reveal where the improvement holds.</p>
+
+<h2 id="practice-explaining-technical-decisions">Practice explaining technical decisions</h2>
+
+<p><strong>Context Window Prep</strong> emphasizes worked questions, with multiple-choice, short-answer, video, and whiteboard formats. Its public homepage includes a scenario where long-context training improves long-document performance but hurts short web and code samples after the data mixture shifts toward books. The useful exercise is to separate the changes and explain which mechanism could cause the regression. The site attributes its adapted material to interviewees, partners, and academic sources; employer labels are its reported provenance. <a href="https://www.contextwindowprep.com/">Context Window Prep</a></p>
+
+<p><strong>LeetML</strong> offers a broader interview bank with role filters, study plans, numeric and multiple-choice answers, browser-tested Python exercises, and worked solutions for open-ended questions. Its company labels identify questions reported by candidates. This mix is useful when your preparation needs to span coding, mathematical reasoning, and design. <a href="https://leetml.org/">LeetML</a></p>
+
+<p><strong>LLM Dojo</strong> focuses on answering technical questions aloud before comparing with model answers. Its topics include tokenization, attention, KV caches, inference costs, retrieval, evaluation, agents, and production systems. It is a useful companion to coding practice when you need to explain why a particular design behaves as it does. <a href="https://llmdojo.dev/interview">LLM Dojo interview prep</a></p>
+
+<p><strong>Route to AI</strong> also emphasizes AI engineering, covering RAG, tool use, security, observability, and system design. Its interview course adds coding drills and a mock-interview plan. Its production-oriented scope makes it worth exploring for roles centered on building applications around models. <a href="https://routetoai.org/interview">Route to AI interview prep</a></p>
+
+<h2 id="connect-components-to-systems-and-data">Connect components to systems and data</h2>
+
+<p><strong>Design Gurus’ Grokking the AI System Design Interview</strong> is a structured course covering classic ML products, LLM serving, RAG, and agentic systems. Its case studies and interview walkthroughs focus on taking a vague request through requirements, architecture, and tradeoffs. <a href="https://www.designgurus.io/course/grokking-the-ai-system-design-interview">Course overview</a></p>
+
+<p><strong>Interview Query</strong> brings together data science interview questions, learning paths, take-home exercises, company guides, and mock-interview options. <strong>StrataScratch</strong> covers analytical, algorithmic, ML, statistics, visualization, and conceptual questions, alongside interview simulations and project work. Both broaden preparation beyond isolated model components. <a href="https://www.interviewquery.com/">Interview Query</a> · <a href="https://www.stratascratch.com/">StrataScratch</a></p>
+
+<p><strong>DataLemur</strong> is especially relevant when SQL and analytics are the immediate gap. Its public problem list includes retention, rolling averages, growth, and aggregation questions. Those exercises complement ML coding by developing the ability to extract and summarize the data a model or evaluation depends on. <a href="https://datalemur.com/">DataLemur</a></p>
+
+<h2 id="build-a-focused-preparation-loop">Build a focused preparation loop</h2>
+
+<p>Choose one main platform and one complement based on your next task:</p>
+
+<ul>
+  <li><strong>ML engineering:</strong> start with Deep-ML, TensorTonic, or ML Coding; add LeetML or Context Window Prep for explanation practice.</li>
+  <li><strong>GPU and ML systems:</strong> start with LeetGPU or Tensara; use GPU MODE resources and workloads to deepen performance analysis.</li>
+  <li><strong>AI application engineering:</strong> pair implementation practice with LLM Dojo or Route to AI, then work through a system-design case.</li>
+  <li><strong>Data science:</strong> start with Interview Query or StrataScratch, and add DataLemur for focused SQL practice.</li>
+</ul>
+
+<p>For each topic, write an implementation, explain its assumptions, and change one condition to see what breaks. An attention exercise can lead to questions about masking and memory use. A retrieval exercise can lead to questions about ranking quality, latency, and evaluation. A working answer becomes more valuable when you can explain the conditions under which it remains useful.</p>
+
+<p>Check free exercises and current plan details before subscribing. Choose a collection whose feedback helps you correct a specific weakness, and revisit difficult problems until you can solve and explain them independently.</p>
+
+<p><em>Website features reviewed November 10, 2026. Catalogs, subscription access, and GPU availability can change.</em></p>
+
+        
+      </section>
+
+      <footer class="page__meta">
+        
+        
+  
+
+
+  
+  
+  
+
+  <p class="page__taxonomy">
+    <strong><i class="fas fa-fw fa-tags" aria-hidden="true"></i> Tags: </strong>
+    <span itemprop="keywords">
+    
+      
+      
+      <a href="/tags/#artificial-intelligence" class="page__taxonomy-item" rel="tag">Artificial Intelligence</a><span class="sep">, </span>
+    
+      
+      
+      <a href="/tags/#interview-preparation" class="page__taxonomy-item" rel="tag">Interview Preparation</a><span class="sep">, </span>
+    
+      
+      
+      <a href="/tags/#learning-resources" class="page__taxonomy-item" rel="tag">Learning Resources</a><span class="sep">, </span>
+    
+      
+      
+      <a href="/tags/#machine-learning" class="page__taxonomy-item" rel="tag">Machine Learning</a>
+    
+    </span>
+  </p>
+
+
+
+
+  
+
+
+  
+  
+  
+
+  <p class="page__taxonomy">
+    <strong><i class="fas fa-fw fa-folder-open" aria-hidden="true"></i> Categories: </strong>
+    <span itemprop="keywords">
+    
+      
+      
+      <a href="/categories/#computer-science" class="page__taxonomy-item" rel="tag">Computer Science</a><span class="sep">, </span>
+    
+      
+      
+      <a href="/categories/#machine-learning" class="page__taxonomy-item" rel="tag">Machine Learning</a>
+    
+    </span>
+  </p>
+
+
+        
+  <p class="page__date"><strong><i class="fas fa-fw fa-calendar-alt" aria-hidden="true"></i> Updated:</strong> <time datetime="2026-11-10T00:00:00-05:00">November 10, 2026</time></p>
+
+
+      </footer>
+
+      <section class="page__share">
+  
+
+  <a href="https://twitter.com/intent/tweet?text=A+Guide+to+Hands-On+AI+and+ML+Interview+Preparation%20%2Fmachine%2520learning%2Fcomputer%2520science%2Fai-interview-preparation-websites%2F" class="btn btn--twitter" onclick="window.open(this.href, 'window', 'left=20,top=20,width=500,height=500,toolbar=1,resizable=0'); return false;" title="Share on Twitter"><i class="fa-brands fa-x-twitter" aria-hidden="true"></i><span> X</span></a>
+
+
+  <a href="https://www.facebook.com/sharer/sharer.php?u=%2Fmachine%2520learning%2Fcomputer%2520science%2Fai-interview-preparation-websites%2F" class="btn btn--facebook" aria-label="Share on Facebook" onclick="window.open(this.href, 'window', 'left=20,top=20,width=500,height=500,toolbar=1,resizable=0'); return false;" title="Share on Facebook">
+    <i class="fab fa-fw fa-facebook" aria-hidden="true"></i><span> Facebook</span>
+  </a>
+  
+  <a href="https://www.linkedin.com/shareArticle?mini=true&url=%2Fmachine%2520learning%2Fcomputer%2520science%2Fai-interview-preparation-websites%2F" class="btn btn--linkedin" onclick="window.open(this.href, 'window', 'left=20,top=20,width=500,height=500,toolbar=1,resizable=0'); return false;" title="Share on LinkedIn"><i class="fab fa-fw fa-linkedin" aria-hidden="true"></i><span> LinkedIn</span></a>
+
+  <a href="https://bsky.app/intent/compose?text=A+Guide+to+Hands-On+AI+and+ML+Interview+Preparation%20%2Fmachine%2520learning%2Fcomputer%2520science%2Fai-interview-preparation-websites%2F" class="btn btn--bluesky" onclick="window.open(this.href, 'window', 'left=20,top=20,width=500,height=500,toolbar=1,resizable=0'); return false;" title="Share on Bluesky">
+    <i class="fab fa-fw fa-bluesky" aria-hidden="true"></i><span> Bluesky</span>
+  </a>
+</section>
+
+
+      
+  <nav class="pagination">
+    
+      <a href="/machine%20learning/computer%20science/redesigning-language-models-during-training/" class="pagination--pager" title="Redesigning Language Models During Training
+">Previous</a>
+    
+    
+      <a href="/machine%20learning/computer%20science/do-language-models-need-sleep/" class="pagination--pager" title="Do Language Models Need Sleep?
+">Next</a>
+    
+  </nav>
+
+    </div>
+
+    
+  </article>
+
+  
+  
+    <div class="page__related">
+      <h4 class="page__related-title">You May Also Enjoy</h4>
+      <div class="grid__wrapper">
+        
+          
+
+
+
+<div class="grid__item">
+  <article class="archive__item" itemscope itemtype="https://schema.org/CreativeWork">
+    
+    <h2 class="archive__item-title no_toc" itemprop="headline">
+      
+        <a href="/machine%20learning/computer%20science/do-language-models-need-sleep/" rel="permalink">Do Language Models Need Sleep?
+</a>
+      
+    </h2>
+    
+
+
+  <p class="page__meta">
+    
+
+    
+
+    
+      
+      
+
+      <span class="page__meta-readtime">
+        <i class="far fa-clock" aria-hidden="true"></i>
+        
+          5 minute read
+        
+      </span>
+    
+  </p>
+
+
+    <p class="archive__item-excerpt" itemprop="description">Four papers connect the difficulty of staying adaptable with test-time training, offline memory processing, and learning across different timescales.
+</p>
+  </article>
+</div>
+
+        
+          
+
+
+
+<div class="grid__item">
+  <article class="archive__item" itemscope itemtype="https://schema.org/CreativeWork">
+    
+    <h2 class="archive__item-title no_toc" itemprop="headline">
+      
+        <a href="/machine%20learning/computer%20science/redesigning-language-models-during-training/" rel="permalink">Redesigning Language Models During Training
+</a>
+      
+    </h2>
+    
+
+
+  <p class="page__meta">
+    
+
+    
+
+    
+      
+      
+
+      <span class="page__meta-readtime">
+        <i class="far fa-clock" aria-hidden="true"></i>
+        
+          3 minute read
+        
+      </span>
+    
+  </p>
+
+
+    <p class="archive__item-excerpt" itemprop="description">DoubleAI gives a coding agent a role in training. The agent diagnoses failures, proposes new computations, and tests where they fit inside a model.
+</p>
+  </article>
+</div>
+
+        
+          
+
+
+
+<div class="grid__item">
+  <article class="archive__item" itemscope itemtype="https://schema.org/CreativeWork">
+    
+    <h2 class="archive__item-title no_toc" itemprop="headline">
+      
+        <a href="/machine%20learning/computer%20science/how-ai-agent-teams-learn-to-coordinate/" rel="permalink">How AI Agent Teams Learn to Coordinate
+</a>
+      
+    </h2>
+    
+
+
+  <p class="page__meta">
+    
+
+    
+
+    
+      
+      
+
+      <span class="page__meta-readtime">
+        <i class="far fa-clock" aria-hidden="true"></i>
+        
+          3 minute read
+        
+      </span>
+    
+  </p>
+
+
+    <p class="archive__item-excerpt" itemprop="description">General Reasoning trains agents with a shared reward and a deadline. The results show when parallel work can save time and why coordination still has to earn...</p>
+  </article>
+</div>
+
+        
+          
+
+
+
+<div class="grid__item">
+  <article class="archive__item" itemscope itemtype="https://schema.org/CreativeWork">
+    
+    <h2 class="archive__item-title no_toc" itemprop="headline">
+      
+        <a href="/machine%20learning/computer%20science/gpu-unlock-tensor-throughput/" rel="permalink">How gpu-unlock Changes GeForce Tensor Throughput
+</a>
+      
+    </h2>
+    
+
+
+  <p class="page__meta">
+    
+
+    
+
+    
+      
+      
+
+      <span class="page__meta-readtime">
+        <i class="far fa-clock" aria-hidden="true"></i>
+        
+          3 minute read
+        
+      </span>
+    
+  </p>
+
+
+    <p class="archive__item-excerpt" itemprop="description">gpu-unlock lifts a limit on certain kinds of math on selected GeForce cards. It does this during Linux startup, before the NVIDIA driver takes over.
+</p>
+  </article>
+</div>
+
+        
+      </div>
+    </div>
+  
+  
+</div>
+
+    </div>
+
+    
+      <div class="search-content">
+        <div class="search-content__inner-wrap"><form class="search-content__form" onkeydown="return event.key != 'Enter';">
+    <label class="sr-only" for="search">
+      Enter your search term...
+    </label>
+    <input type="search" id="search" class="search-input" tabindex="-1" placeholder="Enter your search term..." />
+  </form>
+  <div id="results" class="results"></div></div>
+
+      </div>
+    
+
+    <div id="footer" class="page__footer">
+      <footer>
+        <!-- start custom footer snippets -->
+
+<!-- end custom footer snippets -->
+        <!-- <div class="page__footer-follow">
+  <ul class="social-icons">
+    
+
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+
+    <li><a href="/feed.xml"><i class="fas fa-fw fa-rss-square" aria-hidden="true"></i> Feed</a></li>
+  </ul>
+</div>
+ -->
+<div class="page__footer-copyright">&copy; <!-- 2026  -->Zhehan Shi<!-- . Powered by <a href="https://jekyllrb.com" rel="nofollow">Jekyll</a> &amp; --></div>
+
+      </footer>
+    </div>
+
+    
+  <script src="/assets/js/main.min.js"></script>
+
+
+
+
+<script src="/assets/js/lunr/lunr.min.js"></script>
+<script src="/assets/js/lunr/lunr-store.js"></script>
+<script src="/assets/js/lunr/lunr-en.js"></script>
+
+
+
+
+
+
+<script type="text/javascript" async
+  src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-MML-AM_CHTML">
+</script>
+
+<script type="text/x-mathjax-config">
+   MathJax.Hub.Config({
+     extensions: ["tex2jax.js"],
+     jax: ["input/TeX", "output/HTML-CSS"],
+     tex2jax: {
+       inlineMath: [ ['$','$'], ["\\(","\\)"] ],
+       displayMath: [ ['$$','$$'], ["\\[","\\]"] ],
+       processEscapes: true
+     },
+     "HTML-CSS": { availableFonts: ["TeX"] }
+   });
+</script>
+
+  </body>
+</html>

@@ -1,0 +1,681 @@
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    <meta charset="utf-8">
+
+<!-- begin _includes/seo.html --><title>Do Language Models Need Sleep? - Zhehan Shi</title>
+<meta name="description" content="Four papers connect the difficulty of staying adaptable with test-time training, offline memory processing, and learning across different timescales.">
+
+
+  <meta name="author" content="Zhehan Shi">
+  
+  <meta property="article:author" content="Zhehan Shi">
+  
+
+
+<meta property="og:type" content="article">
+<meta property="og:locale" content="en_US">
+<meta property="og:site_name" content="Zhehan Shi">
+<meta property="og:title" content="Do Language Models Need Sleep?">
+<meta property="og:url" content="/machine%20learning/computer%20science/do-language-models-need-sleep/">
+
+
+  <meta property="og:description" content="Four papers connect the difficulty of staying adaptable with test-time training, offline memory processing, and learning across different timescales.">
+
+
+
+
+
+
+
+  <meta property="article:published_time" content="2026-11-10T00:00:00-05:00">
+
+
+
+
+
+  
+
+  
+
+
+<link rel="canonical" href="/machine%20learning/computer%20science/do-language-models-need-sleep/">
+
+
+
+
+<script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    
+      "@type": "Person",
+      "name": "Zhehan Shi",
+      "url": "/"
+    
+  }
+</script>
+
+
+
+
+
+
+<!-- end _includes/seo.html -->
+
+
+<link href="/feed.xml" type="application/atom+xml" rel="alternate" title="Zhehan Shi Feed">
+
+<!-- https://t.co/dKP3o1e -->
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<script>
+  document.documentElement.className = document.documentElement.className.replace(/\bno-js\b/g, '') + ' js ';
+</script>
+
+<!-- For all browsers -->
+<link rel="stylesheet" href="/assets/css/main.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6/css/all.min.css">
+
+<!--[if IE]>
+  <style>
+    /* old IE unsupported flexbox fixes */
+    .greedy-nav .site-title {
+      padding-right: 3em;
+    }
+    .greedy-nav button {
+      position: absolute;
+      top: 0;
+      right: 0;
+      height: 100%;
+    }
+  </style>
+<![endif]-->
+
+
+
+    <!-- start custom head snippets -->
+
+<!-- insert favicons. use https://realfavicongenerator.net/ -->
+<link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+<link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
+<link rel="manifest" href="/site.webmanifest">
+<!-- end custom head snippets -->
+
+  </head>
+
+  <body class="layout--single wide">
+    <nav class="skip-links">
+  <h2 class="screen-reader-text">Skip links</h2>
+  <ul>
+    <li><a href="#site-nav" class="screen-reader-shortcut">Skip to primary navigation</a></li>
+    <li><a href="#main" class="screen-reader-shortcut">Skip to content</a></li>
+    <li><a href="#footer" class="screen-reader-shortcut">Skip to footer</a></li>
+  </ul>
+</nav>
+
+    <!--[if lt IE 9]>
+<div class="notice--danger align-center" style="margin: 0;">You are using an <strong>outdated</strong> browser. Please <a href="https://browsehappy.com/">upgrade your browser</a> to improve your experience.</div>
+<![endif]-->
+
+    
+
+<div class="masthead">
+  <div class="masthead__inner-wrap">
+    <div class="masthead__menu">
+      <nav id="site-nav" class="greedy-nav">
+        
+        <a class="site-title" href="/">
+          Zhehan Shi
+          
+        </a>
+        <ul class="visible-links"><li class="masthead__menu-item">
+              <a href="/">Home</a>
+            </li><li class="masthead__menu-item">
+              <a href="/projects/">Projects</a>
+            </li><li class="masthead__menu-item">
+              <a href="/posts/">Posts</a>
+            </li><li class="masthead__menu-item">
+              <a href="/about/">About</a>
+            </li></ul>
+        
+        <button class="search__toggle" type="button">
+          <span class="visually-hidden">Toggle search</span>
+          <svg class="icon" width="16" height="16" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 15.99 16">
+            <path d="M15.5,13.12L13.19,10.8a1.69,1.69,0,0,0-1.28-.55l-0.06-.06A6.5,6.5,0,0,0,5.77,0,6.5,6.5,0,0,0,2.46,11.59a6.47,6.47,0,0,0,7.74.26l0.05,0.05a1.65,1.65,0,0,0,.5,1.24l2.38,2.38A1.68,1.68,0,0,0,15.5,13.12ZM6.4,2A4.41,4.41,0,1,1,2,6.4,4.43,4.43,0,0,1,6.4,2Z" transform="translate(-.01)"></path>
+          </svg>
+        </button>
+        
+        <button class="greedy-nav__toggle hidden" type="button">
+          <span class="visually-hidden">Toggle menu</span>
+          <div class="navicon"></div>
+        </button>
+        <ul class="hidden-links hidden"></ul>
+      </nav>
+    </div>
+  </div>
+</div>
+
+
+    <div class="initial-content">
+      
+
+
+
+<div id="main" role="main">
+  
+
+
+  <article class="page" itemscope itemtype="https://schema.org/CreativeWork">
+    <meta itemprop="headline" content="Do Language Models Need Sleep?">
+    <meta itemprop="description" content="Four papers connect the difficulty of staying adaptable with test-time training, offline memory processing, and learning across different timescales.">
+    <meta itemprop="datePublished" content="2026-11-10T00:00:00-05:00">
+    
+
+    <div class="page__inner-wrap">
+      
+        <header>
+          <h1 id="page-title" class="page__title" itemprop="headline">Do Language Models Need Sleep?
+</h1>
+          
+
+
+  <p class="page__meta">
+    
+
+    
+
+    
+      
+      
+
+      <span class="page__meta-readtime">
+        <i class="far fa-clock" aria-hidden="true"></i>
+        
+          5 minute read
+        
+      </span>
+    
+  </p>
+
+
+        </header>
+      
+
+      <section class="page__content" itemprop="text">
+        
+        <p>Imagine a coding assistant that spends a week working in an unfamiliar repository. It encounters naming conventions, architectural decisions, and the reasons earlier fixes failed. How should that experience change what it can do next week?</p>
+
+<p>Saving the conversations makes the experience retrievable. Learning from it raises further questions: what should become internal memory, when should that memory be updated, and can the model remain able to learn after many such updates?</p>
+
+<p>In <a href="https://www.youtube.com/watch?v=rAxTxqIHh9E"><em>The Next Scaling Axis of LLM Is… Sleeping?</em></a>, bycloud connects four papers around these questions. Their shared theme is the organization of learning over time. The two “sleep” papers propose different mechanisms, so understanding where each stores information is essential.</p>
+
+<!--more-->
+
+<div style="position:relative;width:100%;aspect-ratio:16/9;margin:1.5em 0;">
+  <iframe src="https://www.youtube-nocookie.com/embed/rAxTxqIHh9E" title="bycloud: The Next Scaling Axis of LLM Is… Sleeping?" loading="lazy" style="position:absolute;width:100%;height:100%;border:0;" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen=""></iframe>
+</div>
+
+<h2 id="the-problem-retaining-the-ability-to-learn">The problem: retaining the ability to learn</h2>
+
+<p><strong>Can Scale Save Us From Plasticity Loss in Large Language Models?</strong>, by Hernandez-Garcia, Figliolia, and Millidge, studies <em>plasticity</em>: how efficiently a trained network can learn something new. Catastrophic forgetting concerns damage to older capabilities; plasticity loss concerns deterioration in acquiring new ones.</p>
+
+<p>The authors train GPT-style models on repeated cycles of eight languages. Periodically, they copy a checkpoint and train it on held-out Vietnamese with a fixed budget. These probe updates are discarded. Adaptation initially improves, then deteriorates with extended pretraining.</p>
+
+<p>Across models with 5M–314M non-embedding parameters, larger models delay this deterioration. The estimated onset scales sublinearly with size, suggesting diminishing returns from scale alone. Smaller-model experiments also find the effect under a stationary language mixture.</p>
+
+<p>The measured result concerns these architectures and training conditions. Predictions about billion-parameter models are extrapolations, rather than direct measurements in this study. <a href="https://arxiv.org/html/2606.24752v1#S4">Paper, Sections IV–V</a></p>
+
+<h2 id="one-response-make-existing-weights-writable">One response: make existing weights writable</h2>
+
+<p><strong>In-Place Test-Time Training</strong>, by Feng and colleagues, repurposes the final projection in a transformer’s feed-forward block as adaptable <em>fast weights</em>. Other projections remain stable during the inference-time updates, and attention remains part of the architecture.</p>
+
+<p>Updates happen in chunks. Their objective is aligned with predicting the next token, so the memory is trained to store information useful for future prediction. The contribution is a way to introduce adaptive memory within an existing transformer architecture.</p>
+
+<p>“Drop-in” describes architectural compatibility. The Qwen3-4B experiment still uses approximately 35 billion tokens of continued training for both the baseline and the enhanced model. At 128k context length, RULER accuracy rises from 74.8% to 77.0%.</p>
+
+<p>This supports improved use of long context under the tested protocol. It does not establish indefinite retention across independent sessions or resolution of plasticity loss. <a href="https://arxiv.org/html/2604.06169v1#S3">Paper, Sections 3–4 and Table 1</a></p>
+
+<h2 id="sleep-as-computation-before-forgetting-the-context">Sleep as computation before forgetting the context</h2>
+
+<p><strong>Do Language Models Need Sleep? Offline Recurrence for Improved Online Inference</strong>, by Lee, McLeish, Goldstein, and Fanti, asks how much computation is needed to form useful memory.</p>
+
+<p>The model combines attention with state-space memory blocks. Before clearing an attention window, it performs repeated passes that refine its fast-weight state. That state survives cache eviction and supports later single-pass prediction.</p>
+
+<p>Experiments cover cellular automata, graph traversal, and GSM-Infinite mathematical reasoning. Additional consolidation passes improve performance, especially on harder reasoning problems. The intervention changes the computation devoted to organizing memory, while preserving the prediction-phase constraint.</p>
+
+<p>The extra computation still costs time: preserving wake-time prediction latency does not remove the sleep interval. And persistence beyond cache eviction is different from permanent acquisition in the pretrained parameters. Resetting the fast-weight state removes this memory. <a href="https://arxiv.org/html/2605.26099v3#S5">Paper, Sections 5–7</a></p>
+
+<h2 id="sleep-as-transfer-into-slower-memory">Sleep as transfer into slower memory</h2>
+
+<p><strong>Language Models Need Sleep: Learning to Self-Modify and Consolidate Memories</strong>, by Behrouz, Hashemi, Javanmard, and Mirrokni, proposes a hierarchy of memories updated at different frequencies.</p>
+
+<p>Its <em>knowledge seeding</em> stage activates additional capacity and distills knowledge from faster modules into slower ones. In its sparse implementation, new low-rank experts provide space for transferred knowledge. Its <em>dreaming</em> stage learns to generate synthetic training experiences, rewarding those that improve downstream performance after adaptation.</p>
+
+<p>In the 200-passage SQuAD experiment, the four-level system reports 46.2% accuracy when answering without the passages in context, compared with 36.2% when dreaming is removed. This provides evidence for the role of synthetic rehearsal within that setup.</p>
+
+<p>Here, sleep involves parameter expansion, knowledge transfer, and training. It is a different operation from Lee and colleagues’ recurrent refinement of fast-weight state. <a href="https://arxiv.org/html/2606.03979v2#S3">Paper, Sections 3–4 and Table 3</a></p>
+
+<h2 id="four-contributions-different-questions">Four contributions, different questions</h2>
+
+<table>
+  <thead>
+    <tr>
+      <th>Paper</th>
+      <th>Central question</th>
+      <th>Contribution</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Can Scale Save Us…</td>
+      <td>Does extended training preserve adaptability?</td>
+      <td>A multilingual probe and empirical scaling analysis</td>
+    </tr>
+    <tr>
+      <td>In-Place TTT</td>
+      <td>Where can inference-time adaptation live?</td>
+      <td>Writable feed-forward projections</td>
+    </tr>
+    <tr>
+      <td>Offline Recurrence</td>
+      <td>Can more memory-formation compute help?</td>
+      <td>Repeated consolidation before cache eviction</td>
+    </tr>
+    <tr>
+      <td>Self-Modification and Consolidation</td>
+      <td>How can recent learning move into slower storage?</td>
+      <td>Knowledge seeding and synthetic rehearsal</td>
+    </tr>
+  </tbody>
+</table>
+
+<p>These form a conceptual roadmap rather than a single experimentally validated pipeline. The first diagnoses a learning failure; the others investigate mechanisms for adaptation and consolidation. Combining them would require its own evidence.</p>
+
+<p>For the coding assistant, the design questions become concrete. Which details need exact retrieval? Which recurring patterns should influence its internal behavior? How long should that influence persist? How much processing can happen between requests?</p>
+
+<p>A useful synthesis is that memory needs both a location and an update schedule. A system can preserve a transcript yet fail to use it well. It can adapt successfully today yet become harder to teach later. Evaluating a continuing learner therefore requires tracking the acquisition of new skills, retention of earlier ones, and the computation spent achieving both.</p>
+
+<h2 id="appendix-technical-distinctions-behind-the-headlines">Appendix: technical distinctions behind the headlines</h2>
+
+<ul>
+  <li><strong>Plasticity measurement.</strong> The Vietnamese probe uses the area under a validation-loss curve over adaptation steps. Lower area indicates faster adaptation. The fitted onset is an empirical relationship, rather than a universal lifetime for an LLM. <a href="https://arxiv.org/html/2606.24752v1#S4">Sections IV–V</a></li>
+  <li><strong>In-Place TTT’s update target.</strong> The analysis uses a next-token embedding target; the implementation learns a local combination of future-token embeddings. Updates affect later chunks, and fast weights reset at document boundaries. <a href="https://arxiv.org/html/2604.06169v1#S3.SS1">Sections 3.1–3.2</a></li>
+  <li><strong>Offline recurrence’s learning rule.</strong> During deployment, memory changes through local state updates. Training backpropagates through the recurrent consolidation process to learn how those updates support later predictions. <a href="https://arxiv.org/html/2605.26099v3#S5">Section 5</a></li>
+  <li><strong>The ARC headline.</strong> The self-modification paper’s 80% result uses eight filtered held-out tasks and reports the fraction of independently applied dreams yielding a correct answer. It is not a full-benchmark ARC accuracy. <a href="https://arxiv.org/html/2606.03979v2#A2.SS3">Appendix B.3</a></li>
+</ul>
+
+<h2 id="sources">Sources</h2>
+
+<ul>
+  <li>bycloud, <a href="https://www.youtube.com/watch?v=rAxTxqIHh9E">The Next Scaling Axis of LLM Is… Sleeping?</a>, video and transcript.</li>
+  <li>Hernandez-Garcia, Figliolia, and Millidge, <a href="https://arxiv.org/abs/2606.24752">Can Scale Save Us From Plasticity Loss in Large Language Models?</a>, v1.</li>
+  <li>Feng et al., <a href="https://arxiv.org/abs/2604.06169">In-Place Test-Time Training</a>, v1.</li>
+  <li>Lee et al., <a href="https://arxiv.org/abs/2605.26099">Do Language Models Need Sleep? Offline Recurrence for Improved Online Inference</a>, v3.</li>
+  <li>Behrouz et al., <a href="https://arxiv.org/abs/2606.03979">Language Models Need Sleep: Learning to Self-Modify and Consolidate Memories</a>, v2.</li>
+</ul>
+
+        
+      </section>
+
+      <footer class="page__meta">
+        
+        
+  
+
+
+  
+  
+  
+
+  <p class="page__taxonomy">
+    <strong><i class="fas fa-fw fa-tags" aria-hidden="true"></i> Tags: </strong>
+    <span itemprop="keywords">
+    
+      
+      
+      <a href="/tags/#artificial-intelligence" class="page__taxonomy-item" rel="tag">Artificial Intelligence</a><span class="sep">, </span>
+    
+      
+      
+      <a href="/tags/#continual-learning" class="page__taxonomy-item" rel="tag">Continual Learning</a><span class="sep">, </span>
+    
+      
+      
+      <a href="/tags/#large-language-models" class="page__taxonomy-item" rel="tag">Large Language Models</a><span class="sep">, </span>
+    
+      
+      
+      <a href="/tags/#memory-consolidation" class="page__taxonomy-item" rel="tag">Memory Consolidation</a><span class="sep">, </span>
+    
+      
+      
+      <a href="/tags/#test-time-training" class="page__taxonomy-item" rel="tag">Test-Time Training</a>
+    
+    </span>
+  </p>
+
+
+
+
+  
+
+
+  
+  
+  
+
+  <p class="page__taxonomy">
+    <strong><i class="fas fa-fw fa-folder-open" aria-hidden="true"></i> Categories: </strong>
+    <span itemprop="keywords">
+    
+      
+      
+      <a href="/categories/#computer-science" class="page__taxonomy-item" rel="tag">Computer Science</a><span class="sep">, </span>
+    
+      
+      
+      <a href="/categories/#machine-learning" class="page__taxonomy-item" rel="tag">Machine Learning</a>
+    
+    </span>
+  </p>
+
+
+        
+  <p class="page__date"><strong><i class="fas fa-fw fa-calendar-alt" aria-hidden="true"></i> Updated:</strong> <time datetime="2026-11-10T00:00:00-05:00">November 10, 2026</time></p>
+
+
+      </footer>
+
+      <section class="page__share">
+  
+
+  <a href="https://twitter.com/intent/tweet?text=Do+Language+Models+Need+Sleep%3F%20%2Fmachine%2520learning%2Fcomputer%2520science%2Fdo-language-models-need-sleep%2F" class="btn btn--twitter" onclick="window.open(this.href, 'window', 'left=20,top=20,width=500,height=500,toolbar=1,resizable=0'); return false;" title="Share on Twitter"><i class="fa-brands fa-x-twitter" aria-hidden="true"></i><span> X</span></a>
+
+
+  <a href="https://www.facebook.com/sharer/sharer.php?u=%2Fmachine%2520learning%2Fcomputer%2520science%2Fdo-language-models-need-sleep%2F" class="btn btn--facebook" aria-label="Share on Facebook" onclick="window.open(this.href, 'window', 'left=20,top=20,width=500,height=500,toolbar=1,resizable=0'); return false;" title="Share on Facebook">
+    <i class="fab fa-fw fa-facebook" aria-hidden="true"></i><span> Facebook</span>
+  </a>
+  
+  <a href="https://www.linkedin.com/shareArticle?mini=true&url=%2Fmachine%2520learning%2Fcomputer%2520science%2Fdo-language-models-need-sleep%2F" class="btn btn--linkedin" onclick="window.open(this.href, 'window', 'left=20,top=20,width=500,height=500,toolbar=1,resizable=0'); return false;" title="Share on LinkedIn"><i class="fab fa-fw fa-linkedin" aria-hidden="true"></i><span> LinkedIn</span></a>
+
+  <a href="https://bsky.app/intent/compose?text=Do+Language+Models+Need+Sleep%3F%20%2Fmachine%2520learning%2Fcomputer%2520science%2Fdo-language-models-need-sleep%2F" class="btn btn--bluesky" onclick="window.open(this.href, 'window', 'left=20,top=20,width=500,height=500,toolbar=1,resizable=0'); return false;" title="Share on Bluesky">
+    <i class="fab fa-fw fa-bluesky" aria-hidden="true"></i><span> Bluesky</span>
+  </a>
+</section>
+
+
+      
+  <nav class="pagination">
+    
+      <a href="/machine%20learning/computer%20science/ai-interview-preparation-websites/" class="pagination--pager" title="A Guide to Hands-On AI and ML Interview Preparation
+">Previous</a>
+    
+    
+      <a href="#" class="pagination--pager disabled">Next</a>
+    
+  </nav>
+
+    </div>
+
+    
+  </article>
+
+  
+  
+    <div class="page__related">
+      <h4 class="page__related-title">You May Also Enjoy</h4>
+      <div class="grid__wrapper">
+        
+          
+
+
+
+<div class="grid__item">
+  <article class="archive__item" itemscope itemtype="https://schema.org/CreativeWork">
+    
+    <h2 class="archive__item-title no_toc" itemprop="headline">
+      
+        <a href="/machine%20learning/computer%20science/ai-interview-preparation-websites/" rel="permalink">A Guide to Hands-On AI and ML Interview Preparation
+</a>
+      
+    </h2>
+    
+
+
+  <p class="page__meta">
+    
+
+    
+
+    
+      
+      
+
+      <span class="page__meta-readtime">
+        <i class="far fa-clock" aria-hidden="true"></i>
+        
+          6 minute read
+        
+      </span>
+    
+  </p>
+
+
+    <p class="archive__item-excerpt" itemprop="description">Where to practice ML implementations, CUDA and Triton kernels, LLM reasoning, system design, and data interviews—and how to choose a focused study path.
+</p>
+  </article>
+</div>
+
+        
+          
+
+
+
+<div class="grid__item">
+  <article class="archive__item" itemscope itemtype="https://schema.org/CreativeWork">
+    
+    <h2 class="archive__item-title no_toc" itemprop="headline">
+      
+        <a href="/machine%20learning/computer%20science/redesigning-language-models-during-training/" rel="permalink">Redesigning Language Models During Training
+</a>
+      
+    </h2>
+    
+
+
+  <p class="page__meta">
+    
+
+    
+
+    
+      
+      
+
+      <span class="page__meta-readtime">
+        <i class="far fa-clock" aria-hidden="true"></i>
+        
+          3 minute read
+        
+      </span>
+    
+  </p>
+
+
+    <p class="archive__item-excerpt" itemprop="description">DoubleAI gives a coding agent a role in training. The agent diagnoses failures, proposes new computations, and tests where they fit inside a model.
+</p>
+  </article>
+</div>
+
+        
+          
+
+
+
+<div class="grid__item">
+  <article class="archive__item" itemscope itemtype="https://schema.org/CreativeWork">
+    
+    <h2 class="archive__item-title no_toc" itemprop="headline">
+      
+        <a href="/machine%20learning/computer%20science/how-ai-agent-teams-learn-to-coordinate/" rel="permalink">How AI Agent Teams Learn to Coordinate
+</a>
+      
+    </h2>
+    
+
+
+  <p class="page__meta">
+    
+
+    
+
+    
+      
+      
+
+      <span class="page__meta-readtime">
+        <i class="far fa-clock" aria-hidden="true"></i>
+        
+          3 minute read
+        
+      </span>
+    
+  </p>
+
+
+    <p class="archive__item-excerpt" itemprop="description">General Reasoning trains agents with a shared reward and a deadline. The results show when parallel work can save time and why coordination still has to earn...</p>
+  </article>
+</div>
+
+        
+          
+
+
+
+<div class="grid__item">
+  <article class="archive__item" itemscope itemtype="https://schema.org/CreativeWork">
+    
+    <h2 class="archive__item-title no_toc" itemprop="headline">
+      
+        <a href="/machine%20learning/computer%20science/gpu-unlock-tensor-throughput/" rel="permalink">How gpu-unlock Changes GeForce Tensor Throughput
+</a>
+      
+    </h2>
+    
+
+
+  <p class="page__meta">
+    
+
+    
+
+    
+      
+      
+
+      <span class="page__meta-readtime">
+        <i class="far fa-clock" aria-hidden="true"></i>
+        
+          3 minute read
+        
+      </span>
+    
+  </p>
+
+
+    <p class="archive__item-excerpt" itemprop="description">gpu-unlock lifts a limit on certain kinds of math on selected GeForce cards. It does this during Linux startup, before the NVIDIA driver takes over.
+</p>
+  </article>
+</div>
+
+        
+      </div>
+    </div>
+  
+  
+</div>
+
+    </div>
+
+    
+      <div class="search-content">
+        <div class="search-content__inner-wrap"><form class="search-content__form" onkeydown="return event.key != 'Enter';">
+    <label class="sr-only" for="search">
+      Enter your search term...
+    </label>
+    <input type="search" id="search" class="search-input" tabindex="-1" placeholder="Enter your search term..." />
+  </form>
+  <div id="results" class="results"></div></div>
+
+      </div>
+    
+
+    <div id="footer" class="page__footer">
+      <footer>
+        <!-- start custom footer snippets -->
+
+<!-- end custom footer snippets -->
+        <!-- <div class="page__footer-follow">
+  <ul class="social-icons">
+    
+
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+
+    <li><a href="/feed.xml"><i class="fas fa-fw fa-rss-square" aria-hidden="true"></i> Feed</a></li>
+  </ul>
+</div>
+ -->
+<div class="page__footer-copyright">&copy; <!-- 2026  -->Zhehan Shi<!-- . Powered by <a href="https://jekyllrb.com" rel="nofollow">Jekyll</a> &amp; --></div>
+
+      </footer>
+    </div>
+
+    
+  <script src="/assets/js/main.min.js"></script>
+
+
+
+
+<script src="/assets/js/lunr/lunr.min.js"></script>
+<script src="/assets/js/lunr/lunr-store.js"></script>
+<script src="/assets/js/lunr/lunr-en.js"></script>
+
+
+
+
+
+
+<script type="text/javascript" async
+  src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-MML-AM_CHTML">
+</script>
+
+<script type="text/x-mathjax-config">
+   MathJax.Hub.Config({
+     extensions: ["tex2jax.js"],
+     jax: ["input/TeX", "output/HTML-CSS"],
+     tex2jax: {
+       inlineMath: [ ['$','$'], ["\\(","\\)"] ],
+       displayMath: [ ['$$','$$'], ["\\[","\\]"] ],
+       processEscapes: true
+     },
+     "HTML-CSS": { availableFonts: ["TeX"] }
+   });
+</script>
+
+  </body>
+</html>

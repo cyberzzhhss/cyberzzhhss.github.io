@@ -113,6 +113,18 @@ var store = [{
         "url": "/machine%20learning/computer%20science/redesigning-language-models-during-training/",
         "teaser": null
       },{
+        "title": "A Guide to Hands-On AI and ML Interview Preparation",
+        "excerpt":"Recognizing an optimizer’s name, implementing its update rule, and explaining why a training run diverged are different skills. AI preparation gets more useful when the exercise matches the skill you need to build. Deep-ML, TensorTonic, LeetGPU, and Context Window Prep provide four useful starting points: implement algorithms, assemble model components,...","categories": ["Machine Learning","Computer Science"],
+        "tags": ["Artificial Intelligence","Machine Learning","Interview Preparation","Learning Resources"],
+        "url": "/machine%20learning/computer%20science/ai-interview-preparation-websites/",
+        "teaser": null
+      },{
+        "title": "Do Language Models Need Sleep?",
+        "excerpt":"Imagine a coding assistant that spends a week working in an unfamiliar repository. It encounters naming conventions, architectural decisions, and the reasons earlier fixes failed. How should that experience change what it can do next week? Saving the conversations makes the experience retrievable. Learning from it raises further questions: what...","categories": ["Machine Learning","Computer Science"],
+        "tags": ["Artificial Intelligence","Continual Learning","Test-Time Training","Memory Consolidation","Large Language Models"],
+        "url": "/machine%20learning/computer%20science/do-language-models-need-sleep/",
+        "teaser": null
+      },{
         "title": "Question Answering (SQuAD)",
         "excerpt":"This task is about extractive question answering, where questions are posed about a document and answers are identified as spans of text within the document itself. Conducted data pre-processing pipeline such as that included tokenization of questions and context, handling long contexts using stride, and mapping correct answer positions into...","categories": [],
         "tags": [],

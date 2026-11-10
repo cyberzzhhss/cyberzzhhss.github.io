@@ -1,0 +1,111 @@
+I"2(<p>Imagine a coding assistant that spends a week working in an unfamiliar repository. It encounters naming conventions, architectural decisions, and the reasons earlier fixes failed. How should that experience change what it can do next week?</p>
+
+<p>Saving the conversations makes the experience retrievable. Learning from it raises further questions: what should become internal memory, when should that memory be updated, and can the model remain able to learn after many such updates?</p>
+
+<p>In <a href="https://www.youtube.com/watch?v=rAxTxqIHh9E"><em>The Next Scaling Axis of LLM Is… Sleeping?</em></a>, bycloud connects four papers around these questions. Their shared theme is the organization of learning over time. The two “sleep” papers propose different mechanisms, so understanding where each stores information is essential.</p>
+
+<!--more-->
+
+<div style="position:relative;width:100%;aspect-ratio:16/9;margin:1.5em 0;">
+  <iframe src="https://www.youtube-nocookie.com/embed/rAxTxqIHh9E" title="bycloud: The Next Scaling Axis of LLM Is… Sleeping?" loading="lazy" style="position:absolute;width:100%;height:100%;border:0;" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen=""></iframe>
+</div>
+
+<h2 id="the-problem-retaining-the-ability-to-learn">The problem: retaining the ability to learn</h2>
+
+<p><strong>Can Scale Save Us From Plasticity Loss in Large Language Models?</strong>, by Hernandez-Garcia, Figliolia, and Millidge, studies <em>plasticity</em>: how efficiently a trained network can learn something new. Catastrophic forgetting concerns damage to older capabilities; plasticity loss concerns deterioration in acquiring new ones.</p>
+
+<p>The authors train GPT-style models on repeated cycles of eight languages. Periodically, they copy a checkpoint and train it on held-out Vietnamese with a fixed budget. These probe updates are discarded. Adaptation initially improves, then deteriorates with extended pretraining.</p>
+
+<p>Across models with 5M–314M non-embedding parameters, larger models delay this deterioration. The estimated onset scales sublinearly with size, suggesting diminishing returns from scale alone. Smaller-model experiments also find the effect under a stationary language mixture.</p>
+
+<p>The measured result concerns these architectures and training conditions. Predictions about billion-parameter models are extrapolations, rather than direct measurements in this study. <a href="https://arxiv.org/html/2606.24752v1#S4">Paper, Sections IV–V</a></p>
+
+<h2 id="one-response-make-existing-weights-writable">One response: make existing weights writable</h2>
+
+<p><strong>In-Place Test-Time Training</strong>, by Feng and colleagues, repurposes the final projection in a transformer’s feed-forward block as adaptable <em>fast weights</em>. Other projections remain stable during the inference-time updates, and attention remains part of the architecture.</p>
+
+<p>Updates happen in chunks. Their objective is aligned with predicting the next token, so the memory is trained to store information useful for future prediction. The contribution is a way to introduce adaptive memory within an existing transformer architecture.</p>
+
+<p>“Drop-in” describes architectural compatibility. The Qwen3-4B experiment still uses approximately 35 billion tokens of continued training for both the baseline and the enhanced model. At 128k context length, RULER accuracy rises from 74.8% to 77.0%.</p>
+
+<p>This supports improved use of long context under the tested protocol. It does not establish indefinite retention across independent sessions or resolution of plasticity loss. <a href="https://arxiv.org/html/2604.06169v1#S3">Paper, Sections 3–4 and Table 1</a></p>
+
+<h2 id="sleep-as-computation-before-forgetting-the-context">Sleep as computation before forgetting the context</h2>
+
+<p><strong>Do Language Models Need Sleep? Offline Recurrence for Improved Online Inference</strong>, by Lee, McLeish, Goldstein, and Fanti, asks how much computation is needed to form useful memory.</p>
+
+<p>The model combines attention with state-space memory blocks. Before clearing an attention window, it performs repeated passes that refine its fast-weight state. That state survives cache eviction and supports later single-pass prediction.</p>
+
+<p>Experiments cover cellular automata, graph traversal, and GSM-Infinite mathematical reasoning. Additional consolidation passes improve performance, especially on harder reasoning problems. The intervention changes the computation devoted to organizing memory, while preserving the prediction-phase constraint.</p>
+
+<p>The extra computation still costs time: preserving wake-time prediction latency does not remove the sleep interval. And persistence beyond cache eviction is different from permanent acquisition in the pretrained parameters. Resetting the fast-weight state removes this memory. <a href="https://arxiv.org/html/2605.26099v3#S5">Paper, Sections 5–7</a></p>
+
+<h2 id="sleep-as-transfer-into-slower-memory">Sleep as transfer into slower memory</h2>
+
+<p><strong>Language Models Need Sleep: Learning to Self-Modify and Consolidate Memories</strong>, by Behrouz, Hashemi, Javanmard, and Mirrokni, proposes a hierarchy of memories updated at different frequencies.</p>
+
+<p>Its <em>knowledge seeding</em> stage activates additional capacity and distills knowledge from faster modules into slower ones. In its sparse implementation, new low-rank experts provide space for transferred knowledge. Its <em>dreaming</em> stage learns to generate synthetic training experiences, rewarding those that improve downstream performance after adaptation.</p>
+
+<p>In the 200-passage SQuAD experiment, the four-level system reports 46.2% accuracy when answering without the passages in context, compared with 36.2% when dreaming is removed. This provides evidence for the role of synthetic rehearsal within that setup.</p>
+
+<p>Here, sleep involves parameter expansion, knowledge transfer, and training. It is a different operation from Lee and colleagues’ recurrent refinement of fast-weight state. <a href="https://arxiv.org/html/2606.03979v2#S3">Paper, Sections 3–4 and Table 3</a></p>
+
+<h2 id="four-contributions-different-questions">Four contributions, different questions</h2>
+
+<table>
+  <thead>
+    <tr>
+      <th>Paper</th>
+      <th>Central question</th>
+      <th>Contribution</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Can Scale Save Us…</td>
+      <td>Does extended training preserve adaptability?</td>
+      <td>A multilingual probe and empirical scaling analysis</td>
+    </tr>
+    <tr>
+      <td>In-Place TTT</td>
+      <td>Where can inference-time adaptation live?</td>
+      <td>Writable feed-forward projections</td>
+    </tr>
+    <tr>
+      <td>Offline Recurrence</td>
+      <td>Can more memory-formation compute help?</td>
+      <td>Repeated consolidation before cache eviction</td>
+    </tr>
+    <tr>
+      <td>Self-Modification and Consolidation</td>
+      <td>How can recent learning move into slower storage?</td>
+      <td>Knowledge seeding and synthetic rehearsal</td>
+    </tr>
+  </tbody>
+</table>
+
+<p>These form a conceptual roadmap rather than a single experimentally validated pipeline. The first diagnoses a learning failure; the others investigate mechanisms for adaptation and consolidation. Combining them would require its own evidence.</p>
+
+<p>For the coding assistant, the design questions become concrete. Which details need exact retrieval? Which recurring patterns should influence its internal behavior? How long should that influence persist? How much processing can happen between requests?</p>
+
+<p>A useful synthesis is that memory needs both a location and an update schedule. A system can preserve a transcript yet fail to use it well. It can adapt successfully today yet become harder to teach later. Evaluating a continuing learner therefore requires tracking the acquisition of new skills, retention of earlier ones, and the computation spent achieving both.</p>
+
+<h2 id="appendix-technical-distinctions-behind-the-headlines">Appendix: technical distinctions behind the headlines</h2>
+
+<ul>
+  <li><strong>Plasticity measurement.</strong> The Vietnamese probe uses the area under a validation-loss curve over adaptation steps. Lower area indicates faster adaptation. The fitted onset is an empirical relationship, rather than a universal lifetime for an LLM. <a href="https://arxiv.org/html/2606.24752v1#S4">Sections IV–V</a></li>
+  <li><strong>In-Place TTT’s update target.</strong> The analysis uses a next-token embedding target; the implementation learns a local combination of future-token embeddings. Updates affect later chunks, and fast weights reset at document boundaries. <a href="https://arxiv.org/html/2604.06169v1#S3.SS1">Sections 3.1–3.2</a></li>
+  <li><strong>Offline recurrence’s learning rule.</strong> During deployment, memory changes through local state updates. Training backpropagates through the recurrent consolidation process to learn how those updates support later predictions. <a href="https://arxiv.org/html/2605.26099v3#S5">Section 5</a></li>
+  <li><strong>The ARC headline.</strong> The self-modification paper’s 80% result uses eight filtered held-out tasks and reports the fraction of independently applied dreams yielding a correct answer. It is not a full-benchmark ARC accuracy. <a href="https://arxiv.org/html/2606.03979v2#A2.SS3">Appendix B.3</a></li>
+</ul>
+
+<h2 id="sources">Sources</h2>
+
+<ul>
+  <li>bycloud, <a href="https://www.youtube.com/watch?v=rAxTxqIHh9E">The Next Scaling Axis of LLM Is… Sleeping?</a>, video and transcript.</li>
+  <li>Hernandez-Garcia, Figliolia, and Millidge, <a href="https://arxiv.org/abs/2606.24752">Can Scale Save Us From Plasticity Loss in Large Language Models?</a>, v1.</li>
+  <li>Feng et al., <a href="https://arxiv.org/abs/2604.06169">In-Place Test-Time Training</a>, v1.</li>
+  <li>Lee et al., <a href="https://arxiv.org/abs/2605.26099">Do Language Models Need Sleep? Offline Recurrence for Improved Online Inference</a>, v3.</li>
+  <li>Behrouz et al., <a href="https://arxiv.org/abs/2606.03979">Language Models Need Sleep: Learning to Self-Modify and Consolidate Memories</a>, v2.</li>
+</ul>
+:ET
