@@ -1,0 +1,79 @@
+I"� <p>Imagine asking an AI agent to fix three unrelated bugs in a repository. One agent can investigate them in sequence. Three agents can investigate them at the same time, then hand their patches to a reviewer. That works if the bugs are independent. If two agents change the same module, they may spend more time reconciling their edits than they saved by starting together.</p>
+
+<p>General Reasoning’s Avalon-M1 experiments ask whether agents can learn when that trade is worth making. The training setup gives a team a common score, a way to communicate, and a deadline. The goal is to turn parallel model calls into useful progress before time runs out. <a href="https://www.gr.inc/blog/how-to-train-a-swarm">General Reasoning’s How to Train a Swarm</a></p>
+
+<!--more-->
+
+<h2 id="what-a-deadline-teaches">What a deadline teaches</h2>
+
+<p>The recipe is called <strong>reinforcement learning from collective rewards</strong>, or RLCR. Avalon-M1 uses instances of one model policy in different roles. A lead agent can recruit specialists, and agents can use direct messages, shared channels, and a workspace. During training, the group’s outcome supplies one learning signal for the agents’ actions. A successful run can reinforce a useful handoff even though the training system gives that message no separate grade. <a href="https://www.gr.inc/avalonm1.pdf#page=9">Avalon-M1 technical report, methodology</a></p>
+
+<p>The deadline changes which strategies can earn a higher score. If one team passes seven tests before the clock expires and another passes four, the first has more progress to show. If both pass seven, the time cap alone gives them the same score, even if one finished much earlier. The deadline rewards speed when it makes a difference to the work completed in the time available. <a href="https://www.gr.inc/blog/how-to-train-a-swarm">How to Train a Swarm, time limits</a></p>
+
+<p>This only works if progress can be measured when a run stops. A codebase with a test suite supplies a natural checkpoint. A task scored only after a complete answer may give two unfinished runs the same zero even if one is close to a solution. General Reasoning uses environments that can score partial progress and lengthens the time limit during training, giving teams room to learn strategies whose initial coordination costs take time to recover. <a href="https://www.gr.inc/avalonm1.pdf#page=13">Avalon-M1 technical report, training horizons</a></p>
+
+<figure>
+  <iframe src="/assets/html/swarm-figures.html#deadline" title="General Reasoning’s interactive deadline schedule" width="100%" height="610" loading="lazy" sandbox="allow-scripts" style="border: 1px solid #d1d5db; border-radius: 8px;"></iframe>
+  <figcaption>Move the training-step slider to see how the time limit and example rollouts change. <a href="https://www.gr.inc/blog/how-to-train-a-swarm#making-parallel-work-pay">View the original figure in How to Train a Swarm</a>.</figcaption>
+</figure>
+
+<h2 id="when-parallel-work-pays">When parallel work pays</h2>
+
+<p>Return to the three bugs. Say each fix takes 18 minutes of work and reviewing the combined patch takes 10. Assume each agent works at the same rate and the reviewer starts once all three fixes are ready. These are illustrative numbers.</p>
+
+<table>
+  <thead>
+    <tr>
+      <th>Arrangement</th>
+      <th style="text-align: right">Total work</th>
+      <th style="text-align: right">Elapsed time</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>One agent fixes all three in sequence, then reviews</td>
+      <td style="text-align: right">64 minutes</td>
+      <td style="text-align: right">64 minutes</td>
+    </tr>
+    <tr>
+      <td>Three independent fixes run together, followed by review</td>
+      <td style="text-align: right">64 minutes</td>
+      <td style="text-align: right">28 minutes</td>
+    </tr>
+    <tr>
+      <td>One fix depends on another, while the third runs independently</td>
+      <td style="text-align: right">64 minutes</td>
+      <td style="text-align: right">46 minutes</td>
+    </tr>
+  </tbody>
+</table>
+
+<figure>
+  <img src="/assets/images/agent-swarm/parallel-work-timeline.svg" alt="Bug-fixing timelines show completion in 64 minutes sequentially, 28 minutes with independent fixes, and 46 minutes with a dependency." loading="lazy" />
+  <figcaption>Overlapping work shortens the schedule. A dependency between fixes A and B delays the review by 18 minutes.</figcaption>
+</figure>
+
+<p>The work adds up to the same amount in all three cases. The elapsed time follows the longest chain of dependencies. A message can shorten that chain if it lets someone start sooner or avoids duplicated work. A status meeting that delays every patch can lengthen it. In this example, parallel execution creates the opportunity for a speedup. Coordination determines how much of it survives.</p>
+
+<h2 id="what-avalon-m1-measured">What Avalon-M1 measured</h2>
+
+<p>The November 2 article reports that a single agent took roughly four times as long as a team when given a comparable token budget. The technical report matches <strong>output tokens</strong> in this comparison. It reconstructs latency from each run’s event log, using estimated generation times, measured tool durations, and message dependencies. The estimate describes how much work could overlap under that timing model. Actual elapsed time on a serving system also depends on queueing and batching. <a href="https://www.gr.inc/blog/how-to-train-a-swarm">General Reasoning’s results</a> · <a href="https://www.gr.inc/avalonm1.pdf#page=59">Avalon-M1 technical report, latency methodology</a></p>
+
+<p>More output tokens can explain some of the quality gains seen against a shorter single-agent run. When the report gives a single agent the team’s output-token budget, the two approaches trade places across benchmarks. That comparison helps isolate the question that interests me most. If both can get to a similar answer, how long does each take to get there? <a href="https://www.gr.inc/avalonm1.pdf#page=20">Avalon-M1 technical report, token-level comparison</a></p>
+
+<figure>
+  <img src="/assets/images/agent-swarm/avalon-benchmark-scores.svg" alt="Selected Avalon-M1-Mini scores show the team leading on FrontierScience, nearly tying the token-matched single agent on IMO-ProofBench-Advanced, and trailing it on SWE-Bench Pro V2 Hard." loading="lazy" />
+  <figcaption>Three selected benchmarks illustrate how the score comparison changes by task. The middle bar uses the team’s output-token budget. <a href="https://www.gr.inc/avalonm1.pdf#page=20">Source: Avalon-M1 technical report, Table 3</a>.</figcaption>
+</figure>
+
+<figure>
+  <iframe src="/assets/html/swarm-figures.html#edgebench" title="General Reasoning’s interactive EdgeBench reward chart" width="100%" height="470" loading="lazy" sandbox="allow-scripts" style="border: 1px solid #d1d5db; border-radius: 8px;"></iframe>
+  <figcaption>The EdgeBench chart compares a single agent with a team of up to eight hires using derived latency. <a href="https://www.gr.inc/blog/how-to-train-a-swarm#signs-of-life">View the original figure in How to Train a Swarm</a>.</figcaption>
+</figure>
+
+<h2 id="the-team-score-leaves-a-credit-problem">The team score leaves a credit problem</h2>
+
+<p>A shared score is easy to specify, but it leaves the trainer with limited information about what helped. Suppose a specialist identifies the real cause of a bug, another repeats the same search, and a third reviews the eventual patch. A single high score covers all three. Over many runs, the policy can pick up useful patterns, but the signal gets harder to interpret as teams grow and decisions stretch over more hours. The article leaves open whether coordination learned in small teams transfers to much larger ones. <a href="https://www.gr.inc/blog/how-to-train-a-swarm">General Reasoning’s open problems</a></p>
+
+<p>In the bug-fixing example, the comparison I would want is one agent with more time to think, several independent agents whose results are selected at the end, and a communicating team. Give each the same time limit, then record test progress, output tokens, and how often agents block each other. Independent work can be enough when the fixes barely interact. The communicating team earns its place when one agent’s discovery changes what another can do before the deadline.</p>
+:ET

@@ -1,0 +1,601 @@
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    <meta charset="utf-8">
+
+<!-- begin _includes/seo.html --><title>How AI Agent Teams Learn to Coordinate - Zhehan Shi</title>
+<meta name="description" content="General Reasoning trains agents with a shared reward and a deadline. The results show when parallel work can save time and why coordination still has to earn its cost.">
+
+
+  <meta name="author" content="Zhehan Shi">
+  
+  <meta property="article:author" content="Zhehan Shi">
+  
+
+
+<meta property="og:type" content="article">
+<meta property="og:locale" content="en_US">
+<meta property="og:site_name" content="Zhehan Shi">
+<meta property="og:title" content="How AI Agent Teams Learn to Coordinate">
+<meta property="og:url" content="/machine%20learning/computer%20science/how-ai-agent-teams-learn-to-coordinate/">
+
+
+  <meta property="og:description" content="General Reasoning trains agents with a shared reward and a deadline. The results show when parallel work can save time and why coordination still has to earn its cost.">
+
+
+
+
+
+
+
+  <meta property="article:published_time" content="2026-11-09T00:00:00-05:00">
+
+
+
+
+
+  
+
+  
+
+
+<link rel="canonical" href="/machine%20learning/computer%20science/how-ai-agent-teams-learn-to-coordinate/">
+
+
+
+
+<script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    
+      "@type": "Person",
+      "name": "Zhehan Shi",
+      "url": "/"
+    
+  }
+</script>
+
+
+
+
+
+
+<!-- end _includes/seo.html -->
+
+
+<link href="/feed.xml" type="application/atom+xml" rel="alternate" title="Zhehan Shi Feed">
+
+<!-- https://t.co/dKP3o1e -->
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<script>
+  document.documentElement.className = document.documentElement.className.replace(/\bno-js\b/g, '') + ' js ';
+</script>
+
+<!-- For all browsers -->
+<link rel="stylesheet" href="/assets/css/main.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6/css/all.min.css">
+
+<!--[if IE]>
+  <style>
+    /* old IE unsupported flexbox fixes */
+    .greedy-nav .site-title {
+      padding-right: 3em;
+    }
+    .greedy-nav button {
+      position: absolute;
+      top: 0;
+      right: 0;
+      height: 100%;
+    }
+  </style>
+<![endif]-->
+
+
+
+    <!-- start custom head snippets -->
+
+<!-- insert favicons. use https://realfavicongenerator.net/ -->
+<link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+<link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
+<link rel="manifest" href="/site.webmanifest">
+<!-- end custom head snippets -->
+
+  </head>
+
+  <body class="layout--single wide">
+    <nav class="skip-links">
+  <h2 class="screen-reader-text">Skip links</h2>
+  <ul>
+    <li><a href="#site-nav" class="screen-reader-shortcut">Skip to primary navigation</a></li>
+    <li><a href="#main" class="screen-reader-shortcut">Skip to content</a></li>
+    <li><a href="#footer" class="screen-reader-shortcut">Skip to footer</a></li>
+  </ul>
+</nav>
+
+    <!--[if lt IE 9]>
+<div class="notice--danger align-center" style="margin: 0;">You are using an <strong>outdated</strong> browser. Please <a href="https://browsehappy.com/">upgrade your browser</a> to improve your experience.</div>
+<![endif]-->
+
+    
+
+<div class="masthead">
+  <div class="masthead__inner-wrap">
+    <div class="masthead__menu">
+      <nav id="site-nav" class="greedy-nav">
+        
+        <a class="site-title" href="/">
+          Zhehan Shi
+          
+        </a>
+        <ul class="visible-links"><li class="masthead__menu-item">
+              <a href="/">Home</a>
+            </li><li class="masthead__menu-item">
+              <a href="/projects/">Projects</a>
+            </li><li class="masthead__menu-item">
+              <a href="/posts/">Posts</a>
+            </li><li class="masthead__menu-item">
+              <a href="/about/">About</a>
+            </li></ul>
+        
+        <button class="search__toggle" type="button">
+          <span class="visually-hidden">Toggle search</span>
+          <svg class="icon" width="16" height="16" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 15.99 16">
+            <path d="M15.5,13.12L13.19,10.8a1.69,1.69,0,0,0-1.28-.55l-0.06-.06A6.5,6.5,0,0,0,5.77,0,6.5,6.5,0,0,0,2.46,11.59a6.47,6.47,0,0,0,7.74.26l0.05,0.05a1.65,1.65,0,0,0,.5,1.24l2.38,2.38A1.68,1.68,0,0,0,15.5,13.12ZM6.4,2A4.41,4.41,0,1,1,2,6.4,4.43,4.43,0,0,1,6.4,2Z" transform="translate(-.01)"></path>
+          </svg>
+        </button>
+        
+        <button class="greedy-nav__toggle hidden" type="button">
+          <span class="visually-hidden">Toggle menu</span>
+          <div class="navicon"></div>
+        </button>
+        <ul class="hidden-links hidden"></ul>
+      </nav>
+    </div>
+  </div>
+</div>
+
+
+    <div class="initial-content">
+      
+
+
+
+<div id="main" role="main">
+  
+
+
+  <article class="page" itemscope itemtype="https://schema.org/CreativeWork">
+    <meta itemprop="headline" content="How AI Agent Teams Learn to Coordinate">
+    <meta itemprop="description" content="General Reasoning trains agents with a shared reward and a deadline. The results show when parallel work can save time and why coordination still has to earn its cost.">
+    <meta itemprop="datePublished" content="2026-11-09T00:00:00-05:00">
+    
+
+    <div class="page__inner-wrap">
+      
+        <header>
+          <h1 id="page-title" class="page__title" itemprop="headline">How AI Agent Teams Learn to Coordinate
+</h1>
+          
+
+  <p class="page__meta">
+    
+
+    
+
+    
+      
+      
+
+      <span class="page__meta-readtime">
+        <i class="far fa-clock" aria-hidden="true"></i>
+        
+          3 minute read
+        
+      </span>
+    
+  </p>
+
+
+        </header>
+      
+
+      <section class="page__content" itemprop="text">
+        
+        <p>Imagine asking an AI agent to fix three bugs. One agent could tackle them in order, or three agents could work at once. The team can finish sooner if the fixes are independent. If two agents edit the same part of the code, they may spend much of that saved time sorting out their changes.</p>
+
+<p>General Reasoning’s Avalon-M1 experiments ask whether AI agents can learn when it pays to work together. The researchers give the agents a shared score, tools for communicating, and a deadline. <a href="https://www.gr.inc/blog/how-to-train-a-swarm">General Reasoning’s How to Train a Swarm</a></p>
+
+<!--more-->
+
+<h2 id="what-a-deadline-teaches">What a deadline teaches</h2>
+
+<p>In Avalon-M1, the lead agent and its specialists are instances of the same model. The lead can recruit specialists, and the team can share work through messages, channels, and a common workspace. During training, the outcome of the whole run shapes how the model learns from each agent’s actions. General Reasoning calls this <strong>reinforcement learning from collective rewards</strong>, or RLCR. <a href="https://www.gr.inc/avalonm1.pdf#page=9">Avalon-M1 technical report, methodology</a></p>
+
+<p>Say one team passes seven tests before time runs out and another passes four. The first team earns a higher score. If both pass seven, they tie even if one finished earlier. The deadline makes speed matter when it helps the team complete more work. <a href="https://www.gr.inc/blog/how-to-train-a-swarm#making-parallel-work-pay">How to Train a Swarm, time limits</a></p>
+
+<p>To make that incentive work, the task needs a way to score partial progress. A test suite can do this because it can check the code whenever a run stops. General Reasoning increases the time limit over training so teams can practice on tasks long enough for the work of dividing and coordinating a job to pay off. <a href="https://www.gr.inc/avalonm1.pdf#page=13">Avalon-M1 technical report, training horizons</a></p>
+
+<figure>
+  <iframe src="/assets/html/swarm-figures.html#deadline" title="General Reasoning’s interactive deadline schedule" width="100%" height="610" loading="lazy" sandbox="allow-scripts" style="border: 1px solid #d1d5db; border-radius: 8px;"></iframe>
+  <figcaption>Move the slider to see how much time a team gets at different stages of training and how that affects the example runs. <a href="https://www.gr.inc/blog/how-to-train-a-swarm#making-parallel-work-pay">View the original figure in How to Train a Swarm</a>.</figcaption>
+</figure>
+
+<h2 id="when-parallel-work-pays">When parallel work pays</h2>
+
+<p>Suppose each of the three fixes takes 18 minutes and the review takes 10. One agent working through them in order finishes in <strong>64 minutes</strong>. Three agents working independently can finish in <strong>28 minutes</strong>, including the review. If one fix depends on another, the review has to wait for both, and the schedule grows to <strong>46 minutes</strong>.</p>
+
+<p>These are illustrative times. Each schedule contains the same amount of work. What changes is how much can happen at once. A quick message can save time if it warns someone away from duplicate work. A handoff can also add a delay if the next agent has to wait for an answer.</p>
+
+<h2 id="what-avalon-m1-measured">What Avalon-M1 measured</h2>
+
+<p>General Reasoning reports that, when the solo agent generated roughly as many output tokens as the team, its estimated run time was about four times as long. The researchers built that estimate from event logs, including the time to generate tokens, the time tools took to run, and which agents needed to wait for one another’s messages. Actual elapsed time also depends on how the serving system queues and batches requests. <a href="https://www.gr.inc/blog/how-to-train-a-swarm#signs-of-life">General Reasoning’s results</a> · <a href="https://www.gr.inc/avalonm1.pdf#page=59">Avalon-M1 technical report, latency methodology</a></p>
+
+<p>Giving a solo agent the team’s token budget closes much of the score gap on some tasks. On others, the team or the solo agent still comes out ahead. The EdgeBench figure shows a different comparison. It tracks how scores change over the course of a run, including the team’s slower start. <a href="https://www.gr.inc/avalonm1.pdf#page=20">Avalon-M1 technical report, token comparison</a></p>
+
+<figure>
+  <iframe src="/assets/html/swarm-figures.html#edgebench" title="General Reasoning’s interactive EdgeBench reward chart" width="100%" height="470" loading="lazy" sandbox="allow-scripts" style="border: 1px solid #d1d5db; border-radius: 8px;"></iframe>
+  <figcaption>On EdgeBench, the solo agent makes progress sooner. The team pulls ahead later. The time axis uses the researchers’ estimates. <a href="https://www.gr.inc/blog/how-to-train-a-swarm#signs-of-life">View the original figure in How to Train a Swarm</a>.</figcaption>
+</figure>
+
+<h2 id="what-a-team-score-can-miss">What a team score can miss</h2>
+
+<p>Suppose one agent finds the cause of a bug, another repeats the same search, and a third catches an error in the patch. All three share the score. It tells the training system how the team did overall, with little detail about which actions made the difference. That becomes harder to untangle as teams grow and runs get longer. <a href="https://www.gr.inc/blog/how-to-train-a-swarm#outstanding-problems">General Reasoning’s open problems</a></p>
+
+<p>For a bug-fixing task, I’d compare a solo agent with more time to think, several independent attempts, and a team that can talk. I’d give them the same deadline and track tests passed, tokens used, and time spent waiting for handoffs. The most interesting cases are the ones where one agent learns something that lets another finish sooner.</p>
+
+        
+      </section>
+
+      <footer class="page__meta">
+        
+        
+  
+
+
+  
+  
+  
+
+  <p class="page__taxonomy">
+    <strong><i class="fas fa-fw fa-tags" aria-hidden="true"></i> Tags: </strong>
+    <span itemprop="keywords">
+    
+      
+      
+      <a href="/tags/#artificial-intelligence" class="page__taxonomy-item" rel="tag">Artificial Intelligence</a><span class="sep">, </span>
+    
+      
+      
+      <a href="/tags/#multi-agent-systems" class="page__taxonomy-item" rel="tag">Multi-Agent Systems</a><span class="sep">, </span>
+    
+      
+      
+      <a href="/tags/#reinforcement-learning" class="page__taxonomy-item" rel="tag">Reinforcement Learning</a>
+    
+    </span>
+  </p>
+
+
+
+
+  
+
+
+  
+  
+  
+
+  <p class="page__taxonomy">
+    <strong><i class="fas fa-fw fa-folder-open" aria-hidden="true"></i> Categories: </strong>
+    <span itemprop="keywords">
+    
+      
+      
+      <a href="/categories/#computer-science" class="page__taxonomy-item" rel="tag">Computer Science</a><span class="sep">, </span>
+    
+      
+      
+      <a href="/categories/#machine-learning" class="page__taxonomy-item" rel="tag">Machine Learning</a>
+    
+    </span>
+  </p>
+
+
+        
+  <p class="page__date"><strong><i class="fas fa-fw fa-calendar-alt" aria-hidden="true"></i> Updated:</strong> <time datetime="2026-11-09T00:00:00-05:00">November 9, 2026</time></p>
+
+
+      </footer>
+
+      <section class="page__share">
+  
+
+  <a href="https://twitter.com/intent/tweet?text=How+AI+Agent+Teams+Learn+to+Coordinate%20%2Fmachine%2520learning%2Fcomputer%2520science%2Fhow-ai-agent-teams-learn-to-coordinate%2F" class="btn btn--twitter" onclick="window.open(this.href, 'window', 'left=20,top=20,width=500,height=500,toolbar=1,resizable=0'); return false;" title="Share on Twitter"><i class="fa-brands fa-x-twitter" aria-hidden="true"></i><span> X</span></a>
+
+
+  <a href="https://www.facebook.com/sharer/sharer.php?u=%2Fmachine%2520learning%2Fcomputer%2520science%2Fhow-ai-agent-teams-learn-to-coordinate%2F" class="btn btn--facebook" aria-label="Share on Facebook" onclick="window.open(this.href, 'window', 'left=20,top=20,width=500,height=500,toolbar=1,resizable=0'); return false;" title="Share on Facebook">
+    <i class="fab fa-fw fa-facebook" aria-hidden="true"></i><span> Facebook</span>
+  </a>
+  
+  <a href="https://www.linkedin.com/shareArticle?mini=true&url=%2Fmachine%2520learning%2Fcomputer%2520science%2Fhow-ai-agent-teams-learn-to-coordinate%2F" class="btn btn--linkedin" onclick="window.open(this.href, 'window', 'left=20,top=20,width=500,height=500,toolbar=1,resizable=0'); return false;" title="Share on LinkedIn"><i class="fab fa-fw fa-linkedin" aria-hidden="true"></i><span> LinkedIn</span></a>
+
+  <a href="https://bsky.app/intent/compose?text=How+AI+Agent+Teams+Learn+to+Coordinate%20%2Fmachine%2520learning%2Fcomputer%2520science%2Fhow-ai-agent-teams-learn-to-coordinate%2F" class="btn btn--bluesky" onclick="window.open(this.href, 'window', 'left=20,top=20,width=500,height=500,toolbar=1,resizable=0'); return false;" title="Share on Bluesky">
+    <i class="fab fa-fw fa-bluesky" aria-hidden="true"></i><span> Bluesky</span>
+  </a>
+</section>
+
+
+      
+  <nav class="pagination">
+    
+      <a href="/machine%20learning/computer%20science/gpu-unlock-tensor-throughput/" class="pagination--pager" title="How gpu-unlock Changes GeForce Tensor Throughput
+">Previous</a>
+    
+    
+      <a href="/machine%20learning/computer%20science/redesigning-language-models-during-training/" class="pagination--pager" title="Redesigning Language Models During Training
+">Next</a>
+    
+  </nav>
+
+    </div>
+
+    
+  </article>
+
+  
+  
+    <div class="page__related">
+      <h4 class="page__related-title">You May Also Enjoy</h4>
+      <div class="grid__wrapper">
+        
+          
+
+
+
+<div class="grid__item">
+  <article class="archive__item" itemscope itemtype="https://schema.org/CreativeWork">
+    
+    <h2 class="archive__item-title no_toc" itemprop="headline">
+      
+        <a href="/machine%20learning/computer%20science/redesigning-language-models-during-training/" rel="permalink">Redesigning Language Models During Training
+</a>
+      
+    </h2>
+    
+
+  <p class="page__meta">
+    
+
+    
+
+    
+      
+      
+
+      <span class="page__meta-readtime">
+        <i class="far fa-clock" aria-hidden="true"></i>
+        
+          3 minute read
+        
+      </span>
+    
+  </p>
+
+
+    <p class="archive__item-excerpt" itemprop="description">DoubleAI gives a coding agent a role in training. The agent diagnoses failures, proposes new computations, and tests where they fit inside a model.
+</p>
+  </article>
+</div>
+
+        
+          
+
+
+
+<div class="grid__item">
+  <article class="archive__item" itemscope itemtype="https://schema.org/CreativeWork">
+    
+    <h2 class="archive__item-title no_toc" itemprop="headline">
+      
+        <a href="/machine%20learning/computer%20science/gpu-unlock-tensor-throughput/" rel="permalink">How gpu-unlock Changes GeForce Tensor Throughput
+</a>
+      
+    </h2>
+    
+
+  <p class="page__meta">
+    
+
+    
+
+    
+      
+      
+
+      <span class="page__meta-readtime">
+        <i class="far fa-clock" aria-hidden="true"></i>
+        
+          3 minute read
+        
+      </span>
+    
+  </p>
+
+
+    <p class="archive__item-excerpt" itemprop="description">gpu-unlock lifts a limit on certain kinds of math on selected GeForce cards. It does this during Linux startup, before the NVIDIA driver takes over.
+</p>
+  </article>
+</div>
+
+        
+          
+
+
+
+<div class="grid__item">
+  <article class="archive__item" itemscope itemtype="https://schema.org/CreativeWork">
+    
+    <h2 class="archive__item-title no_toc" itemprop="headline">
+      
+        <a href="/machine%20learning/computer%20science/cadence-learning-from-live-experience/" rel="permalink">How Cadence Learns From Live Experience
+</a>
+      
+    </h2>
+    
+
+  <p class="page__meta">
+    
+
+    
+
+    
+      
+      
+
+      <span class="page__meta-readtime">
+        <i class="far fa-clock" aria-hidden="true"></i>
+        
+          5 minute read
+        
+      </span>
+    
+  </p>
+
+
+    <p class="archive__item-excerpt" itemprop="description">Cadence is a Python research library that uses a recurrent network to choose actions, remember outcomes, and adapt as an environment changes.
+</p>
+  </article>
+</div>
+
+        
+          
+
+
+
+<div class="grid__item">
+  <article class="archive__item" itemscope itemtype="https://schema.org/CreativeWork">
+    
+    <h2 class="archive__item-title no_toc" itemprop="headline">
+      
+        <a href="/machine%20learning/computer%20science/computation-inside-language-models/" rel="permalink">Computation Inside Language Models
+</a>
+      
+    </h2>
+    
+
+  <p class="page__meta">
+    
+
+    
+
+    
+      
+      
+
+      <span class="page__meta-readtime">
+        <i class="far fa-clock" aria-hidden="true"></i>
+        
+          5 minute read
+        
+      </span>
+    
+  </p>
+
+
+    <p class="archive__item-excerpt" itemprop="description">Four projects explore what changes when a transformer can execute programs, train smaller models, and load new capabilities from memory.
+</p>
+  </article>
+</div>
+
+        
+      </div>
+    </div>
+  
+  
+</div>
+
+    </div>
+
+    
+      <div class="search-content">
+        <div class="search-content__inner-wrap"><form class="search-content__form" onkeydown="return event.key != 'Enter';">
+    <label class="sr-only" for="search">
+      Enter your search term...
+    </label>
+    <input type="search" id="search" class="search-input" tabindex="-1" placeholder="Enter your search term..." />
+  </form>
+  <div id="results" class="results"></div></div>
+
+      </div>
+    
+
+    <div id="footer" class="page__footer">
+      <footer>
+        <!-- start custom footer snippets -->
+
+<!-- end custom footer snippets -->
+        <!-- <div class="page__footer-follow">
+  <ul class="social-icons">
+    
+
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+
+    <li><a href="/feed.xml"><i class="fas fa-fw fa-rss-square" aria-hidden="true"></i> Feed</a></li>
+  </ul>
+</div>
+ -->
+<div class="page__footer-copyright">&copy; <!-- 2026  -->Zhehan Shi<!-- . Powered by <a href="https://jekyllrb.com" rel="nofollow">Jekyll</a> &amp; --></div>
+
+      </footer>
+    </div>
+
+    
+  <script src="/assets/js/main.min.js"></script>
+
+
+
+
+<script src="/assets/js/lunr/lunr.min.js"></script>
+<script src="/assets/js/lunr/lunr-store.js"></script>
+<script src="/assets/js/lunr/lunr-en.js"></script>
+
+
+
+
+
+
+<script type="text/javascript" async
+  src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-MML-AM_CHTML">
+</script>
+
+<script type="text/x-mathjax-config">
+   MathJax.Hub.Config({
+     extensions: ["tex2jax.js"],
+     jax: ["input/TeX", "output/HTML-CSS"],
+     tex2jax: {
+       inlineMath: [ ['$','$'], ["\\(","\\)"] ],
+       displayMath: [ ['$$','$$'], ["\\[","\\]"] ],
+       processEscapes: true
+     },
+     "HTML-CSS": { availableFonts: ["TeX"] }
+   });
+</script>
+
+  </body>
+</html>

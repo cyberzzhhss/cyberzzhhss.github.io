@@ -101,6 +101,12 @@ var store = [{
         "url": "/machine%20learning/computer%20science/gpu-unlock-tensor-throughput/",
         "teaser": null
       },{
+        "title": "How AI Agent Teams Learn to Coordinate",
+        "excerpt":"Imagine asking an AI agent to fix three bugs. One agent could tackle them in order, or three agents could work at once. The team can finish sooner if the fixes are independent. If two agents edit the same part of the code, they may spend much of that saved...","categories": ["Machine Learning","Computer Science"],
+        "tags": ["Artificial Intelligence","Multi-Agent Systems","Reinforcement Learning"],
+        "url": "/machine%20learning/computer%20science/how-ai-agent-teams-learn-to-coordinate/",
+        "teaser": null
+      },{
         "title": "Redesigning Language Models During Training",
         "excerpt":"A model learning to solve algorithm problems can do well on the input lengths it sees during training and stumble on the lengths in between. An engineer might inspect those failures and add a computation that handles the missing case. DoubleAI asks what happens when a coding agent can do...","categories": ["Machine Learning","Computer Science"],
         "tags": ["Artificial Intelligence","Language Models","Model Architecture"],

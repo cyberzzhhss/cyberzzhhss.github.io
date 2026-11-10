@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline' https://www.gr.inc; style-src 'unsafe-inline' https://www.gr.inc; font-src https://www.gr.inc; img-src data:">
+<title>Interactive figures from How to Train a Swarm</title>
+<link rel="stylesheet" href="https://www.gr.inc/_next/static/css/a38875e87f53b2c2.css?dpl=dpl_HDopjwp9ovKcZkosRVU5f1N1Hysw">
+<link rel="stylesheet" href="https://www.gr.inc/_next/static/css/64efff4f17614ac2.css?dpl=dpl_HDopjwp9ovKcZkosRVU5f1N1Hysw">
+<link rel="stylesheet" href="https://www.gr.inc/_next/static/css/1ba683abdb96023b.css?dpl=dpl_HDopjwp9ovKcZkosRVU5f1N1Hysw">
+<link rel="stylesheet" href="https://www.gr.inc/_next/static/css/3192e2ef51b1103b.css?dpl=dpl_HDopjwp9ovKcZkosRVU5f1N1Hysw">
+<style>
+  body { margin: 0; padding: 16px; }
+  h1 { font-size: 1.125rem; font-weight: 600; margin: 0 0 12px; }
+</style>
+<script defer crossorigin="anonymous" integrity="sha384-/XshNYKcPkNI/gPTNzXh1wqZ/LbSxuNmGF3l58VBnaP+NUHiQQbuMHIkzQeYN3lY" src="https://www.gr.inc/_next/static/chunks/webpack-163adf17b1687480.js?dpl=dpl_HDopjwp9ovKcZkosRVU5f1N1Hysw"></script>
+<script defer crossorigin="anonymous" integrity="sha384-70sDzNsD+XKHC25fRQruXJgaxmFMfjV2Yaim4nnyStPh+j2tgUuh3dqJw9DbUiOC" src="https://www.gr.inc/_next/static/chunks/4bd1b696-85247466588872a1.js?dpl=dpl_HDopjwp9ovKcZkosRVU5f1N1Hysw"></script>
+<script defer crossorigin="anonymous" integrity="sha384-kd1oZF4yKuiW20jYOtY7jizb7qZNIzBUYeinvQUw3EFqBnPBMNGfNCJcOtof82sD" src="https://www.gr.inc/_next/static/chunks/684-1282c534652d3425.js?dpl=dpl_HDopjwp9ovKcZkosRVU5f1N1Hysw"></script>
+<script defer crossorigin="anonymous" integrity="sha384-DQ7+UPLraRpC+9UvwYHEBv9+jCDnYy2VoIm3Gf99PVpNZKmXg+EmBOptltJyGGVp" src="https://www.gr.inc/_next/static/chunks/874-5608e9a330d0d2ce.js?dpl=dpl_HDopjwp9ovKcZkosRVU5f1N1Hysw"></script>
+<script defer crossorigin="anonymous" integrity="sha384-RW9k5XKqA6pNrd1Zz7KqSjBSbl9Ktx03KmqdlEC8R8RUbx44Ef4TKKqLUJu3Ms9z" src="https://www.gr.inc/_next/static/chunks/717-23e35fd39950a98f.js?dpl=dpl_HDopjwp9ovKcZkosRVU5f1N1Hysw"></script>
+<script defer crossorigin="anonymous" integrity="sha384-5W3AvQk65U86plvY/1l1G+aEPQKzxAJgWIE32+K71GyS2WWHDhG27tEosiQyIzYH" src="https://www.gr.inc/_next/static/chunks/502-bf5dc422ec7a9660.js?dpl=dpl_HDopjwp9ovKcZkosRVU5f1N1Hysw"></script>
+<script defer crossorigin="anonymous" integrity="sha384-Bz46yvJHYiHBMTTC1L5eU76MmfXWcwunNcxLSF4JQZ6+M3P1fMNPn9RX7mdsA3nj" src="https://www.gr.inc/_next/static/chunks/226-e5d5606fa9bff630.js?dpl=dpl_HDopjwp9ovKcZkosRVU5f1N1Hysw"></script>
+<script defer crossorigin="anonymous" integrity="sha384-wYQ9Nl9VZjvMHkQ6vA/9VfAtTmA2pFk+beR8sTU5Vm88ftqYmlvKuzCu+ValeU6m" src="https://www.gr.inc/_next/static/chunks/app/blog/how-to-train-a-swarm/page-c3cd324fd43873b7.js?dpl=dpl_HDopjwp9ovKcZkosRVU5f1N1Hysw"></script>
+</head>
+<body>
+<h1 id="title">How to Train a Swarm</h1>
+<div id="chart"></div>
+<p id="status" role="status">Loading General Reasoning’s interactive figure…</p>
+<script>
+  const isEdgeBench = location.hash === '#edgebench';
+  const title = document.getElementById('title');
+  const status = document.getElementById('status');
+  title.textContent = isEdgeBench
+    ? 'EdgeBench cumulative reward over time'
+    : 'Maximum wall-clock schedule as latency pressure';
+
+  window.addEventListener('DOMContentLoaded', () => {
+    try {
+      // Mount only the selected component from the published article build.
+      window.webpackChunk_N_E.push([[929226], {}, requireModule => {
+        const { createElement } = requireModule(12115);
+        const { createRoot } = requireModule(12669);
+        let component;
+        let props = {};
+        if (isEdgeBench) {
+          component = requireModule(64721).EdgeBenchChart;
+          const palette = requireModule(15306);
+          props = {
+            fit: false,
+            colours: [palette.Pg, '#e09a86', '#c5604a', palette.Jl],
+            only: ['b0', 'b8'],
+            ahead: { at: 2.35, label: 'Up to 8 hires ahead from 2.4 h' }
+          };
+        } else {
+          component = requireModule(58532).ScheduleGroupFigure;
+        }
+        createRoot(document.getElementById('chart')).render(createElement(component, props));
+        status.hidden = true;
+      }]);
+    } catch {
+      status.textContent = 'The figure could not load. Open the original article using the link below the frame.';
+    }
+  });
+</script>
+</body>
+</html>

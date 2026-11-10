@@ -1,0 +1,42 @@
+I"�<p>Imagine asking an AI agent to fix three bugs. One agent could tackle them in order, or three agents could work at once. The team can finish sooner if the fixes are independent. If two agents edit the same part of the code, they may spend much of that saved time sorting out their changes.</p>
+
+<p>General Reasoning’s Avalon-M1 experiments ask whether AI agents can learn when it pays to work together. The researchers give the agents a shared score, tools for communicating, and a deadline. <a href="https://www.gr.inc/blog/how-to-train-a-swarm">General Reasoning’s How to Train a Swarm</a></p>
+
+<!--more-->
+
+<h2 id="what-a-deadline-teaches">What a deadline teaches</h2>
+
+<p>In Avalon-M1, the lead agent and its specialists are instances of the same model. The lead can recruit specialists, and the team can share work through messages, channels, and a common workspace. During training, the outcome of the whole run shapes how the model learns from each agent’s actions. General Reasoning calls this <strong>reinforcement learning from collective rewards</strong>, or RLCR. <a href="https://www.gr.inc/avalonm1.pdf#page=9">Avalon-M1 technical report, methodology</a></p>
+
+<p>Say one team passes seven tests before time runs out and another passes four. The first team earns a higher score. If both pass seven, they tie even if one finished earlier. The deadline makes speed matter when it helps the team complete more work. <a href="https://www.gr.inc/blog/how-to-train-a-swarm#making-parallel-work-pay">How to Train a Swarm, time limits</a></p>
+
+<p>To make that incentive work, the task needs a way to score partial progress. A test suite can do this because it can check the code whenever a run stops. General Reasoning increases the time limit over training so teams can practice on tasks long enough for the work of dividing and coordinating a job to pay off. <a href="https://www.gr.inc/avalonm1.pdf#page=13">Avalon-M1 technical report, training horizons</a></p>
+
+<figure>
+  <iframe src="/assets/html/swarm-figures.html#deadline" title="General Reasoning’s interactive deadline schedule" width="100%" height="610" loading="lazy" sandbox="allow-scripts" style="border: 1px solid #d1d5db; border-radius: 8px;"></iframe>
+  <figcaption>Move the slider to see how much time a team gets at different stages of training and how that affects the example runs. <a href="https://www.gr.inc/blog/how-to-train-a-swarm#making-parallel-work-pay">View the original figure in How to Train a Swarm</a>.</figcaption>
+</figure>
+
+<h2 id="when-parallel-work-pays">When parallel work pays</h2>
+
+<p>Suppose each of the three fixes takes 18 minutes and the review takes 10. One agent working through them in order finishes in <strong>64 minutes</strong>. Three agents working independently can finish in <strong>28 minutes</strong>, including the review. If one fix depends on another, the review has to wait for both, and the schedule grows to <strong>46 minutes</strong>.</p>
+
+<p>These are illustrative times. Each schedule contains the same amount of work. What changes is how much can happen at once. A quick message can save time if it warns someone away from duplicate work. A handoff can also add a delay if the next agent has to wait for an answer.</p>
+
+<h2 id="what-avalon-m1-measured">What Avalon-M1 measured</h2>
+
+<p>General Reasoning reports that, when the solo agent generated roughly as many output tokens as the team, its estimated run time was about four times as long. The researchers built that estimate from event logs, including the time to generate tokens, the time tools took to run, and which agents needed to wait for one another’s messages. Actual elapsed time also depends on how the serving system queues and batches requests. <a href="https://www.gr.inc/blog/how-to-train-a-swarm#signs-of-life">General Reasoning’s results</a> · <a href="https://www.gr.inc/avalonm1.pdf#page=59">Avalon-M1 technical report, latency methodology</a></p>
+
+<p>Giving a solo agent the team’s token budget closes much of the score gap on some tasks. On others, the team or the solo agent still comes out ahead. The EdgeBench figure shows a different comparison. It tracks how scores change over the course of a run, including the team’s slower start. <a href="https://www.gr.inc/avalonm1.pdf#page=20">Avalon-M1 technical report, token comparison</a></p>
+
+<figure>
+  <iframe src="/assets/html/swarm-figures.html#edgebench" title="General Reasoning’s interactive EdgeBench reward chart" width="100%" height="470" loading="lazy" sandbox="allow-scripts" style="border: 1px solid #d1d5db; border-radius: 8px;"></iframe>
+  <figcaption>On EdgeBench, the solo agent makes progress sooner. The team pulls ahead later. The time axis uses the researchers’ estimates. <a href="https://www.gr.inc/blog/how-to-train-a-swarm#signs-of-life">View the original figure in How to Train a Swarm</a>.</figcaption>
+</figure>
+
+<h2 id="what-a-team-score-can-miss">What a team score can miss</h2>
+
+<p>Suppose one agent finds the cause of a bug, another repeats the same search, and a third catches an error in the patch. All three share the score. It tells the training system how the team did overall, with little detail about which actions made the difference. That becomes harder to untangle as teams grow and runs get longer. <a href="https://www.gr.inc/blog/how-to-train-a-swarm#outstanding-problems">General Reasoning’s open problems</a></p>
+
+<p>For a bug-fixing task, I’d compare a solo agent with more time to think, several independent attempts, and a team that can talk. I’d give them the same deadline and track tests passed, tokens used, and time spent waiting for handoffs. The most interesting cases are the ones where one agent learns something that lets another finish sooner.</p>
+:ET
