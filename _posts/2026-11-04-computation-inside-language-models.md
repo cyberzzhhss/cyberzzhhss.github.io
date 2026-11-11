@@ -1,11 +1,13 @@
 ---
 title: "Computation Inside Language Models"
-excerpt: "Four projects explore what changes when a transformer can execute programs, train smaller models, and load new capabilities from memory."
+excerpt: "Five projects explore execution, internal training, extensible memory, and certified arithmetic—and clarify which parts of computation remain outside the network."
+last_modified_at: 2026-11-10
 excerpt_separator: "<!--more-->"
 tags:
   - Artificial Intelligence
   - Language Models
   - Transformers
+  - Formal Verification
 categories:
   - Machine Learning
   - Computer Science
@@ -15,7 +17,7 @@ layout: single
 
 A language model asked to multiply two matrices can write a program and hand it to an external runtime. Now imagine that its next forward pass executes an instruction from that program. The following pass executes another. Eventually, the answer is sitting in memory maintained by the model. The visible chat might look the same, but the division of labor has changed.
 
-Four projects explore that boundary. Percepta builds a WebAssembly executor and later a Python environment with writable memory. qwenGPU adds a small parallel machine to Qwen. qwenLab gives Qwen an internal training lab for smaller transformers. Together, they separate three decisions that are easy to conflate: **who chooses the computation, where it runs, and where its state persists**.
+Five projects explore that boundary. Percepta builds a WebAssembly executor and later a Python environment with writable memory. qwenGPU adds a small parallel machine to Qwen. qwenLab gives Qwen an internal training lab for smaller transformers. Sketchpad adds a learned arithmetic engine whose local steps can be exhaustively checked. Together, they separate four decisions: **who chooses the computation, where it runs, where its state persists, and what establishes its correctness**.
 
 <!--more-->
 
@@ -63,10 +65,32 @@ One demonstration stores the weights of a digit classifier in memory. The execut
   <figcaption>In the embedded article, find “Constant work per step with unlimited context” for the Python demo. <a href="https://www.percepta.ai/blog/can-llms-grow-their-own-capabilities#constant-work-per-step-with-unlimited-context">Open the Spotlight Python demo on Percepta</a></figcaption>
 </figure>
 
+## Sketchpad makes local arithmetic exhaustively checkable
+
+In *Sketchpad: certified exact arithmetic with a small vision-language model*, Mostafa “Neo” Mohsenvand adapts Qwen3.5-0.8B to work on a rendered sheet. Each step reads three cells and produces the arithmetic output and next operation. Conventional code writes those outputs and moves the view; the model computes the result digits. The low-rank adapter learns the local operations, while the runtime supplies the procedures and working memory. [Sketchpad repository](https://github.com/NeoVand/sketchpad)
+
+The important restriction is that no conversation history or evolving hidden state carries information between steps. Everything needed for the next step is supplied through its bounded input. A longer multiplication requires more steps, but it does not introduce an unlimited variety of local cases.
+
+That makes exhaustive checking possible. The paper enumerates **2,446 operation-specific views** and proves in Lean that correct local outputs imply correct runs of any length, provided the runtime presents only covered views and its reference procedures are correct. All views pass on the reported Apple M4 browser deployment. The runtime's view coverage and the correctness of its classical arithmetic procedures are **not themselves formalized in Lean**. [Paper, Sections 2–3](https://arxiv.org/html/2611.04434#S3)
+
+<figure>
+  <img src="https://arxiv.org/html/2611.04434v1/fig1.png" alt="Original Sketchpad overview showing a three-cell multiplication step, certified output margins, and arithmetic comparison results" loading="lazy">
+  <figcaption>Sketchpad's original overview. Figure 1 from <a href="https://arxiv.org/html/2611.04434">Mohsenvand, Sketchpad</a>, reproduced under <a href="https://creativecommons.org/licenses/by/4.0/">CC BY 4.0</a>.</figcaption>
+</figure>
+
+The project reports 220 correct answers on 220 pre-registered long-addition and multiplication problems. That benchmark illustrates the system; the finite-view argument supplies the guarantee under its assumptions. The dialogue version still has to choose and transcribe a computation, and its reported performance on fresh GSM8K problems falls 5.8 points below the base model. Certified execution does not certify that the right problem was posed. [Results and limitations](https://github.com/NeoVand/sketchpad#results)
+
+The [original interactive demo](https://neovand.github.io/sketchpad/demo) shows the sheet, local views, and model outputs. It starts with recorded runs; loading the model enables execution on the reader's GPU. Its default device check covers the weakest tenth of views; a full check is available separately. [Demo and device-check behavior](https://neovand.github.io/sketchpad/demo)
+
 ## Where a reusable capability lives
 
 These projects connect to a question from my earlier post on computational words. Suppose a model identifies a repeated procedure and gives it a name. The name makes it easier to refer to the procedure. A separate design decision determines what happens when the name is used. [Creating New Words]({% post_url 2026-11-01-creating-new-words %})
 
-A compiler can build the procedure's execution rules into layers. An interpreter can run code supplied as tokens. A memory architecture can keep that code available across invocations and replace it when a better version arrives. From this perspective, qwenLab illustrates how a model can choose among actions offered by a built-in subsystem, while Spotlight illustrates how the set of available procedures can change after the executor is built.
+A compiler can build the procedure's execution rules into layers. An interpreter can run code supplied as tokens. A memory architecture can keep that code available across invocations and replace it when a better version arrives. From this perspective, qwenLab illustrates how a model can choose among actions offered by a built-in subsystem, while Spotlight illustrates how the set of available procedures can change after the executor is built. Sketchpad adds a different question: can every local decision in a learned procedure be checked, so that confidence in execution no longer depends only on sampled problems?
 
 The distinction matters when evaluating a claim that a model gained a capability. Running a supplied program tests execution. Keeping that program available tests storage and retrieval. Discovering a program worth retaining, verifying it, and applying it to a new problem would test something further. Each step can be evaluated on its own, which gives a more precise account of what improved and where that improvement resides.
+
+
+## Appendix: what Sketchpad's certificate covers
+
+The certificate is tied to the model files, glyphs, precision, and execution path. A different deployment needs a full check or a justified bound on numerical changes. The paper tests sampled batch compositions, rather than exhaustively bounding every possible batch. Its guarantee concerns the restricted sheet machine; it does not show that a finite benchmark certifies an unrestricted chat model. [Certification methods and discussion](https://arxiv.org/html/2611.04434#S8)

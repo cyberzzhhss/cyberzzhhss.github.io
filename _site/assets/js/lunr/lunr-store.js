@@ -85,7 +85,7 @@ var store = [{
       },{
         "title": "Computation Inside Language Models",
         "excerpt":"A language model asked to multiply two matrices can write a program and hand it to an external runtime. Now imagine that its next forward pass executes an instruction from that program. The following pass executes another. Eventually, the answer is sitting in memory maintained by the model. The visible...","categories": ["Machine Learning","Computer Science"],
-        "tags": ["Artificial Intelligence","Language Models","Transformers"],
+        "tags": ["Artificial Intelligence","Language Models","Transformers","Formal Verification"],
         "url": "/machine%20learning/computer%20science/computation-inside-language-models/",
         "teaser": null
       },{
@@ -129,6 +129,12 @@ var store = [{
         "excerpt":"An agent arrives in a game with no explanation of its rules. Colored objects fill the board. Some actions move things; others appear to do nothing. The goal itself may need to be discovered. Every experiment consumes part of the action budget. Solving this requires more than recognizing a pattern....","categories": ["Machine Learning","Computer Science"],
         "tags": ["Artificial Intelligence","ARC-AGI","AI Agents","Program Synthesis","World Models"],
         "url": "/machine%20learning/computer%20science/inside-top-two-arc-agi-3-solutions/",
+        "teaser": null
+      },{
+        "title": "MiniMind and Mini-Omni: Learning How Language Models Are Built",
+        "excerpt":"A conversational model hides several engineering problems behind a simple interface. It needs to learn language, respond to instructions, and turn its predictions into something a person can use. A voice assistant adds another challenge: it must begin speaking soon enough for the exchange to feel natural. MiniMind and Mini-Omni...","categories": ["Machine Learning","Computer Science"],
+        "tags": ["Artificial Intelligence","Small Language Models","Multimodal Learning","Speech Models","Model Training"],
+        "url": "/machine%20learning/computer%20science/minimind-and-mini-omni/",
         "teaser": null
       },{
         "title": "Question Answering (SQuAD)",

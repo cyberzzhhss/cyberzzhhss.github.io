@@ -4,7 +4,7 @@
     <meta charset="utf-8">
 
 <!-- begin _includes/seo.html --><title>Computation Inside Language Models - Zhehan Shi</title>
-<meta name="description" content="Four projects explore what changes when a transformer can execute programs, train smaller models, and load new capabilities from memory.">
+<meta name="description" content="Five projects explore execution, internal training, extensible memory, and certified arithmetic—and clarify which parts of computation remain outside the network.">
 
 
   <meta name="author" content="Zhehan Shi">
@@ -20,7 +20,7 @@
 <meta property="og:url" content="/machine%20learning/computer%20science/computation-inside-language-models/">
 
 
-  <meta property="og:description" content="Four projects explore what changes when a transformer can execute programs, train smaller models, and load new capabilities from memory.">
+  <meta property="og:description" content="Five projects explore execution, internal training, extensible memory, and certified arithmetic—and clarify which parts of computation remain outside the network.">
 
 
 
@@ -31,6 +31,8 @@
   <meta property="article:published_time" content="2026-11-04T00:00:00-05:00">
 
 
+
+  <meta property="article:modified_time" content="2026-11-10T00:00:00-05:00">
 
 
 
@@ -168,9 +170,9 @@
 
   <article class="page" itemscope itemtype="https://schema.org/CreativeWork">
     <meta itemprop="headline" content="Computation Inside Language Models">
-    <meta itemprop="description" content="Four projects explore what changes when a transformer can execute programs, train smaller models, and load new capabilities from memory.">
+    <meta itemprop="description" content="Five projects explore execution, internal training, extensible memory, and certified arithmetic—and clarify which parts of computation remain outside the network.">
     <meta itemprop="datePublished" content="2026-11-04T00:00:00-05:00">
-    
+    <meta itemprop="dateModified" content="2026-11-10T00:00:00-05:00">
 
     <div class="page__inner-wrap">
       
@@ -192,7 +194,7 @@
       <span class="page__meta-readtime">
         <i class="far fa-clock" aria-hidden="true"></i>
         
-          5 minute read
+          7 minute read
         
       </span>
     
@@ -206,7 +208,7 @@
         
         <p>A language model asked to multiply two matrices can write a program and hand it to an external runtime. Now imagine that its next forward pass executes an instruction from that program. The following pass executes another. Eventually, the answer is sitting in memory maintained by the model. The visible chat might look the same, but the division of labor has changed.</p>
 
-<p>Four projects explore that boundary. Percepta builds a WebAssembly executor and later a Python environment with writable memory. qwenGPU adds a small parallel machine to Qwen. qwenLab gives Qwen an internal training lab for smaller transformers. Together, they separate three decisions that are easy to conflate: <strong>who chooses the computation, where it runs, and where its state persists</strong>.</p>
+<p>Five projects explore that boundary. Percepta builds a WebAssembly executor and later a Python environment with writable memory. qwenGPU adds a small parallel machine to Qwen. qwenLab gives Qwen an internal training lab for smaller transformers. Sketchpad adds a learned arithmetic engine whose local steps can be exhaustively checked. Together, they separate four decisions: <strong>who chooses the computation, where it runs, where its state persists, and what establishes its correctness</strong>.</p>
 
 <!--more-->
 
@@ -254,13 +256,34 @@
   <figcaption>In the embedded article, find “Constant work per step with unlimited context” for the Python demo. <a href="https://www.percepta.ai/blog/can-llms-grow-their-own-capabilities#constant-work-per-step-with-unlimited-context">Open the Spotlight Python demo on Percepta</a></figcaption>
 </figure>
 
+<h2 id="sketchpad-makes-local-arithmetic-exhaustively-checkable">Sketchpad makes local arithmetic exhaustively checkable</h2>
+
+<p>In <em>Sketchpad: certified exact arithmetic with a small vision-language model</em>, Mostafa “Neo” Mohsenvand adapts Qwen3.5-0.8B to work on a rendered sheet. Each step reads three cells and produces the arithmetic output and next operation. Conventional code writes those outputs and moves the view; the model computes the result digits. The low-rank adapter learns the local operations, while the runtime supplies the procedures and working memory. <a href="https://github.com/NeoVand/sketchpad">Sketchpad repository</a></p>
+
+<p>The important restriction is that no conversation history or evolving hidden state carries information between steps. Everything needed for the next step is supplied through its bounded input. A longer multiplication requires more steps, but it does not introduce an unlimited variety of local cases.</p>
+
+<p>That makes exhaustive checking possible. The paper enumerates <strong>2,446 operation-specific views</strong> and proves in Lean that correct local outputs imply correct runs of any length, provided the runtime presents only covered views and its reference procedures are correct. All views pass on the reported Apple M4 browser deployment. The runtime’s view coverage and the correctness of its classical arithmetic procedures are <strong>not themselves formalized in Lean</strong>. <a href="https://arxiv.org/html/2611.04434#S3">Paper, Sections 2–3</a></p>
+
+<figure>
+  <img src="https://arxiv.org/html/2611.04434v1/fig1.png" alt="Original Sketchpad overview showing a three-cell multiplication step, certified output margins, and arithmetic comparison results" loading="lazy" />
+  <figcaption>Sketchpad's original overview. Figure 1 from <a href="https://arxiv.org/html/2611.04434">Mohsenvand, Sketchpad</a>, reproduced under <a href="https://creativecommons.org/licenses/by/4.0/">CC BY 4.0</a>.</figcaption>
+</figure>
+
+<p>The project reports 220 correct answers on 220 pre-registered long-addition and multiplication problems. That benchmark illustrates the system; the finite-view argument supplies the guarantee under its assumptions. The dialogue version still has to choose and transcribe a computation, and its reported performance on fresh GSM8K problems falls 5.8 points below the base model. Certified execution does not certify that the right problem was posed. <a href="https://github.com/NeoVand/sketchpad#results">Results and limitations</a></p>
+
+<p>The <a href="https://neovand.github.io/sketchpad/demo">original interactive demo</a> shows the sheet, local views, and model outputs. It starts with recorded runs; loading the model enables execution on the reader’s GPU. Its default device check covers the weakest tenth of views; a full check is available separately. <a href="https://neovand.github.io/sketchpad/demo">Demo and device-check behavior</a></p>
+
 <h2 id="where-a-reusable-capability-lives">Where a reusable capability lives</h2>
 
 <p>These projects connect to a question from my earlier post on computational words. Suppose a model identifies a repeated procedure and gives it a name. The name makes it easier to refer to the procedure. A separate design decision determines what happens when the name is used. <a href="/machine%20learning/computer%20science/creating-new-words/">Creating New Words</a></p>
 
-<p>A compiler can build the procedure’s execution rules into layers. An interpreter can run code supplied as tokens. A memory architecture can keep that code available across invocations and replace it when a better version arrives. From this perspective, qwenLab illustrates how a model can choose among actions offered by a built-in subsystem, while Spotlight illustrates how the set of available procedures can change after the executor is built.</p>
+<p>A compiler can build the procedure’s execution rules into layers. An interpreter can run code supplied as tokens. A memory architecture can keep that code available across invocations and replace it when a better version arrives. From this perspective, qwenLab illustrates how a model can choose among actions offered by a built-in subsystem, while Spotlight illustrates how the set of available procedures can change after the executor is built. Sketchpad adds a different question: can every local decision in a learned procedure be checked, so that confidence in execution no longer depends only on sampled problems?</p>
 
 <p>The distinction matters when evaluating a claim that a model gained a capability. Running a supplied program tests execution. Keeping that program available tests storage and retrieval. Discovering a program worth retaining, verifying it, and applying it to a new problem would test something further. Each step can be evaluated on its own, which gives a more precise account of what improved and where that improvement resides.</p>
+
+<h2 id="appendix-what-sketchpads-certificate-covers">Appendix: what Sketchpad’s certificate covers</h2>
+
+<p>The certificate is tied to the model files, glyphs, precision, and execution path. A different deployment needs a full check or a justified bound on numerical changes. The paper tests sampled batch compositions, rather than exhaustively bounding every possible batch. Its guarantee concerns the restricted sheet machine; it does not show that a finite benchmark certifies an unrestricted chat model. <a href="https://arxiv.org/html/2611.04434#S8">Certification methods and discussion</a></p>
 
         
       </section>
@@ -282,6 +305,10 @@
       
       
       <a href="/tags/#artificial-intelligence" class="page__taxonomy-item" rel="tag">Artificial Intelligence</a><span class="sep">, </span>
+    
+      
+      
+      <a href="/tags/#formal-verification" class="page__taxonomy-item" rel="tag">Formal Verification</a><span class="sep">, </span>
     
       
       
@@ -321,7 +348,7 @@
 
 
         
-  <p class="page__date"><strong><i class="fas fa-fw fa-calendar-alt" aria-hidden="true"></i> Updated:</strong> <time datetime="2026-11-04T00:00:00-05:00">November 4, 2026</time></p>
+  <p class="page__date"><strong><i class="fas fa-fw fa-calendar-alt" aria-hidden="true"></i> Updated:</strong> <time datetime="2026-11-10">November 10, 2026</time></p>
 
 
       </footer>
@@ -366,6 +393,47 @@
     <div class="page__related">
       <h4 class="page__related-title">You May Also Enjoy</h4>
       <div class="grid__wrapper">
+        
+          
+
+
+
+<div class="grid__item">
+  <article class="archive__item" itemscope itemtype="https://schema.org/CreativeWork">
+    
+    <h2 class="archive__item-title no_toc" itemprop="headline">
+      
+        <a href="/machine%20learning/computer%20science/minimind-and-mini-omni/" rel="permalink">MiniMind and Mini-Omni: Learning How Language Models Are Built
+</a>
+      
+    </h2>
+    
+
+
+  <p class="page__meta">
+    
+
+    
+
+    
+      
+      
+
+      <span class="page__meta-readtime">
+        <i class="far fa-clock" aria-hidden="true"></i>
+        
+          7 minute read
+        
+      </span>
+    
+  </p>
+
+
+    <p class="archive__item-excerpt" itemprop="description">MiniMind makes small-model training inspectable. Mini-Omni shows how a pretrained language model can produce streaming speech.
+</p>
+  </article>
+</div>
+
         
           
 
@@ -485,47 +553,6 @@
 
 
     <p class="archive__item-excerpt" itemprop="description">Where to practice ML implementations, CUDA and Triton kernels, LLM reasoning, system design, and data interviews—and how to choose a focused study path.
-</p>
-  </article>
-</div>
-
-        
-          
-
-
-
-<div class="grid__item">
-  <article class="archive__item" itemscope itemtype="https://schema.org/CreativeWork">
-    
-    <h2 class="archive__item-title no_toc" itemprop="headline">
-      
-        <a href="/machine%20learning/computer%20science/redesigning-language-models-during-training/" rel="permalink">Redesigning Language Models During Training
-</a>
-      
-    </h2>
-    
-
-
-  <p class="page__meta">
-    
-
-    
-
-    
-      
-      
-
-      <span class="page__meta-readtime">
-        <i class="far fa-clock" aria-hidden="true"></i>
-        
-          3 minute read
-        
-      </span>
-    
-  </p>
-
-
-    <p class="archive__item-excerpt" itemprop="description">DoubleAI gives a coding agent a role in training. The agent diagnoses failures, proposes new computations, and tests where they fit inside a model.
 </p>
   </article>
 </div>
